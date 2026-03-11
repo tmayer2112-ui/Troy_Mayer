@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troy Mayer | Mechanical Engineering Portfolio</title>
+    <style>
+        /* MODERN COLOR PALETTE & TYPOGRAPHY */
+        :root {
+            --bg-color: #FAFAFC;
+            --text-main: #111111;
+            --text-muted: #666666;
+            --accent: #0055FF;
+            --card-bg: #FFFFFF;
+            --dark-block: #222222;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* SLEEK NAVIGATION */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            background-color: rgba(250, 250, 252, 0.95);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #EAEAEA;
+        }
+        .nav-logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+        .nav-links a {
+            margin-left: 2rem;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
+        /* HERO INTRO SECTION */
+        .hero {
+            background: linear-gradient(rgba(17, 17, 17, 0.8), rgba(17, 17, 17, 0.9)), url('purdue_arch.jpg') center/cover no-repeat;
+            padding: 8rem 5% 8rem 5%;
+            width: 100%;
+            color: #FFFFFF;
+        }
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4rem;
+        }
+        .hero-text {
+            flex: 1;
+            max-width: 750px;
+        }
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -1px;
+            margin-bottom: 1.5rem;
+            color: #FFFFFF;
+        }
+        .hero p {
+            font-size: 1.25rem;
+            color: #D1D1D1;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+        .hero-image {
+            flex-shrink: 0;
+        }
+        .hero-image img {
+            width: 340px;
+            height: 340px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            border: 6px solid #FFFFFF;
+        }
+        .btn-hero {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background-color: var(--accent);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .btn-hero:hover {
+            transform: translateY(-2px);
+            background-color: #0044CC;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background-color: var(--text-main);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            background-color: var(--accent);
+        }
+
+        /* PROJECTS GRID */
+        .projects-grid-section {
+            padding: 5rem 5% 4rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .section-header {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-weight: 700;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+        .grid-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            color: var(--text-main);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .grid-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        }
+        .grid-img {
+            height: 250px;
+            width: 100%;
+            object-fit: cover;
+            border-bottom: 1px solid #EAEAEA;
+        }
+        .grid-info {
+            padding: 1.5rem;
+        }
+        .grid-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .grid-info p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* INDIVIDUAL PROJECT PAGES */
+        .project-detail {
+            max-width: 1200px;
+            margin: 8rem auto;
+            padding: 0 5%;
+            border-top: 1px solid #EAEAEA;
+            padding-top: 5rem;
+        }
+        .project-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            line-height: 1.1;
+        }
+        .project-meta {
+            font-size: 1rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .disclaimer {
+            font-size: 0.9rem;
+            color: #888;
+            font-style: italic;
+            margin-bottom: 3rem;
+        }
+        .project-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 4rem;
+        }
+        .project-text {
+            position: sticky;
+            top: 100px;
+            align-self: start;
+        }
+        .project-text h4 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            margin-bottom: 0.2rem;
+            margin-top: 1.5rem;
+        }
+        .project-text h4:first-child {
+            margin-top: 0;
+        }
+        .project-text p {
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+            color: #333;
+        }
+        
+        /* SKILLS LAYOUT */
+        .skills-section {
+            margin-top: 2.5rem;
+            width: 100%;
+        }
+        .skills-header {
+            background-color: var(--dark-block);
+            color: #FFFFFF;
+            text-align: center;
+            font-weight: 800;
+            padding: 0.6rem;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+        }
+        .skills-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+        }
+        .skill-badge {
+            background-color: var(--dark-block);
+            color: #FFFFFF;
+            text-align: center;
+            font-weight: 700;
+            padding: 0.6rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* PROJECT GALLERY */
+        .project-gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+        .gallery-item img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .gallery-item p {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* ABOUT SECTION */
+        .about-section {
+            padding: 6rem 5%;
+            max-width: 1200px;
+            margin: 0 auto 4rem auto;
+            border-top: 1px solid #EAEAEA;
+        }
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        .about-img img {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 900px) {
+            .hero-container {
+                flex-direction: column-reverse;
+                text-align: center;
+                gap: 2rem;
+            }
+            .hero-text {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .project-layout, .about-grid {
+                grid-template-columns: 1fr;
+            }
+            .project-text {
+                position: relative;
+                top: 0;
+            }
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+        }
+        @media (max-width: 500px) {
+            .skills-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="#" class="nav-logo">Troy Mayer</a>
+        <div class="nav-links">
+            <a href="#work">Work</a>
+            <a href="#about">About</a>
+            <a href="Troy Mayer Resume .pdf" target="_blank">Resume</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-container">
+            <div class="hero-text">
+                <h1>Engineering the Full <br>Product Lifecycle.</h1>
+                <p>Mechanical Engineering & Applied Statistics student at Purdue University. I specialize in bridging the gap between theoretical mechanics and physical reality, from precision machining and custom PCB routing to Python-driven data acquisition.</p>
+                <a href="#work" class="btn-hero">View Selected Works</a>
+            </div>
+            <div class="hero-image">
+                <img src="image_f58a52.png" alt="Troy Mayer Portrait">
+            </div>
+        </div>
+    </header>
+
+    <section id="work" class="projects-grid-section">
+        <div class="section-header">Selected Works</div>
+        <div class="grid-container">
+            
+            <a href="#emerson" class="grid-card">
+                <img src="image_058215.png" alt="Emerson Valve" class="grid-img">
+                <div class="grid-info">
+                    <h3>Heavy Industrial Valves</h3>
+                    <p>Emerson ASCO • R&D Engineering</p>
+                </div>
+            </a>
+
+            <a href="#soft-robotics" class="grid-card">
+                <img src="image_0518a3.png" alt="Soft Robotics" class="grid-img" style="object-position: top;">
+                <div class="grid-info">
+                    <h3>Ionic Dielectric Gels</h3>
+                    <p>Chortos Lab • Soft Robotics Research</p>
+                </div>
+            </a>
+
+            <a href="#orthosis" class="grid-card">
+                <img src="openeremg12.png" alt="Active Orthosis PCB" class="grid-img">
+                <div class="grid-info">
+                    <h3>Active Orthosis Mechatronics</h3>
+                    <p>Purdue ASME • Biomechanics</p>
+                </div>
+            </a>
+
+            <a href="#caterpillar" class="grid-card">
+                <img src="Caterpillar.png" alt="Power BI Dashboard" class="grid-img" style="object-position: left;">
+                <div class="grid-info">
+                    <h3>Predictive Analytics Dashboard</h3>
+                    <p>Purdue Data Mine • Caterpillar</p>
+                </div>
+            </a>
+
+            <a href="#autonetwork" class="grid-card">
+                <img src="autonetwork_terminal.png" alt="Python Terminal Output" class="grid-img" style="object-position: top;">
+                <div class="grid-info">
+                    <h3>AI Networking Automator</h3>
+                    <p>Python • OpenAI • REST APIs</p>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <section id="emerson" class="project-detail">
+        <h2 class="project-title">Heavy Industrial Valve Development</h2>
+        <div class="project-meta">Emerson ASCO | R&D Engineering Intern</div>
+        <div class="disclaimer">*Note: Certain CAD assemblies, exploded views, and proprietary dimensions have been omitted from this portfolio to comply with Emerson ASCO's intellectual property and confidentiality agreements.</div>
+        
+        <div class="project-layout">
+            <div class="project-text">
+                <h4>Project Summary</h4>
+                <p>Designed and validated heavy industrial valve components and optimized actuator assembly procedures to significantly reduce mechanical deadbands.</p>
+                
+                <h4>My Role</h4>
+                <p>R&D Engineering Intern responsible for end-to-end mechanical design, precision prototype manufacturing, and root-cause data analysis.</p>
+
+                <h4>Process & Solution</h4>
+                <p>Engineered 30+ custom rotary valve components in Creo Parametric, including a complex adjustable spring canister. Validated designs via hand-calculated stress analysis and transitioned designs to the shop floor, utilizing G-code CNC and manual machining (lathe, band saw) to manufacture physical pistons.</p>
+                
+                <h4>Impact & Metrics</h4>
+                <p>Successfully held strict +/- 0.05 mm manufacturing tolerances. By running rigorous cycle tests and processing capability data, I authored a new assembly procedure that successfully decreased actuator deadbands by over 10%.</p>
+
+                <div class="skills-section">
+                    <div class="skills-header">Top Skills Utilized</div>
+                    <div class="skills-grid">
+                        <div class="skill-badge">Creo Parametric</div>
+                        <div class="skill-badge">CNC Machining</div>
+                        <div class="skill-badge">Root-Cause Analysis</div>
+                        <div class="skill-badge">GD&T Tolerance</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="project-gallery">
+                <div class="gallery-item">
+                    <img src="image_058215.png" alt="Spring Canister CAD">
+                    <p>Industrial rotary valve.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="image_05825b.png" alt="Valve Connection CAD">
+                    <p>Detailed CAD model of the custom connection system interfacing with the industrial valve.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="soft-robotics" class="project-detail">
+        <h2 class="project-title">Electromechanical Optimization of Dielectric Gels</h2>
+        <div class="project-meta">Chortos Lab | Soft Robotics Research</div>
+        
+        <div class="project-layout">
+            <div class="project-text">
+                <h4>Project Summary</h4>
+                <p>Maximized the electromechanical force output of ionic dielectric gels for soft robotic applications through targeted chemical formulation and custom automated testing.</p>
+                
+                <h4>My Role</h4>
+                <p>Undergraduate Researcher driving the gel synthesis process and independently developing custom computer vision software for advanced data acquisition.</p>
+
+                <h4>Process & Solution</h4>
+                <p>Iteratively formulated new gel variations and designed 15 custom Fusion 360 test fixtures. To solve the challenge of accurately capturing sub-millimeter material behavior, I developed a Python-based computer vision autotracker, paired with LabVIEW and MATLAB, to autonomously quantify material displacement.</p>
+                
+                <h4>Impact & Metrics</h4>
+                <p>Achieved a force output increase of over 50%. The tracking pipeline autonomously processed datasets exceeding 50,000 points, achieving 0.01 mm tracking precision on a 29.45 mm cantilever sample.</p>
+
+                <div class="skills-section">
+                    <div class="skills-header">Top Skills Utilized</div>
+                    <div class="skills-grid">
+                        <div class="skill-badge">Python Computer Vision</div>
+                        <div class="skill-badge">LabVIEW & MATLAB</div>
+                        <div class="skill-badge">Fusion 360 CAD</div>
+                        <div class="skill-badge">DIW 3D Printing</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="project-gallery">
+                <div class="gallery-item">
+                    <img src="image_0518a3.png" alt="Actuation Schematic">
+                    <p>Actuation modes of dielectric elastomers driving the research.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="image_05119d.png" alt="Cantilever Deflection">
+                    <p>Macro-photography of a 29.45 mm dielectric gel cantilever under actuation. The micrometer scale was utilized by the Python autotracker to quantify material displacement.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="labview_pipeline.png" alt="LabVIEW Data Acquisition Pipeline">
+                    <p>Custom LabVIEW block diagram engineered to autonomously acquire and synchronize high-frequency data from the physical test fixtures.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="image_051230.png" alt="RPM Displacement Data">
+                    <p>MATLAB analysis of gel displacement over time, comparing mechanical response at varying spin-coating speeds.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="image_05153e.png" alt="Force vs Time">
+                    <p>Force magnitude testing under varying voltage loads utilized to optimize the chemical composition.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="orthosis" class="project-detail">
+        <h2 class="project-title">Active Orthosis Electronics</h2>
+        <div class="project-meta">Purdue ASME | Biomechanics Team Lead</div>
+        
+        <div class="project-layout">
+            <div class="project-text">
+                <h4>Project Summary</h4>
+                <p>Developed a functional rehabilitative active orthosis prototype by integrating a high-force mechanical chassis with custom EMG-controlled mechatronics.</p>
+                
+                <h4>My Role</h4>
+                <p>Biomechanics Team Lead directing a 5-student cross-functional engineering team and serving as the primary mechatronics and firmware engineer.</p>
+
+                <h4>Process & Solution</h4>
+                <p>Utilized CAD and FEA to engineer a mechanical arm chassis. To control the hardware, I designed and routed a custom KiCad PCB to serve as the system's central hub, and wrote C++ control firmware to process live electromyography (EMG) signals and manage gear ratios.</p>
+                
+                <h4>Impact & Metrics</h4>
+                <p>Engineered a robust structural system capable of sustaining over 150 N of force, achieving precise 160-degree motor positioning with less than 10 ms of latency.</p>
+
+                <div class="skills-section">
+                    <div class="skills-header">Top Skills Utilized</div>
+                    <div class="skills-grid">
+                        <div class="skill-badge">KiCad PCB Design</div>
+                        <div class="skill-badge">C++ Firmware</div>
+                        <div class="skill-badge">FEA Analysis</div>
+                        <div class="skill-badge">Mechatronics</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="project-gallery">
+                <div class="gallery-item">
+                    <img src="orthosis_chassis_cad.jpg" alt="Mechanical Arm Chassis CAD">
+                    <p>CAD modeling of the mechanical arm chassis, engineered to sustain over 150 N of force.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="FEA.jpg" alt="FEA Rendering">
+                    <p>FEA rendering of one of the arm pieces to validate structural integrity under high loads.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="openeremg12.png" alt="3D PCB Render">
+                    <p>Photorealistic 3D render of the custom PCB designed as the central control hub.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="image_04a4f7.png" alt="2D Trace Layout">
+                    <p>2D board layout engineered in KiCad, detailing complex signal routing and keep-out zones.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="caterpillar" class="project-detail">
+        <h2 class="project-title">Predictive Analytics Dashboard</h2>
+        <div class="project-meta">Purdue Data Mine | Caterpillar Paint Systems</div>
+        
+        <div class="project-layout">
+            <div class="project-text">
+                <h4>Project Summary</h4>
+                <p>Built a full-stack Python dashboard and predictive machine learning models to centralize real-time tracking and forecast solvent usage across manufacturing lines.</p>
+                
+                <h4>My Role</h4>
+                <p>Software & Data Engineer tasked with consolidating scattered legacy data sources and integrating predictive analytics for the facility's paint division.</p>
+
+                <h4>Process & Solution</h4>
+                <p>Engineered custom data pipelines to feed a cohesive Python dashboard. To drive predictive decision-making, I integrated Long Short-Term Memory (LSTM) neural networks and Monte Carlo simulations to model usage trends, translating complex models into dynamic Power BI visualizations.</p>
+                
+                <h4>Impact & Metrics</h4>
+                <p>Successfully isolated process inefficiencies between manual and robotic paint lines, providing actionable predictive insights to reduce overall facility operational costs.</p>
+
+                <div class="skills-section">
+                    <div class="skills-header">Top Skills Utilized</div>
+                    <div class="skills-grid">
+                        <div class="skill-badge">Python Full-Stack</div>
+                        <div class="skill-badge">LSTM Neural Networks</div>
+                        <div class="skill-badge">Data Pipelines</div>
+                        <div class="skill-badge">Power BI</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="project-gallery">
+                <div class="gallery-item">
+                    <img src="Caterpillar.png" alt="Power BI Dashboard">
+                    <p>Power BI analysis isolating and comparing primer and top coat usage trends across manual and robotic lines.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="image_041273.png" alt="LSTM Forecast">
+                    <p>Preliminary readout of the machine learning model comparing actual versus predicted topcoat usage via LSTM neural networks.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="autonetwork" class="project-detail">
+        <h2 class="project-title">AI-Driven Networking Automator</h2>
+        <div class="project-meta">Personal Project | Python & API Architecture</div>
+        
+        <div class="project-layout">
+            <div class="project-text">
+                <h4>Project Summary</h4>
+                <p>Engineered a Python command-line application that automates lead-generation and email-verification for quantitative finance and engineering role outreach.</p>
+                
+                <h4>My Role</h4>
+                <p>Solo Developer responsible for end-to-end software architecture, AI integration, and REST API routing.</p>
+
+                <h4>Process & Solution</h4>
+                <p>Utilized the OpenAI API (gpt-4o-mini) to parse unstructured Google search data into clean JSON payloads. Designed a custom algorithmic tier system to cross-reference names and validate corporate emails using the Hunter.io REST API.</p>
+                
+                <h4>Impact & Metrics</h4>
+                <p>Successfully prioritized warm connections through custom confidence thresholds and automated the export of verified hit-lists to a CSV via Pandas, dramatically scaling cold outreach volume and conversion rates.</p>
+
+                <div class="skills-section">
+                    <div class="skills-header">Top Skills Utilized</div>
+                    <div class="skills-grid">
+                        <div class="skill-badge">Python Automation</div>
+                        <div class="skill-badge">OpenAI API (LLMs)</div>
+                        <div class="skill-badge">REST APIs Integration</div>
+                        <div class="skill-badge">Pandas Data Structuring</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="project-gallery">
+                <div class="gallery-item">
+                    <img src="autonetwork_code.png" alt="Python Algorithmic Tier Logic">
+                    <p>Python definitions of the custom algorithmic tier system, prioritizing warm connections with adjusted confidence thresholds.</p>
+                </div>
+                <div class="gallery-item">
+                    <img src="autonetwork_terminal.png" alt="Python Script Execution">
+                    <p>Terminal of the automation script displaying the outputs and tiered confidence.</p>
+                </div>
+
+                <div class="gallery-item" style="background: #FAFAFC; padding: 2rem; border-radius: 8px; border: 1px solid #EAEAEA;">
+                    <h4 style="text-align: center; margin-top: 0; margin-bottom: 2rem; font-size: 1.1rem; color: #111; text-transform: uppercase; letter-spacing: 1px;">System Architecture</h4>
+                    
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+                        
+                        <div style="background: var(--dark-block); color: white; padding: 1rem 2rem; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; font-weight: 600;">
+                            1. Target Definition<br>
+                            <span style="font-size: 0.85rem; font-weight: 400; color: #AAA;">User inputs target company</span>
+                        </div>
+                        <div style="color: var(--accent); font-size: 1.5rem;">↓</div>
+                        <div style="background: var(--dark-block); color: white; padding: 1rem 2rem; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; font-weight: 600;">
+                            2. Data Extraction<br>
+                            <span style="font-size: 0.85rem; font-weight: 400; color: #AAA;">Unstructured Google search scraping</span>
+                        </div>
+                        <div style="color: var(--accent); font-size: 1.5rem;">↓</div>
+                        <div style="background: var(--dark-block); color: white; padding: 1rem 2rem; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; font-weight: 600;">
+                            3. AI Parsing (OpenAI API)<br>
+                            <span style="font-size: 0.85rem; font-weight: 400; color: #AAA;">gpt-4o-mini extracts names into JSON</span>
+                        </div>
+                        <div style="color: var(--accent); font-size: 1.5rem;">↓</div>
+                        <div style="background: var(--accent); color: white; padding: 1rem 2rem; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; font-weight: 600;">
+                            4. Algorithmic Sorting<br>
+                            <span style="font-size: 0.85rem; font-weight: 400; opacity: 0.9;">Prioritizes Purdue, Theta Chi, & Hometown</span>
+                        </div>
+                        <div style="color: var(--accent); font-size: 1.5rem;">↓</div>
+                        <div style="background: var(--dark-block); color: white; padding: 1rem 2rem; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; font-weight: 600;">
+                            5. Validation (Hunter.io API)<br>
+                            <span style="font-size: 0.85rem; font-weight: 400; color: #AAA;">Verifies corporate emails against thresholds</span>
+                        </div>
+                        <div style="color: var(--accent); font-size: 1.5rem;">↓</div>
+                        <div style="background: #EAEAEA; color: #111; padding: 1rem 2rem; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; font-weight: 600; border: 1px solid #CCC;">
+                            6. Pandas Export<br>
+                            <span style="font-size: 0.85rem; font-weight: 400; color: #555;">Compiles CSV Hit-List & Clipboard</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about-section">
+        <div class="about-grid">
+            <div class="about-img">
+                <img src="about.jpeg" alt="Troy Mayer">
+            </div>
+            <div>
+                <h2 class="project-title" style="margin-bottom: 1.5rem;">About Me</h2>
+                <p style="font-size: 1.1rem; color: #444; margin-bottom: 1.5rem;">
+                    Hi, I'm Troy A. Mayer. I am a Mechanical Engineering and Applied Statistics student at Purdue University with a relentless love for continuous learning. I am passionate about bridging the gap between rigorous hardware design and high-level software automation. 
+                </p>
+                <p style="font-size: 1.1rem; color: #444; margin-bottom: 1.5rem;">
+                    I’m passionate about making a positive impact on the world and thrive on building meaningful connections and meeting new people. Whether I am organizing philanthropic events with my brothers in the Theta Chi fraternity, teaching and playing the saxophone, or pushing my competitive limits in swim meets, I enjoy dedicating my time to pursuits that foster personal growth and discipline. Outside of the pool and the engineering lab, these experiences keep me grounded, inspired, and always ready for the next challenge. Cheering on Purdue basketball is another passion that keeps me grounded and inspired.
+                </p>
+                <div style="background: var(--bg-color); padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--accent); margin-bottom: 2.5rem;">
+                    <ul style="list-style: none; padding: 0; margin: 0; color: #333;">
+                        <li style="margin-bottom: 0.5rem;"><strong>University:</strong> Purdue University</li>
+                        <li style="margin-bottom: 0.5rem;"><strong>Degree:</strong> Mechanical Engineering</li>
+                        <li style="margin-bottom: 0.5rem;"><strong>Status:</strong> Actively seeking internships for Summer 2026 & 2027</li>
+                    </ul>
+                </div>
+                <a href="Troy Mayer Resume .pdf" target="_blank" class="btn" style="margin-right: 1rem;">View Resume</a>
+                <a href="mailto:tmayer2112@gmail.com" class="btn" style="background-color: transparent; color: var(--text-main); border: 2px solid var(--text-main);">Email Me</a>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>
