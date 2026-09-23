@@ -274,7 +274,7 @@ h2.section-title{
 /* ============================================================
    ABOUT
    ============================================================ */
-.about-grid{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:56px;align-items:start}
+.about-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:56px;align-items:start;max-width:820px}
 .about-photo{position:sticky;top:calc(var(--nav-h) + 28px)}
 .about-photo img{width:100%;border-radius:var(--radius);box-shadow:var(--shadow-lg);aspect-ratio:3/4;object-fit:cover}
 .about-body p{color:var(--text-2);font-size:1.05rem;margin-bottom:20px}
@@ -568,9 +568,6 @@ footer{padding:36px 0 44px;text-align:center}
 <section class="block" id="about">
   <div class="wrap">
     <div class="about-grid">
-      <div class="about-photo reveal">
-        <img src="about.jpeg" alt="Troy Mayer">
-      </div>
       <div class="about-body reveal">
         <div class="eyebrow">About</div>
         <h2 class="section-title">Mechanism, signal, and the model in between.</h2>
@@ -725,7 +722,7 @@ footer{padding:36px 0 44px;text-align:center}
 
       <a href="#orthosis" class="card reveal" data-tags="robotics hardware">
         <div class="card-media">
-          <img src="openeremg12.png" alt="3D render of the custom orthosis control PCB">
+          <img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand">
           <div class="card-badge">Purdue ASME</div>
         </div>
         <div class="card-body">
@@ -738,7 +735,7 @@ footer{padding:36px 0 44px;text-align:center}
 
       <a href="#soft-robotics" class="card reveal" data-tags="hardware data">
         <div class="card-media">
-          <img src="image_0518a3.png" alt="Actuation modes of dielectric elastomers" style="object-position:top">
+          <img src="gel_samples.jpg" alt="Direct-ink-write printed gel samples on metal substrates">
           <div class="card-badge">Chortos Lab</div>
         </div>
         <div class="card-body">
@@ -756,7 +753,7 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
         <div class="card-body">
           <h3>Paint Line Forecasting</h3>
-          <div class="card-org">LSTM · Monte Carlo · Python · Power BI</div>
+          <div class="card-org">LSTM · Monte Carlo · Python · Full-Stack Dashboard</div>
           <p class="card-desc">LSTM sequence forecasting and Monte Carlo variance analysis over months of cleaned legacy data — 5% less material used, 4% off manufacturing cycle time.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
@@ -888,6 +885,10 @@ footer{padding:36px 0 44px;text-align:center}
 
       <div class="gallery reveal">
         <figure class="shot">
+          <img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand">
+          <figcaption>The assembled drivetrain: aluminum chassis with 3D-printed comfort pads and velcro cuffs, driven by a planetary gearmotor through a machined drum and cable to the forearm brace. The control board that drives it is below.</figcaption>
+        </figure>
+        <figure class="shot">
           <img src="openeremg12.png" alt="Photorealistic 3D render of the custom EMG control PCB">
           <figcaption>Photorealistic 3D render of the custom PCB serving as the system's central control hub, interfacing motor driver signals with incoming EMG input.</figcaption>
         </figure>
@@ -923,8 +924,9 @@ footer{padding:36px 0 44px;text-align:center}
           <p>Maximizing the electromechanical force output of ionic dielectric gels for soft robotic actuators, through targeted chemical formulation paired with a custom automated test stack.</p>
         </div>
         <div class="side-block">
-          <h4>The Measurement Problem</h4>
-          <p>The material moves less than a millimeter. Hand-measuring that off video is neither accurate nor repeatable — so I wrote a Python computer-vision autotracker that quantifies displacement frame by frame against a micrometer scale in shot.</p>
+          <h4>Two Ways to Measure</h4>
+          <p>Flat samples sit under a Keyence laser displacement head, which reads sub-millimeter motion directly into LabVIEW. A cantilever is a different problem: the tip sweeps through an arc and leaves the laser's line, so there is nothing for it to track.</p>
+          <p>For those I wrote a Python computer-vision autotracker that resolves tip displacement frame by frame against a micrometer scale in shot — covering the geometry the laser could not.</p>
         </div>
         <div class="side-block">
           <h4>Approach &amp; Results</h4>
@@ -948,8 +950,12 @@ footer{padding:36px 0 44px;text-align:center}
 
       <div class="gallery reveal">
         <figure class="shot">
-          <img src="image_0518a3.png" alt="Actuation modes of dielectric elastomers">
-          <figcaption>Actuation modes of dielectric elastomers underpinning the research direction.</figcaption>
+          <img src="gel_samples.jpg" alt="Nine direct-ink-write printed gel samples on metal substrates">
+          <figcaption>A batch of direct-ink-write printed gel samples on metallized substrates with copper tape contacts. Line width and spacing vary across the set — each plate is one formulation and geometry in the iteration.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="keyence_rig.jpg" alt="Keyence laser displacement sensor aimed at a flat gel sample beside a laptop running LabVIEW">
+          <figcaption>The flat-sample path: a Keyence laser displacement head trained on a live sample — the red spot is the measurement point — feeding an NI USB-6001 into the LabVIEW VI on the laptop.</figcaption>
         </figure>
         <figure class="shot">
           <img src="image_05119d.png" alt="Macro photograph of a dielectric gel cantilever deflecting">
@@ -961,7 +967,7 @@ footer{padding:36px 0 44px;text-align:center}
         </figure>
         <figure class="shot">
           <img src="image_051230.png" alt="MATLAB plot of gel displacement over time by spin speed" loading="lazy">
-          <figcaption>MATLAB analysis of gel displacement over time, comparing mechanical response across spin-coating speeds.</figcaption>
+          <figcaption>MATLAB analysis of gel displacement over time across four spin-coating speeds — 500 to 2000 RPM. Each step change is an actuation cycle.</figcaption>
         </figure>
         <figure class="shot">
           <img src="image_05153e.png" alt="Force magnitude versus time under varying voltage" loading="lazy">
@@ -1016,7 +1022,7 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="gallery reveal">
         <figure class="shot">
           <img src="Caterpillar.png" alt="Power BI dashboard comparing primer and topcoat usage">
-          <figcaption>Power BI analysis isolating primer and topcoat usage trends across the manual and robotic lines.</figcaption>
+          <figcaption>The bottleneck view of the Python dashboard, ranking paint stages by severity and average deviation to isolate where the manual and robotic lines diverge.</figcaption>
         </figure>
         <figure class="shot">
           <img src="image_041273.png" alt="LSTM forecast versus actual topcoat usage">
