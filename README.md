@@ -48,19 +48,18 @@ portfolio uses a photo of the person *in context*. Shoot a replacement:
 you at a bench with the orthosis arm, in the Chortos Lab, or at a workstation with CAD
 on screen. Landscape or square, good light, 1200px+ on the short edge.
 
-### 3. Orthosis — **`orthosis_assembled.jpg`**
-There are three renders and an FEA study but no photo of the physical thing. One picture
-of the assembled arm — ideally worn, with electrodes on — is worth more than all three
-renders. Add it as the first item in the `#orthosis` gallery and use it as the card image.
+### 3. Orthosis — DONE
+`orthosis_built.jpg` is in. It now leads the gallery and is the project card image.
+A short video of the arm actuating from a muscle flex would still beat it.
 
 ### 4. Emerson — **`valve_machined.jpg`** (check with Emerson first)
 A photo of a piston you actually machined, or you at the lathe, would prove the
 "CAD to shop floor" claim that the CAD renders don't. Only use it if it clears the
 confidentiality agreement — the disclaimer on that section covers CAD, not photos.
 
-### 5. Chortos Lab — **`gel_fixture.jpg`**
-A photo of one of the 15 printed test fixtures with a gel sample loaded. The current
-gallery is all screenshots; one physical object grounds it.
+### 5. Chortos Lab — DONE
+`gel_samples.jpg` (the DIW-printed sample batch) and `keyence_rig.jpg` (the laser
+displacement bench) are both in. The samples shot is the project card image.
 
 ### 6. `og-card.png` (optional)
 A 1200×630 preview card for link sharing. Right now the Open Graph image points at the
@@ -69,8 +68,11 @@ portrait, which crops badly in Slack and LinkedIn.
 ### Image specs
 - Photos: JPG, 1600px wide, under ~400 KB.
 - Plots and screenshots: PNG, 1400–2000px wide, readable axis labels.
-- Everything already in the repo is used except `autonetwork_code.png` and
-  `autonetwork_terminal.png` — see below.
+- Everything already in the repo is used except `autonetwork_code.png`,
+  `autonetwork_terminal.png` (see below), `about.jpeg` and `image_0518a3.png`
+  (both removed — see the git history for why).
+- **Before publishing any lab photo, read it at full size first.** `keyence_rig.jpg`
+  had to be cropped because a login PIN was legible on tape stuck to the laptop.
 
 ---
 
