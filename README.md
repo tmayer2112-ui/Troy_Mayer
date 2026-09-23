@@ -91,3 +91,17 @@ the page and the only one with a reputational downside.
 
 If you want a fifth software project, the state estimator is already stronger, and
 anything with a public GitHub repo behind it would be better still.
+
+---
+
+## Publishing note: the `docs/` folder
+
+GitHub Pages on this repo is configured to publish from **`main` / `/docs`**, so
+`docs/` holds a copy of the site. The canonical files stay at the repo root.
+
+**After editing `index.html` or adding an image, run `./sync-docs.sh` and commit
+both.** Otherwise the repo root changes and the published site does not.
+
+To go back to a single copy: set Pages to **`main` / `/ (root)`** in
+Settings → Pages, confirm a build goes green, then delete `docs/` and
+`sync-docs.sh`.
