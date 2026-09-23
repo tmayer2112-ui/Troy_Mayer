@@ -886,7 +886,7 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="gallery reveal">
         <figure class="shot">
           <img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand">
-          <figcaption>The assembled orthosis. Aluminum chassis with 3D-printed comfort pads and velcro cuffs, driven by a planetary gearmotor through a machined drum and cable to the forearm brace.</figcaption>
+          <figcaption>The assembled drivetrain: aluminum chassis with 3D-printed comfort pads and velcro cuffs, driven by a planetary gearmotor through a machined drum and cable to the forearm brace. The control board that drives it is below.</figcaption>
         </figure>
         <figure class="shot">
           <img src="openeremg12.png" alt="Photorealistic 3D render of the custom EMG control PCB">
@@ -924,8 +924,9 @@ footer{padding:36px 0 44px;text-align:center}
           <p>Maximizing the electromechanical force output of ionic dielectric gels for soft robotic actuators, through targeted chemical formulation paired with a custom automated test stack.</p>
         </div>
         <div class="side-block">
-          <h4>The Measurement Problem</h4>
-          <p>The material moves less than a millimeter. Hand-measuring that off video is neither accurate nor repeatable — so I wrote a Python computer-vision autotracker that quantifies displacement frame by frame against a micrometer scale in shot.</p>
+          <h4>Two Ways to Measure</h4>
+          <p>Flat samples sit under a Keyence laser displacement head, which reads sub-millimeter motion directly into LabVIEW. A cantilever is a different problem: the tip sweeps through an arc and leaves the laser's line, so there is nothing for it to track.</p>
+          <p>For those I wrote a Python computer-vision autotracker that resolves tip displacement frame by frame against a micrometer scale in shot — covering the geometry the laser could not.</p>
         </div>
         <div class="side-block">
           <h4>Approach &amp; Results</h4>
@@ -953,8 +954,8 @@ footer{padding:36px 0 44px;text-align:center}
           <figcaption>A batch of direct-ink-write printed gel samples on metallized substrates with copper tape contacts. Line width and spacing vary across the set — each plate is one formulation and geometry in the iteration.</figcaption>
         </figure>
         <figure class="shot">
-          <img src="keyence_rig.jpg" alt="Keyence laser displacement sensor aimed at a gel sample beside a laptop running LabVIEW">
-          <figcaption>The displacement bench: a Keyence laser head trained on a live sample — the red spot is the measurement point — feeding an NI USB-6001 into the LabVIEW acquisition VI on the laptop.</figcaption>
+          <img src="keyence_rig.jpg" alt="Keyence laser displacement sensor aimed at a flat gel sample beside a laptop running LabVIEW">
+          <figcaption>The flat-sample path: a Keyence laser displacement head trained on a live sample — the red spot is the measurement point — feeding an NI USB-6001 into the LabVIEW VI on the laptop.</figcaption>
         </figure>
         <figure class="shot">
           <img src="image_05119d.png" alt="Macro photograph of a dielectric gel cantilever deflecting">
