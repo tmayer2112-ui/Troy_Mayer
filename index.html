@@ -379,6 +379,14 @@ section.block.alt .nda-note{background:var(--bg-elev)}
 }
 .card:hover .card-more{gap:12px}
 .card-more svg{width:14px;height:14px}
+.card-diagram{
+  display:grid;place-items:center;height:100%;padding:22px;
+  background:linear-gradient(135deg,var(--accent-soft),transparent 65%),var(--bg-sunken);
+  color:var(--text-3);
+}
+.card-diagram svg{width:100%;max-width:300px;height:auto}
+.card-diagram .accent-stroke{stroke:var(--accent)}
+.card-diagram .accent-fill{fill:var(--accent)}
 .placeholder-media{
   display:grid;place-items:center;gap:8px;height:100%;
   background:
@@ -706,9 +714,25 @@ footer{padding:36px 0 44px;text-align:center}
 
       <a href="#state-estimation" class="card reveal" data-tags="robotics">
         <div class="card-media">
-          <div class="placeholder-media">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 17l6-6 4 4 8-8"/><circle cx="3" cy="17" r="1.6"/><circle cx="9" cy="11" r="1.6"/><circle cx="13" cy="15" r="1.6"/><circle cx="21" cy="7" r="1.6"/></svg>
-            <span>Image needed — see notes</span>
+          <div class="card-diagram">
+            <svg viewBox="0 0 320 180" role="img" aria-label="Schematic of the contact-aided filter loop">
+              <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                <rect x="18" y="26" width="86" height="30" rx="6" opacity=".85"/>
+                <rect x="18" y="76" width="86" height="30" rx="6" opacity=".85"/>
+                <rect x="126" y="51" width="80" height="30" rx="6" opacity=".85"/>
+                <rect x="228" y="51" width="74" height="30" rx="6" class="accent-stroke"/>
+                <path d="M104 41h12q6 0 6 6v4" opacity=".6"/>
+                <path d="M104 91h12q6 0 6-6v-4" opacity=".6"/>
+                <path d="M206 66h16" opacity=".6"/>
+                <path d="M265 81v26q0 6-6 6H68q-6 0-6-6v-7" opacity=".45" stroke-dasharray="3 4"/>
+              </g>
+              <g font-size="10" font-family="ui-monospace,monospace" fill="currentColor" text-anchor="middle">
+                <text x="61" y="45">IMU</text>
+                <text x="61" y="95">KINEMATICS</text>
+                <text x="166" y="70">EKF</text>
+                <text x="265" y="70" class="accent-fill">POSE</text>
+              </g>
+            </svg>
           </div>
           <div class="card-badge">Personal Project</div>
         </div>
@@ -834,13 +858,6 @@ footer{padding:36px 0 44px;text-align:center}
             <div class="arch-node"><b>Validation</b><span>Ground-truth RMSE · analytic vs. finite-difference Jacobians · GoogleTest</span></div>
           </div>
         </div>
-        <figure class="shot">
-          <div class="placeholder-media" style="aspect-ratio:16/9">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M7 15l4-6 3 4 5-8"/></svg>
-            <span>Image needed — estimated vs. ground-truth trajectory plot</span>
-          </div>
-          <figcaption>Suggested: a MATLAB or Matplotlib plot overlaying estimated base velocity against MuJoCo ground truth across the 60-second run, with the RMSE band annotated. See the image notes in the README.</figcaption>
-        </figure>
       </div>
     </div>
   </div>
@@ -868,7 +885,7 @@ footer{padding:36px 0 44px;text-align:center}
           <h4>Approach</h4>
           <ul>
             <li>Wrote real-time C++ firmware closing a <strong>500 Hz control loop</strong> from EMG sensor input to actuator command, holding end-to-end latency <strong>under 10 ms</strong>.</li>
-            <li>Designed and routed a custom PCB control hub interfacing motor driver signals with sensor input as the system's central processing unit.</li>
+            <li>Designed, routed, and fabricated a custom PCB control hub to interface motor driver signals with sensor input as the system's central processing unit, ahead of integration onto the arm.</li>
             <li>Led the team integrating FEA-validated structural design into a chassis producing <strong>over 150 N</strong> of force.</li>
           </ul>
         </div>
@@ -889,7 +906,7 @@ footer{padding:36px 0 44px;text-align:center}
         </figure>
         <figure class="shot">
           <img src="openeremg12.png" alt="Photorealistic 3D render of the custom EMG control PCB">
-          <figcaption>Photorealistic 3D render of the custom PCB serving as the system's central control hub, interfacing motor driver signals with incoming EMG input.</figcaption>
+          <figcaption>Photorealistic 3D render of the custom PCB designed as the system's central control hub, interfacing motor driver signals with incoming EMG input. The board has been fabricated; integration onto the arm is the next step.</figcaption>
         </figure>
         <figure class="shot">
           <img src="image_04a4f7.png" alt="KiCad 2D board layout showing signal routing">
@@ -1018,10 +1035,6 @@ footer{padding:36px 0 44px;text-align:center}
         <figure class="shot">
           <img src="Caterpillar.png" alt="Power BI dashboard comparing primer and topcoat usage">
           <figcaption>The bottleneck view of the Python dashboard, ranking paint stages by severity and average deviation to isolate where the manual and robotic lines diverge.</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="image_041273.png" alt="LSTM forecast versus actual topcoat usage">
-          <figcaption>Model readout comparing actual against predicted topcoat usage from the LSTM forecaster.</figcaption>
         </figure>
       </div>
     </div>
