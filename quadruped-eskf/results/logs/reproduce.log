@@ -1,0 +1,33 @@
+# reproduce.py run log
+command: PYTHONPATH=python python3 python/scripts/reproduce.py
+provenance: {"git_commit": "115d2d47197a606ded30e659c13b13898d219499", "git_dirty": true, "python": "3.11.15", "numpy": "2.4.6", "mujoco": "3.14.0", "machine": "x86_64", "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz", "time_utc": "2026-09-23T04:06:46Z"}
+tuned params: {"foot_noise": 0.001, "kin_noise": 0.003, "settle_steps": 10} contact={"use_schedule": true, "liftoff_advance_ms": 5, "delay_ms": 0.0}
+dataset: data/headline_seed0.npz (python/scripts/generate_data.py)  duration 60.000 s at 1000 Hz
+
+HEADLINE vel RMSE (world 3D)      contact-aided 0.0108 m/s   IMU-only 1.3787 m/s
+C++ replay vel RMSE               0.0108 m/s  (parity max |dp| 1.4e-13 m, |dv| 3.3e-13 m/s)
+Monte Carlo (10 seeds)            0.0128 +- 0.0019 m/s [0.0108, 0.0162]
+IMU-only |v err| > 0.1 m/s at     7.7940000000000005 s;  > 1.0 m/s at 24.151 s
+IMU-only |v err| growth, first 10 s: 0.0152 m/s per s
+velocity NEES median              13.45 (3.0 = consistent)
+
+per-state RMSE:
+  Velocity, world 3D (m/s)     IMU-only       1.38   contact-aided     0.0108
+  Velocity x, world (m/s)      IMU-only       1.28   contact-aided    0.00551
+  Velocity y, world (m/s)      IMU-only      0.514   contact-aided     0.0079
+  Velocity z, world (m/s)      IMU-only     0.0125   contact-aided    0.00491
+  Velocity, body 3D (m/s)      IMU-only       1.38   contact-aided     0.0102
+  Roll (deg)                   IMU-only      0.226   contact-aided      0.144
+  Pitch (deg)                  IMU-only      0.195   contact-aided      0.564
+  Yaw (deg)                    IMU-only      0.428   contact-aided      0.279
+  Position x (m)               IMU-only      28.64   contact-aided     0.0463
+  Position y (m)               IMU-only      10.67   contact-aided     0.0259
+  Position z (m)               IMU-only      0.367   contact-aided     0.0676
+  Accel bias x (m/s²)          IMU-only      0.025   contact-aided     0.0956
+  Accel bias y (m/s²)          IMU-only      0.026   contact-aided     0.0244
+  Accel bias z (m/s²)          IMU-only   0.000505   contact-aided   0.000863
+  Gyro bias x (deg/s)          IMU-only    0.00712   contact-aided    0.00426
+  Gyro bias y (deg/s)          IMU-only     0.0116   contact-aided    0.00366
+  Gyro bias z (deg/s)          IMU-only     0.0103   contact-aided    0.00808
+
+wall time 144 s

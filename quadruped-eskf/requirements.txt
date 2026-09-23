@@ -1,0 +1,6 @@
+# Versions the committed results were produced with (see results/metrics.json -> provenance).
+mujoco==3.14.0
+numpy==2.4.6
+matplotlib==3.11.2
+pytest==9.1.1
+pypdf==6.19.0   # optional: lets check_claims.py read the resume PDF
