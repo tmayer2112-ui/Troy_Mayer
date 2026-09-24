@@ -565,7 +565,7 @@ footer{padding:36px 0 44px;text-align:center}
   <div class="metrics">
     <div class="metrics-inner">
       <div class="metric"><div class="v">500 Hz</div><div class="l">EMG control loop</div></div>
-      <div class="metric"><div class="v">0.08 m/s</div><div class="l">EKF velocity RMSE</div></div>
+      <div class="metric"><div class="v">0.013 m/s</div><div class="l">EKF velocity RMSE (sim)</div></div>
       <div class="metric"><div class="v">50,000+</div><div class="l">Data points processed</div></div>
       <div class="metric"><div class="v">±0.05 mm</div><div class="l">Machining tolerance held</div></div>
     </div>
@@ -714,32 +714,13 @@ footer{padding:36px 0 44px;text-align:center}
 
       <a href="#state-estimation" class="card reveal" data-tags="robotics">
         <div class="card-media">
-          <div class="card-diagram">
-            <svg viewBox="0 0 320 180" role="img" aria-label="Schematic of the contact-aided filter loop">
-              <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                <rect x="18" y="26" width="86" height="30" rx="6" opacity=".85"/>
-                <rect x="18" y="76" width="86" height="30" rx="6" opacity=".85"/>
-                <rect x="126" y="51" width="80" height="30" rx="6" opacity=".85"/>
-                <rect x="228" y="51" width="74" height="30" rx="6" class="accent-stroke"/>
-                <path d="M104 41h12q6 0 6 6v4" opacity=".6"/>
-                <path d="M104 91h12q6 0 6-6v-4" opacity=".6"/>
-                <path d="M206 66h16" opacity=".6"/>
-                <path d="M265 81v26q0 6-6 6H68q-6 0-6-6v-7" opacity=".45" stroke-dasharray="3 4"/>
-              </g>
-              <g font-size="10" font-family="ui-monospace,monospace" fill="currentColor" text-anchor="middle">
-                <text x="61" y="45">IMU</text>
-                <text x="61" y="95">KINEMATICS</text>
-                <text x="166" y="70">EKF</text>
-                <text x="265" y="70" class="accent-fill">POSE</text>
-              </g>
-            </svg>
-          </div>
+          <img src="quadruped-eskf/results/figures/card_trajectory.png" alt="Top-down path of the simulated quadruped: ground truth, contact-aided estimate, and IMU-only dead reckoning drifting away">
           <div class="card-badge">Personal Project</div>
         </div>
         <div class="card-body">
           <h3>Legged Robot State Estimation</h3>
           <div class="card-org">C++ · Eigen · MuJoCo · GoogleTest</div>
-          <p class="card-desc">A contact-aided error-state EKF fusing IMU propagation with leg kinematics to estimate floating-base pose and velocity for a simulated quadruped — running at 1 kHz with velocity RMSE bounded to 0.08 m/s.</p>
+          <p class="card-desc">A contact-aided error-state EKF fusing a simulated BMI088 IMU with leg kinematics on a walking Go1 in MuJoCo — 1 kHz, 0.013 m/s velocity RMSE against ground truth, and a set of experiments that break it on purpose.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
       </a>
@@ -816,19 +797,29 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
         <div class="side-block">
           <h4>What I Built</h4>
-          <p>A contact-aided <strong>error-state extended Kalman filter</strong> in C++/Eigen that estimates floating-base pose and velocity for a simulated quadruped, propagating on IMU and correcting on leg-kinematics updates whenever a foot is in contact.</p>
+          <p>A contact-aided <strong>error-state extended Kalman filter</strong> in C++/Eigen (with a Python reference) for a simulated Unitree Go1. It propagates on the IMU, adds each planted foot to the state at touchdown, corrects with forward kinematics while the foot is down, and marginalizes it at liftoff.</p>
         </div>
         <div class="side-block">
           <h4>Results</h4>
           <ul>
-            <li>Velocity RMSE bounded to <strong>0.08 m/s</strong> against ground truth over a 60-second trajectory.</li>
-            <li>Estimator runs at <strong>1 kHz</strong>.</li>
-            <li>Filter Jacobians verified against finite differences in a GoogleTest suite.</li>
+            <li>Velocity RMSE <strong>0.013 m/s</strong> against MuJoCo ground truth over a 60-second walk (mean of 10 sensor-noise seeds), against 1.38 m/s for IMU-only dead reckoning.</li>
+            <li>Runs at <strong>1 kHz</strong>, one update per IMU sample; the C++ step takes about 20 µs of the 1 ms budget.</li>
+            <li>Jacobians verified against finite differences in GoogleTest; the C++ filter matches the Python reference to 1e-13 on a recorded walk.</li>
+            <li>IMU noise and bias terms taken from the BMI088 data sheet, not tuned.</li>
           </ul>
         </div>
         <div class="side-block">
           <h4>Observability Finding</h4>
-          <p>Characterizing the filter under IMU and kinematics alone showed <strong>roll, pitch, and velocity remain bounded</strong>, while <strong>position and yaw drift without limit</strong> — the expected unobservable directions, confirmed empirically rather than assumed.</p>
+          <p>With only an IMU and leg kinematics, <strong>roll, pitch, and velocity stay bounded</strong> while <strong>position and yaw drift without limit</strong>: gravity is the only absolute direction the sensors can see. Derived analytically, then confirmed numerically (exactly four unobservable directions in every window tested). The weakest observable direction is tilt against accelerometer bias, which only separates once the robot turns.</p>
+        </div>
+        <div class="side-block">
+          <h4>What Breaks It</h4>
+          <ul>
+            <li>About <strong>2 cm/s of foot slip</strong> doubles the velocity error; the per-sample χ² gate never catches a smooth slide.</li>
+            <li>Force-only contact detection loses yaw fast as latency grows; ANDing with the gait schedule removes the cliff.</li>
+            <li>A tutorial-style <code>Q = 0.01·I</code> loses attitude entirely; data-sheet Q doesn't.</li>
+          </ul>
+          <p><a href="https://github.com/tmayer2112-ui/Troy_Mayer/tree/main/quadruped-eskf">Code, reproduction commands and debug log →</a></p>
         </div>
         <div class="skill-block">
           <div class="hd">Core Skills</div>
@@ -849,15 +840,27 @@ footer{padding:36px 0 44px;text-align:center}
             <div class="arch-arrow">↓</div>
             <div class="arch-node"><b>Error-State Propagation</b><span>Nominal state integrated; error covariance propagated on the tangent space</span></div>
             <div class="arch-arrow">↓</div>
-            <div class="arch-node hi"><b>Contact Detection</b><span>Foot in stance → contact point treated as world-fixed</span></div>
+            <div class="arch-node hi"><b>Contact Detection</b><span>Foot force AND gait schedule → foot position added to the state at touchdown</span></div>
             <div class="arch-arrow">↓</div>
-            <div class="arch-node"><b>Leg-Kinematics Update</b><span>Forward kinematics gives base-to-foot vector → velocity measurement</span></div>
+            <div class="arch-node"><b>Leg-Kinematics Update</b><span>Forward kinematics gives the base-to-foot vector; the foot is marginalized at liftoff</span></div>
             <div class="arch-arrow">↓</div>
             <div class="arch-node"><b>Error Injection &amp; Reset</b><span>Correction folded into nominal state, error reset to zero</span></div>
             <div class="arch-arrow">↓</div>
-            <div class="arch-node"><b>Validation</b><span>Ground-truth RMSE · analytic vs. finite-difference Jacobians · GoogleTest</span></div>
+            <div class="arch-node"><b>Validation</b><span>Ground-truth RMSE · finite-difference Jacobians · Python/C++ parity · GoogleTest</span></div>
           </div>
         </div>
+        <figure class="shot">
+          <img src="quadruped-eskf/results/figures/velocity_tracking.png" alt="Estimated base velocity against MuJoCo ground truth over the 60-second walk, full run and 3-second zoom">
+          <figcaption>Estimated base velocity against MuJoCo ground truth over the 60-second walk (sensor seed 0). Regenerated by <code>make reproduce</code>.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="quadruped-eskf/results/figures/covariance_observability.png" alt="Filter covariance over a 300-second walk: position and yaw uncertainty grow, velocity and roll/pitch stay bounded">
+          <figcaption>The observability split in the filter's own covariance over a 300-second walk: position and yaw grow, velocity and roll/pitch stay bounded.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="quadruped-eskf/results/figures/exp_contact_delay.png" alt="Velocity and yaw error against contact-detection latency for three contact detectors">
+          <figcaption>Breaking it on purpose: with force-only contact detection, 10 ms of latency costs 6.6° of yaw over the 60-second walk. Gating on the gait schedule removes the failure. Code, results and debug log: <a href="https://github.com/tmayer2112-ui/Troy_Mayer/tree/main/quadruped-eskf">quadruped-eskf on GitHub</a>.</figcaption>
+        </figure>
       </div>
     </div>
   </div>

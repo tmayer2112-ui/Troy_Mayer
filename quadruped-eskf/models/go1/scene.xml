@@ -1,0 +1,23 @@
+<!-- Flat-ground scene for the estimator experiments.
+     timestep = 1 ms so every physics step produces exactly one IMU sample (1 kHz).
+     gravity:   set to standard gravity explicitly. MuJoCo's default is 9.81, the filter
+                uses 9.80665; the 3.35 mm/s^2 difference showed up as a fake z accel bias.
+     eulerdamp: disabled. With it on, the Euler integrator applies joint damping implicitly,
+                so v[k+1] - v[k] != qacc[k] * dt and the accelerometer (computed from qacc)
+                disagrees with ground-truth velocity by ~0.1 m/s^2 RMS. See DEBUG_LOG #5. -->
+<mujoco model="go1 estimation scene">
+  <include file="go1.xml"/>
+  <option timestep="0.001" gravity="0 0 -9.80665">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <worldbody>
+    <geom name="floor" size="0 0 0.05" type="plane"/>
+  </worldbody>
+
+  <sensor>
+    <!-- Ideal (noise-free) IMU at the trunk "imu" site; noise is added in qeskf/imu_model.py -->
+    <accelerometer name="accel" site="imu"/>
+    <gyro name="gyro" site="imu"/>
+  </sensor>
+</mujoco>

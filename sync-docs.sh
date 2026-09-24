@@ -9,6 +9,6 @@ cp index.html docs/
 { grep -oE '(src|href)="[^"#][^"]*"' index.html | sed -E 's/.*="//; s/"//'
   grep -oE "url\(['\"]?[^)'\"]+['\"]?\)" index.html | sed -E "s/url\(['\"]?//; s/['\"]?\)//"
 } | grep -vE '^(https?:|mailto:|data:)' | sort -u \
-  | while read -r f; do [ -f "$f" ] && cp "$f" docs/; done
+  | while read -r f; do [ -f "$f" ] && mkdir -p "docs/$(dirname "$f")" && cp "$f" "docs/$f"; done  # keep paths
 touch docs/.nojekyll   # serve files as-is, skip Jekyll
 echo "docs/ synced: $(ls -A docs | wc -l) files"

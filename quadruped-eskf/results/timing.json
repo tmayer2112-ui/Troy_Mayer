@@ -1,0 +1,70 @@
+{
+  "rate_hz": 1000,
+  "iterations": 60000,
+  "scheduler": "SCHED_FIFO(80), mlockall yes, cpu any",
+  "compute_us": {
+    "p50": 18.249,
+    "p99": 60.477270000000054,
+    "p999": 167.61433700000512,
+    "max": 4005.496
+  },
+  "wake_late_us": {
+    "p50": 38.668499999999995,
+    "p99": 105.05410000000002,
+    "p999": 1232.7562910001895,
+    "max": 7528.28
+  },
+  "period_us": {
+    "mean": 1000.0009694833333,
+    "std": 74.83012171261997
+  },
+  "deadline_misses": 81,
+  "deadline_miss_pct": 0.135,
+  "compute_budget_used_p99_pct": 6.047727000000005,
+  "all_runs": [
+    {
+      "deadline_misses": 81,
+      "compute_p50_us": 18.249,
+      "compute_p99_us": 60.477270000000054,
+      "compute_p999_us": 167.61433700000512,
+      "compute_max_us": 4005.496,
+      "wake_late_p99_us": 105.05410000000002,
+      "wake_late_max_us": 7528.28
+    },
+    {
+      "deadline_misses": 75,
+      "compute_p50_us": 18.6295,
+      "compute_p99_us": 69.92316000000004,
+      "compute_p999_us": 212.27414800000057,
+      "compute_max_us": 3126.602,
+      "wake_late_p99_us": 124.37610000000002,
+      "wake_late_max_us": 10612.865
+    },
+    {
+      "deadline_misses": 107,
+      "compute_p50_us": 18.4805,
+      "compute_p99_us": 56.37206000000001,
+      "compute_p999_us": 208.5722700000279,
+      "compute_max_us": 3003.476,
+      "wake_late_p99_us": 117.48536000000027,
+      "wake_late_max_us": 11939.544
+    }
+  ],
+  "deadline_miss_pct_range": [
+    0.125,
+    0.17833333333333334
+  ],
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+  "note": "non-RT kernel (cloud VM); jitter is the host's, compute is the filter's",
+  "command": "/home/user/Troy_Mayer/quadruped-eskf/build/qeskf_bench_loop /home/user/Troy_Mayer/quadruped-eskf/data/timing/config.txt /home/user/Troy_Mayer/quadruped-eskf/data/timing/sensors.csv /home/user/Troy_Mayer/quadruped-eskf/data/timing/timing_0.csv --rate 1000",
+  "provenance": {
+    "git_commit": "115d2d47197a606ded30e659c13b13898d219499",
+    "git_dirty": true,
+    "python": "3.11.15",
+    "numpy": "2.4.6",
+    "mujoco": "3.14.0",
+    "machine": "x86_64",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "time_utc": "2026-09-23T04:04:05Z"
+  }
+}

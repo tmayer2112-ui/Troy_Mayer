@@ -1,0 +1,51 @@
+{
+  "eskf": {
+    "foot_noise": 0.001,
+    "kin_noise": 0.003,
+    "settle_steps": 10
+  },
+  "contact": {
+    "use_schedule": true,
+    "liftoff_advance_ms": 5,
+    "delay_ms": 0.0
+  },
+  "how_chosen": {
+    "dataset": "data/tuning.npz (long_walk_profile, 120 s, sensor seed 100)",
+    "rule": "min world 3D velocity RMSE",
+    "n_candidates": 150,
+    "best": {
+      "foot_noise": 0.001,
+      "kin_noise": 0.003,
+      "liftoff_advance_ms": 5,
+      "settle_ms": 10,
+      "vel_rmse": 0.007194140779721321,
+      "vel_rmse_z": 0.0031772957421172896,
+      "pos_final_err_m": 0.2226827103472869,
+      "roll_rmse_deg": 0.14009823999531165,
+      "pitch_rmse_deg": 0.5400233540627116,
+      "nees_v_median": 6.7307569604020525
+    },
+    "runner_up": {
+      "foot_noise": 0.003,
+      "kin_noise": 0.003,
+      "liftoff_advance_ms": 10,
+      "settle_ms": 10,
+      "vel_rmse": 0.00742011446906596,
+      "vel_rmse_z": 0.003604156729766975,
+      "pos_final_err_m": 0.16723213597130357,
+      "roll_rmse_deg": 0.1386717326325318,
+      "pitch_rmse_deg": 0.5380992820220438,
+      "nees_v_median": 3.0276039140987367
+    },
+    "provenance": {
+      "git_commit": "115d2d47197a606ded30e659c13b13898d219499",
+      "git_dirty": true,
+      "python": "3.11.15",
+      "numpy": "2.4.6",
+      "mujoco": "3.14.0",
+      "machine": "x86_64",
+      "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+      "time_utc": "2026-09-23T03:49:24Z"
+    }
+  }
+}
