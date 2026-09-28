@@ -183,6 +183,7 @@ static int32_t  encZero    = 0;
 static float    jointDeg   = 0.0f;
 static float    jointDps   = 0.0f;
 static int32_t  lastEncSnapshot = 0;
+static int32_t  ratioZero  = 0;   // reference for the gear-ratio measurement
 #endif
 
 // =============================================================================
@@ -470,6 +471,7 @@ static void printHelp() {
     "  a  arm   - motor goes live. kill switch must be closed.\n"
     "  d  disarm\n"
     "  z  zero the encoder at the current position\n"
+    "  m  gear-ratio measurement: zero, hand-turn N output revs, then '?'\n"
     "  ?  status\n"));
 }
 
@@ -480,6 +482,15 @@ static void printStatus() {
   Serial.printf("  joint=%+.1f deg (%.0f dps)", jointDeg, jointDps);
 #endif
   Serial.printf("  motOK=%d\n", digitalRead(PIN_MOT_FAULT));
+#if USE_ENCODER
+  {
+    int32_t raw = encRead();
+    Serial.printf("  raw counts %ld  (since 'm': %ld = %.3f motor rev = %.4f output rev)\n",
+                  (long)raw, (long)(raw - ratioZero),
+                  (float)(raw - ratioZero) / COUNTS_PER_MOTOR_REV,
+                  (float)(raw - ratioZero) / COUNTS_PER_OUTPUT_REV);
+  }
+#endif
   for (uint8_t i = 0; i < 4; i++) {
     Serial.printf("  ch%u env %7.1f  on %7.1f  mvc %7.1f  act %.2f%s\n",
                   i, ch[i].env, ch[i].onset, ch[i].mvc, ch[i].activation,
@@ -523,6 +534,19 @@ static void handleSerial() {
       encZero = encRead();
       lastEncSnapshot = encZero;
       Serial.println("\n>> encoder zeroed");
+      break;
+#endif
+#if USE_ENCODER
+    case 'm':
+      // Gear-ratio measurement. Motor must be DISARMED and back-drivable.
+      motorCoast();
+      if (state == ST_ARMED) state = ST_IDLE;
+      ratioZero = encRead();
+      Serial.println(F(
+        "\n>> RATIO MEASUREMENT\n"
+        "   Mark the OUTPUT shaft. Hand-turn it exactly N full revolutions\n"
+        "   (N = 5 or 10 is easiest to see), then press '?'.\n"
+        "   gear ratio = (counts since 'm') / 28 / N"));
       break;
 #endif
     case '?': printStatus(); break;
