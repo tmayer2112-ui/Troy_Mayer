@@ -1,0 +1,12 @@
+{
+  "lift_15dps_steady_error_ff_only_dps": 14.733,
+  "lift_15dps_steady_error_closed_dps": 0.130,
+  "step20_rise_10_90_ms": 74.0,
+  "step20_overshoot_pct": 8.86,
+  "hold_drift_5s_deg": 0.0000,
+  "emg_demo_final_state": "ARMED",
+  "envelope_mean_delay_ms": 79.6,
+  "kp_duty_per_dps": 0.00214,
+  "ki_duty_per_deg": 0.1070,
+  "deg_per_count": 0.06698
+}

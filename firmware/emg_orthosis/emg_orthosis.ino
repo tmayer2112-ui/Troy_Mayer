@@ -1,728 +1,377 @@
 /* =============================================================================
  * OpenEREMG v2 - EMG-driven orthosis motor control
  *
- * Target : ESP32-S3-WROOM-1  (Arduino-ESP32 core 2.x or 3.x)
- * Board  : openeremg v2 - 4ch INA333 front end, ISO7761FDW barrier, DPDT kill
- * Motor  : goBILDA 5203 Yellow Jacket planetary gearmotor w/ quadrature encoder
- * Driver : BTS7960 half-bridge pair (see MOTOR INTERFACE note below)
+ * Target : ESP32-S3-WROOM-1 (3.3 V flash/PSRAM variants only: GPIO47 is the
+ *          encoder, and on the 1.8 V "...V" modules it is a 1.8 V pin)
+ * Core   : Arduino-ESP32 3.x (ESP-IDF 5). Tools -> USB CDC On Boot: Enabled,
+ *          because the board's USB-C goes to the S3's native USB on IO19/IO20.
+ * Board  : openeremg v2 - 4 ch INA333 front end, ISO7763 barrier, DPDT kill
+ * Motor  : goBILDA 5203 Yellow Jacket 5.2:1 with 28 CPR quadrature encoder
+ * Driver : BTS7960 (RPWM / LPWM / EN), on the far side of the isolator
  *
- * Control scheme: two-site proportional velocity control.
- *   A flexor channel and an extensor channel each drive an envelope detector.
- *   Their normalised difference commands motor velocity. Simultaneous
- *   contraction of both ("co-contraction") commands a stop - the standard
- *   myoelectric idiom, and the user's fastest voluntary brake.
+ * This file is only the hardware layer. Every decision - EMG processing,
+ * intent, the velocity loop, the safety supervisor - lives in orthosis_core.h,
+ * which is compiled unchanged into the host simulator and its tests
+ * (firmware/sim). See firmware/README.md for the design and the test results.
+ *
+ * Execution model
+ *   ctrl task, core 1, highest app priority, exactly 1 kHz (xTaskDelayUntil):
+ *     read 4 ADC channels + encoder snapshot + kill/driver status
+ *     -> Controller::step() -> BTS7960 -> feed the task watchdog
+ *   encoder ISR: timestamps every quadrature edge (for the speed estimate)
+ *   loop(), Arduino's task: serial commands and telemetry only. It posts
+ *     requests to the ctrl task and reads a snapshot; it never touches the
+ *     controller, so printing can never delay the control loop.
  *
  * SAFETY - read before powering a motor with this.
- *   - Nothing moves until you explicitly arm it over serial. No auto-arm.
- *   - The DPDT kill switch is a HARDWARE interlock. This firmware also reads
- *     its second pole, but the firmware is not what stops the motor - the
- *     switch shorting EN_ISO to MOT_GND is. Never remove that.
- *   - Soft position limits, stall detection and a command watchdog are all
- *     backstops, not primary protection.
+ *   - Nothing moves until you calibrate ('c'), zero ('z') and arm ('a').
+ *   - The DPDT kill switch is the primary interlock: it pulls EN_ISO to MOT_GND
+ *     in hardware. The firmware reads its second pole, but never relies on it.
+ *   - If the ctrl task stops, the task watchdog resets the chip within 200 ms.
+ *     A reset releases every pin, and the board's pull-downs (R67, R68 on the
+ *     PWM lines, R69 on MOT_EN, R70 on EN_ISO) turn the driver off.
  *   - Bench-test with the motor unloaded and off the body first. Every time.
  * ============================================================================= */
 
 #include <Arduino.h>
-#include <math.h>
+#include <atomic>
 
-// =============================================================================
-// SECTION 1 - THINGS YOU MUST SET FOR YOUR HARDWARE
-// =============================================================================
+#include "esp_task_wdt.h"
+#include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "soc/gpio_reg.h"
+#include "soc/soc.h"
 
-/* --- Transmission chain ----------------------------------------------------
- *
- *   motor --> planetary gearbox --> lead/ball screw --> cable --> pulley --> joint
- *
- * The encoder is on the MOTOR shaft, so every stage below sits between what we
- * count and what actually moves. All of these come from Motor_Calculations_ASME_2.
- *
- * Encoder: 7 pulses per channel per motor revolution, 4x quadrature = 28
- * counts per motor revolution. Counts per gearbox-output revolution = 28*ratio.
- *
- * Gear ratio 5.2:1 is inferred from RPM_M = 1150 in the notebook - goBILDA's
- * 5.2:1 Yellow Jacket is the 1150 RPM variant. Verify with the 'm' command or
- * off the motor label; see the note on back-drivability below before you try.
- *
- * Ignore the CPR values in the two Arduino reference docs (12, and 728 for a
- * 26:1). Neither matches this motor. goBILDA's own published 537.7 counts/rev
- * for the 19.2:1 is 28 * 19.2, which is what confirms the 28.
- */
-static const float GEAR_RATIO        = 5.2f;    // <<< VERIFY (notebook: RPM_M = 1150)
-static const float SCREW_PITCH_MM    = 4.0f;    // notebook: PITCH, mm of cable per screw rev
-static const float PULLEY_DIA_MM     = 47.0f;   // <<< VERIFY: notebook uses 47 early, 65 late
+#include "orthosis_core.h"
 
-static const float COUNTS_PER_MOTOR_REV  = 28.0f;                  // 7 PPR x4
-static const float COUNTS_PER_OUTPUT_REV = COUNTS_PER_MOTOR_REV * GEAR_RATIO;
-
-/* mm of cable per degree of joint rotation = circumference / 360 */
-static const float MM_PER_JOINT_DEG  = (float)M_PI * PULLEY_DIA_MM / 360.0f;
-/* joint degrees per gearbox-output revolution */
-static const float JOINT_DEG_PER_REV = SCREW_PITCH_MM / MM_PER_JOINT_DEG;
-/* the number the control loop actually uses */
-static const float DEG_PER_COUNT     = JOINT_DEG_PER_REV / COUNTS_PER_OUTPUT_REV;
-
-/* --- Joint range of motion ------------------------------------------------
- * Notebook TRAVEL = 120 degrees, which at the above works out to ~1791 counts
- * end to end. Measured from the zero you set with 'z'.
- *
- * START NARROWER THAN THE REAL TRAVEL. Open these up only once you have
- * watched the joint move through the range with nothing in it.
- */
-static const float JOINT_MIN_DEG     = 0.0f;
-static const float JOINT_MAX_DEG     = 30.0f;   // <<< real travel is 120; start at 30
-
-/* --- Joint speed limit -----------------------------------------------------
- * At full duty this drivetrain runs 1150 RPM into a 4 mm screw, which is about
- * 187 deg/s at the joint - 120 degrees in 0.64 s, per the notebook's own cycle
- * time. That is far too fast for something strapped to a person. The governor
- * below scales the command back whenever measured joint speed exceeds this.
- */
-static const float JOINT_MAX_DPS     = 25.0f;   // <<< SET ME. deg/s at the joint.
-
-/* --- Which EMG channel is which ------------------------------------------- */
-static const uint8_t CH_FLEXOR       = 0;   // EMGC1 -> drives positive motion
-static const uint8_t CH_EXTENSOR     = 1;   // EMGC2 -> drives negative motion
-// channels 2 and 3 are acquired and logged but not used in the control law
-
-/* --- Motor limits ---------------------------------------------------------- */
-static const float DUTY_MAX          = 0.55f;  // fraction of full scale. START LOW.
-static const float DUTY_MIN          = 0.12f;  // below this the gearbox won't break stiction
-static const float DUTY_SLEW_PER_S   = 2.0f;   // max duty change per second
-
-/* Dynamic-brake at zero command instead of coasting. The ball screw is
- * back-drivable, so a coasting joint sags under load. See motorDrive().
- * Set false if you add a mechanical brake or a non-back-drivable screw. */
-static const bool  BRAKE_ON_STOP     = true;
-
-// =============================================================================
-// SECTION 2 - PIN MAP  (matches the v2 schematic)
-// =============================================================================
-
-// EMG channel outputs from the four analogue front ends (ADC1)
-static const uint8_t PIN_EMG[4]      = { 4, 5, 6, 7 };   // IO4..IO7 = EMGC1..EMGC4
-
-// Isolated motor interface - board side of the ISO7761FDW
-static const uint8_t PIN_MOT_RPWM    = 15;   // IO15 -> INA -> OUTA -> RPWM_ISO
-static const uint8_t PIN_MOT_LPWM    = 16;   // IO16 -> INB -> OUTB -> LPWM_ISO
-static const uint8_t PIN_MOT_EN      = 17;   // IO17 -> INC -> OUTC -> kill switch -> EN_ISO
-static const uint8_t PIN_KILL_SENSE  = 18;   // IO18 <- kill switch pole B. LOW = armed.
-static const uint8_t PIN_MOT_FAULT   = 14;   // IO14 <- OUTF <- INF <- MOT_OK (motor side)
-
-// Encoder - NOT PRESENT ON THE v2 BOARD YET. See the note in the reply.
-#define USE_ENCODER 1
-static const uint8_t PIN_ENC_A       = 21;   // IO21
-static const uint8_t PIN_ENC_B       = 47;   // IO47
-
-// =============================================================================
-// SECTION 3 - SIGNAL PROCESSING AND TIMING CONSTANTS
-// =============================================================================
-
-static const uint32_t FS_HZ          = 1000;    // EMG sample rate per channel
-static const uint32_t CTRL_HZ        = 100;     // control law rate
-static const uint32_t TELEM_HZ       = 20;      // serial telemetry rate
-
-static const float DC_BLOCK_FC_HZ    = 0.5f;    // tracks VREF drift out of the signal
-static const float ENVELOPE_FC_HZ    = 3.0f;    // two cascaded poles -> ~55 ms effective
-
-/* Activation mapping.
- * Full motor command at MVC_FRACTION of the calibrated maximum, so the user
- * does not have to contract maximally to get full speed. */
-static const float MVC_FRACTION      = 0.60f;
-static const float ONSET_K_SIGMA     = 6.0f;    // onset threshold = rest_mean + k*rest_sd
-static const float ONSET_MIN_MVC     = 0.08f;   // ...but never below 8% of MVC
-static const float RELEASE_RATIO     = 0.70f;   // hysteresis: release at 70% of onset
-static const float DEADZONE          = 0.08f;   // |flex - ext| below this = no command
-static const float COCONTRACT_LEVEL  = 0.35f;   // both channels above this = commanded stop
-
-/* Safety timers */
-static const uint32_t STALL_TIME_MS      = 400;   // commanded hard, not moving -> fault
-static const float    STALL_DUTY         = 0.30f;
-static const float    STALL_SPEED_DPS    = 3.0f;
-static const uint32_t MAX_CONTINUOUS_MS  = 15000; // longest single uninterrupted drive
-static const uint32_t CMD_WATCHDOG_MS    = 250;   // control loop must tick this often
-
-/* Calibration durations */
-static const uint32_t CAL_REST_MS    = 4000;
-static const uint32_t CAL_MVC_MS     = 4000;
-
-// PWM
-static const uint32_t PWM_FREQ_HZ    = 20000;   // above audible, within BTS7960 spec
-static const uint8_t  PWM_BITS       = 10;      // 0..1023
-static const uint16_t PWM_MAX        = (1u << PWM_BITS) - 1;
-
-// =============================================================================
-// SECTION 4 - STATE
-// =============================================================================
-
-enum State : uint8_t {
-  ST_BOOT,
-  ST_CAL_REST,
-  ST_CAL_FLEX,
-  ST_CAL_EXT,
-  ST_IDLE,        // calibrated, disarmed
-  ST_ARMED,       // motor live
-  ST_FAULT
-};
-static State state = ST_BOOT;
-static const char* stateName(State s) {
-  switch (s) {
-    case ST_BOOT:     return "BOOT";
-    case ST_CAL_REST: return "CAL_REST";
-    case ST_CAL_FLEX: return "CAL_FLEX";
-    case ST_CAL_EXT:  return "CAL_EXT";
-    case ST_IDLE:     return "IDLE";
-    case ST_ARMED:    return "ARMED";
-    case ST_FAULT:    return "FAULT";
-  }
-  return "?";
-}
-static const char* faultReason = "";
-
-struct Channel {
-  float dc      = 2048.0f;  // tracked DC level in ADC counts
-  float env1    = 0.0f;     // first envelope pole
-  float env     = 0.0f;     // second pole - this is the envelope
-  float restMean = 0.0f;
-  float restSd   = 1.0f;
-  float mvc      = 1.0f;
-  float onset    = 0.0f;
-  float release  = 0.0f;
-  bool  active   = false;   // hysteresis latch
-  float activation = 0.0f;  // 0..1
-};
-static Channel ch[4];
-
-static float aDc  = 0.0f;   // DC blocker coefficient
-static float aEnv = 0.0f;   // envelope coefficient
-
-static float dutyCmd    = 0.0f;   // -1..1, post slew limit
-static float dutyTarget = 0.0f;   // -1..1, from the control law
-
-static uint32_t driveStartMs   = 0;
-static uint32_t stallStartMs   = 0;
-static uint32_t lastCtrlMs     = 0;
-
-#if USE_ENCODER
-static volatile int32_t encCount = 0;
-static volatile uint8_t encState = 0;
-static int32_t  encZero    = 0;
-static float    jointDeg   = 0.0f;
-static float    jointDps   = 0.0f;
-static int32_t  lastEncSnapshot = 0;
-static int32_t  ratioZero  = 0;   // reference for the gear-ratio measurement
+#if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
+#error "Needs Arduino-ESP32 core 3.x (Boards Manager -> esp32 by Espressif -> 3.x)"
 #endif
+static_assert(configTICK_RATE_HZ == 1000, "the 1 kHz control task assumes a 1 ms FreeRTOS tick");
 
 // =============================================================================
-// SECTION 5 - ENCODER
+// PIN MAP (matches the v2 schematic, tmayeremgboard.kicad_sch)
 // =============================================================================
+static const uint8_t PIN_EMG[4]     = {4, 5, 6, 7};  // IO4..IO7 = EMGC1..4, all on ADC1
+static const uint8_t PIN_MOT_RPWM   = 15;  // -> ISO7763 INA -> OUTA -> RPWM_ISO
+static const uint8_t PIN_MOT_LPWM   = 16;  // -> INB -> OUTB -> LPWM_ISO
+static const uint8_t PIN_MOT_EN     = 17;  // -> INC -> OUTC -> kill switch -> EN_ISO
+static const uint8_t PIN_KILL_SENSE = 18;  // <- kill switch pole B. LOW = closed (armed)
+static const uint8_t PIN_MOT_FAULT  = 14;  // <- OUTF <- INF <- MOT_OK. HIGH = driver OK
+static const uint8_t PIN_ENC_A      = 21;  // <- OUTD <- IND <- ENC_A_ISO
+static const uint8_t PIN_ENC_B      = 47;  // <- OUTE <- INE <- ENC_B_ISO
+static_assert(PIN_ENC_A < 32 && PIN_ENC_B >= 32, "readAB() reads A from GPIO_IN and B from GPIO_IN1");
 
-#if USE_ENCODER
-/* 4x quadrature state table. Index = (previous 2 bits << 2) | current 2 bits.
- * Zero entries are "no change" or an illegal double transition. */
-static const int8_t QTAB[16] = {
-   0, -1,  1,  0,
-   1,  0,  0, -1,
-  -1,  0,  0,  1,
-   0,  1, -1,  0
-};
+static const uint32_t PWM_FREQ_HZ = 20000;  // above hearing, inside the BTS7960's range
+static const uint8_t PWM_BITS = 10;
+static const uint32_t PWM_MAX = (1u << PWM_BITS) - 1;
 
-static void IRAM_ATTR encISR() {
-  uint8_t s = (uint8_t)((digitalRead(PIN_ENC_A) << 1) | digitalRead(PIN_ENC_B));
-  encCount += QTAB[(encState << 2) | s];
-  encState = s;
-}
-
-static int32_t encRead() {
-  noInterrupts();
-  int32_t c = encCount;
-  interrupts();
+// =============================================================================
+// CONFIGURATION - defaults live in orthosis_core.h (struct Config). Override
+// here once you have measured them. 'j' prints the motor values to paste in.
+// =============================================================================
+static orth::Config makeConfig() {
+  orth::Config c;
+  // c.pulley_dia_mm = 47.0f;      // VERIFY: notebook uses 47 early, 65 late
+  // c.gear_ratio = 5.2f;          // VERIFY with 'm'
+  // c.encoder_sign = -1;          // if 'j' says the sign is reversed
+  // c.dps_per_duty = ...;         // from 'j'
+  // c.friction_duty = ...;        // from 'j'
+  // c.plant_tau_s = ...;          // from 'j'
+  // c.joint_max_deg = 30.0f;      // widen only after watching the full range unloaded
   return c;
 }
-#endif
+
+static orth::Controller ctl(makeConfig());
 
 // =============================================================================
-// SECTION 6 - MOTOR INTERFACE
+// ENCODER - every edge is timestamped for the speed estimate
 // =============================================================================
-/*
- * MOTOR INTERFACE NOTE
- *
- * This assumes the three isolated forward channels carry RPWM, LPWM and EN,
- * which maps 1:1 onto a BTS7960:
- *     PWM_ISO (OUTA) -> RPWM
- *     DIR_ISO (OUTB) -> LPWM
- *     EN_ISO  (OUTC, through the kill switch) -> R_EN and L_EN tied together
- *
- * One of RPWM/LPWM carries the PWM; the other is held low. That is the
- * standard BTS7960 drive and it needs no logic on the motor side at all.
- *
- * Your schematic currently names those nets MOT_PWM / MOT_DIR / MOT_EN. With a
- * DIR-style driver (L298N: IN1/IN2/ENA) you would need an inverter on the motor
- * side to derive IN2 from IN1, because a single DIR line cannot drive both.
- * Renaming the nets to RPWM/LPWM/EN costs nothing and removes that part.
- *
- * Do NOT drive this motor with an L298N. The 5203 stalls near 9 A; the L298N
- * is rated 2 A continuous. Your own reference doc flags this twice.
- */
+static portMUX_TYPE encMux = portMUX_INITIALIZER_UNLOCKED;
+static orth::EdgeTracker enc;
 
-#if ESP_ARDUINO_VERSION_MAJOR >= 3
-  #define PWM_SETUP(pin)      ledcAttach((pin), PWM_FREQ_HZ, PWM_BITS)
-  #define PWM_WRITE(pin, v)   ledcWrite((pin), (v))
-#else
-  static const uint8_t LEDC_CH_R = 0;
-  static const uint8_t LEDC_CH_L = 1;
-  static uint8_t ledcChanFor(uint8_t pin) {
-    return (pin == PIN_MOT_RPWM) ? LEDC_CH_R : LEDC_CH_L;
-  }
-  #define PWM_SETUP(pin)      do { ledcSetup(ledcChanFor(pin), PWM_FREQ_HZ, PWM_BITS); \
-                                   ledcAttachPin((pin), ledcChanFor(pin)); } while (0)
-  #define PWM_WRITE(pin, v)   ledcWrite(ledcChanFor(pin), (v))
-#endif
-
-static void motorCoast() {
-  PWM_WRITE(PIN_MOT_RPWM, 0);
-  PWM_WRITE(PIN_MOT_LPWM, 0);
-  digitalWrite(PIN_MOT_EN, LOW);
-  dutyCmd = 0.0f;
+// Direct register reads: IRAM-safe (digitalRead() is not guaranteed to be) and
+// both channels sampled back to back.
+static inline uint8_t IRAM_ATTR readAB() {
+  const uint32_t a = (REG_READ(GPIO_IN_REG) >> PIN_ENC_A) & 1u;
+  const uint32_t b = (REG_READ(GPIO_IN1_REG) >> (PIN_ENC_B - 32)) & 1u;
+  return static_cast<uint8_t>((a << 1) | b);
 }
 
-/* duty in -1..1. Positive drives the joint toward JOINT_MAX.
- *
- * At zero command this DYNAMIC BRAKES rather than coasting: EN stays high with
- * both PWM inputs low, which turns on both low-side FETs and shorts the motor
- * through itself. The ball screw is back-drivable, so a coasting joint sags
- * under the weight of the limb. Braking resists that.
- *
- * Note what it does NOT do: a dynamic brake opposes motion proportionally to
- * speed, so it slows the sag, it does not hold a static position. If the joint
- * must hold against gravity indefinitely, that wants a mechanical brake or a
- * non-back-drivable screw, not firmware.
- *
- * motorCoast() is the separate true-coast path, used for disarm, fault and
- * kill. Releasing the limb is the right failure mode; holding it is not.
- */
-static void motorDrive(float duty) {
-  duty = constrain(duty, -1.0f, 1.0f);
-  uint16_t mag = (uint16_t)(fabsf(duty) * PWM_MAX);
-  if (duty >= 0.0f) {
-    PWM_WRITE(PIN_MOT_LPWM, 0);
-    PWM_WRITE(PIN_MOT_RPWM, mag);
-  } else {
-    PWM_WRITE(PIN_MOT_RPWM, 0);
-    PWM_WRITE(PIN_MOT_LPWM, mag);
-  }
-  digitalWrite(PIN_MOT_EN, BRAKE_ON_STOP ? HIGH : (mag > 0 ? HIGH : LOW));
+static void IRAM_ATTR encISR() {
+  const uint32_t t = static_cast<uint32_t>(esp_timer_get_time());
+  portENTER_CRITICAL_ISR(&encMux);
+  enc.onChange(readAB(), t);
+  portEXIT_CRITICAL_ISR(&encMux);
 }
 
-static bool killSwitchArmed() {
-  // Pole B: closed -> tied to GND -> LOW -> armed. Open -> pull-up -> HIGH -> killed.
-  return digitalRead(PIN_KILL_SENSE) == LOW;
-}
-
-static void enterFault(const char* why) {
-  motorCoast();
-  faultReason = why;
-  state = ST_FAULT;
-  Serial.printf("\n!! FAULT: %s\n", why);
+static orth::EdgeTracker encSnapshot() {
+  portENTER_CRITICAL(&encMux);
+  const orth::EdgeTracker e = enc;
+  portEXIT_CRITICAL(&encMux);
+  return e;
 }
 
 // =============================================================================
-// SECTION 7 - EMG ACQUISITION
+// MOTOR - BTS7960
+//   duty > 0: PWM on RPWM, LPWM low.  duty < 0: the reverse.
+//   enable with |duty| = 0: both low-side FETs on = the loop holds/brakes.
+//   enable = false: EN low, bridge off, motor coasts. Used for every fault,
+//   because releasing the limb is the right failure mode.
 // =============================================================================
-
-static void emgSample() {
-  for (uint8_t i = 0; i < 4; i++) {
-    float x = (float)analogRead(PIN_EMG[i]);
-
-    // Track and remove DC. The analogue front end high-passes at ~23 Hz, so
-    // this is really just following VREF and any slow electrode drift.
-    ch[i].dc += aDc * (x - ch[i].dc);
-    float ac = x - ch[i].dc;
-
-    // Rectify, then two cascaded one-pole low passes = the envelope.
-    float r = fabsf(ac);
-    ch[i].env1 += aEnv * (r - ch[i].env1);
-    ch[i].env  += aEnv * (ch[i].env1 - ch[i].env);
-  }
-}
-
-/* Map envelope -> 0..1 activation, with onset/release hysteresis. */
-static void emgActivation() {
-  for (uint8_t i = 0; i < 4; i++) {
-    Channel& c = ch[i];
-    if (c.active) {
-      if (c.env < c.release) c.active = false;
-    } else {
-      if (c.env > c.onset)   c.active = true;
-    }
-    if (!c.active) {
-      c.activation = 0.0f;
-    } else {
-      float span = (c.mvc * MVC_FRACTION) - c.onset;
-      if (span < 1.0f) span = 1.0f;
-      c.activation = constrain((c.env - c.onset) / span, 0.0f, 1.0f);
-    }
-  }
-}
-
-// =============================================================================
-// SECTION 8 - CALIBRATION
-// =============================================================================
-
-struct Accum { double sum = 0; double sumSq = 0; uint32_t n = 0; float peak = 0; };
-static Accum acc[4];
-static uint32_t calStartMs = 0;
-
-static void calBegin(State s, const char* prompt) {
-  for (uint8_t i = 0; i < 4; i++) acc[i] = Accum();
-  calStartMs = millis();
-  state = s;
-  Serial.printf("\n>> %s\n", prompt);
-}
-
-static void calAccumulate() {
-  for (uint8_t i = 0; i < 4; i++) {
-    float e = ch[i].env;
-    acc[i].sum   += e;
-    acc[i].sumSq += (double)e * e;
-    acc[i].n++;
-    if (e > acc[i].peak) acc[i].peak = e;
-  }
-}
-
-static void calFinishRest() {
-  for (uint8_t i = 0; i < 4; i++) {
-    float mean = (float)(acc[i].sum / acc[i].n);
-    float var  = (float)(acc[i].sumSq / acc[i].n) - mean * mean;
-    ch[i].restMean = mean;
-    ch[i].restSd   = (var > 0.0f) ? sqrtf(var) : 1.0f;
-    Serial.printf("   ch%u rest: mean %.1f  sd %.1f\n", i, ch[i].restMean, ch[i].restSd);
-  }
-}
-
-/* Take the peak envelope as MVC. Peak is noisy but the envelope is already
- * heavily smoothed, so it is a reasonable stand-in for a 90th percentile. */
-static void calFinishMvc(uint8_t idx) {
-  ch[idx].mvc = acc[idx].peak;
-  Serial.printf("   ch%u MVC peak: %.1f\n", idx, ch[idx].mvc);
-}
-
-static void calComputeThresholds() {
-  for (uint8_t i = 0; i < 4; i++) {
-    Channel& c = ch[i];
-    float t = c.restMean + ONSET_K_SIGMA * c.restSd;
-    float floorT = c.restMean + ONSET_MIN_MVC * (c.mvc - c.restMean);
-    c.onset   = max(t, floorT);
-    c.release = c.restMean + RELEASE_RATIO * (c.onset - c.restMean);
-    c.active  = false;
-  }
-  Serial.printf("   thresholds: flex on %.1f off %.1f | ext on %.1f off %.1f\n",
-                ch[CH_FLEXOR].onset,   ch[CH_FLEXOR].release,
-                ch[CH_EXTENSOR].onset, ch[CH_EXTENSOR].release);
-}
-
-// =============================================================================
-// SECTION 9 - CONTROL LAW
-// =============================================================================
-
-static void controlStep(float dt) {
-  lastCtrlMs = millis();
-
-  // --- Hard gates, checked every tick, highest priority first ---------------
-  if (!killSwitchArmed()) {
-    motorCoast();
-    if (state == ST_ARMED) {
-      state = ST_IDLE;
-      Serial.println("\n>> Kill switch opened - disarmed.");
-    }
+static void driveMotor(const orth::Outputs& o) {
+  if (!o.enable) {
+    digitalWrite(PIN_MOT_EN, LOW);  // EN first: the bridge is off before the PWMs change
+    ledcWrite(PIN_MOT_RPWM, 0);
+    ledcWrite(PIN_MOT_LPWM, 0);
     return;
   }
-  if (state != ST_ARMED) { motorCoast(); return; }
-
-#if USE_ENCODER
-  int32_t c = encRead();
-  jointDeg = (float)(c - encZero) * DEG_PER_COUNT;
-  jointDps = (float)(c - lastEncSnapshot) * DEG_PER_COUNT / dt;
-  lastEncSnapshot = c;
-#endif
-
-  // --- Control law ----------------------------------------------------------
-  float aFlex = ch[CH_FLEXOR].activation;
-  float aExt  = ch[CH_EXTENSOR].activation;
-
-  if (aFlex > COCONTRACT_LEVEL && aExt > COCONTRACT_LEVEL) {
-    dutyTarget = 0.0f;                       // co-contraction = voluntary stop
+  const uint32_t mag = static_cast<uint32_t>(fabsf(o.duty) * PWM_MAX + 0.5f);
+  if (o.duty >= 0.0f) {
+    ledcWrite(PIN_MOT_LPWM, 0);
+    ledcWrite(PIN_MOT_RPWM, mag);
   } else {
-    float net = aFlex - aExt;
-    if (fabsf(net) < DEADZONE) {
-      dutyTarget = 0.0f;
-    } else {
-      float mag = (fabsf(net) - DEADZONE) / (1.0f - DEADZONE);
-      dutyTarget = copysignf(DUTY_MIN + mag * (DUTY_MAX - DUTY_MIN), net);
-    }
+    ledcWrite(PIN_MOT_RPWM, 0);
+    ledcWrite(PIN_MOT_LPWM, mag);
   }
-
-  // --- Soft position limits -------------------------------------------------
-#if USE_ENCODER
-  if (jointDeg >= JOINT_MAX_DEG && dutyTarget > 0.0f) dutyTarget = 0.0f;
-  if (jointDeg <= JOINT_MIN_DEG && dutyTarget < 0.0f) dutyTarget = 0.0f;
-
-  // --- Joint speed governor -------------------------------------------------
-  // Crude proportional back-off, not a velocity loop. It exists because this
-  // drivetrain's full-duty speed is roughly 7x what a limb should see, so the
-  // useful duty band is narrow and easy to overshoot.
-  {
-    float sp = fabsf(jointDps);
-    if (sp > JOINT_MAX_DPS && sp > 0.0f) {
-      dutyTarget *= constrain(JOINT_MAX_DPS / sp, 0.0f, 1.0f);
-    }
-  }
-#endif
-
-  // --- Slew limit -----------------------------------------------------------
-  float maxStep = DUTY_SLEW_PER_S * dt;
-  float err = dutyTarget - dutyCmd;
-  dutyCmd += constrain(err, -maxStep, maxStep);
-  if (fabsf(dutyCmd) < 1e-3f) dutyCmd = 0.0f;
-
-  // --- Duration limit -------------------------------------------------------
-  if (dutyCmd != 0.0f) {
-    if (driveStartMs == 0) driveStartMs = millis();
-    else if (millis() - driveStartMs > MAX_CONTINUOUS_MS) {
-      enterFault("continuous drive limit exceeded");
-      return;
-    }
-  } else {
-    driveStartMs = 0;
-  }
-
-  // --- Stall detection ------------------------------------------------------
-#if USE_ENCODER
-  if (fabsf(dutyCmd) > STALL_DUTY && fabsf(jointDps) < STALL_SPEED_DPS) {
-    if (stallStartMs == 0) stallStartMs = millis();
-    else if (millis() - stallStartMs > STALL_TIME_MS) {
-      enterFault("stall detected");
-      return;
-    }
-  } else {
-    stallStartMs = 0;
-  }
-#endif
-
-  motorDrive(dutyCmd);
+  digitalWrite(PIN_MOT_EN, HIGH);
 }
 
 // =============================================================================
-// SECTION 10 - SERIAL INTERFACE
+// SHARED STATE between the ctrl task and loop()
 // =============================================================================
+static std::atomic<uint8_t> pendingRequest{static_cast<uint8_t>(orth::Request::None)};
+
+struct Telemetry {
+  uint32_t t_ms;
+  orth::State state;
+  float env[2], act[2];
+  float cmd, ref, vel, pos, duty;
+  int32_t raw_count;
+  uint32_t enc_errors;
+  bool kill_closed, mot_ok, zeroed;
+  const char* msg;
+  uint32_t msg_seq;
+  const char* fault;
+  orth::IdentResult ident;
+  uint32_t loop_us_max, overruns;
+  float k, friction, tau, kp, ki;   // loop model: 'j' can change these at run time
+};
+static portMUX_TYPE telMux = portMUX_INITIALIZER_UNLOCKED;
+static Telemetry tel;
+
+static Telemetry telemetry() {
+  portENTER_CRITICAL(&telMux);
+  const Telemetry t = tel;
+  portEXIT_CRITICAL(&telMux);
+  return t;
+}
+
+// =============================================================================
+// THE 1 kHz CONTROL TASK
+// =============================================================================
+static void controlTask(void*) {
+  esp_task_wdt_add(nullptr);
+  TickType_t wake = xTaskGetTickCount();
+  uint32_t loop_us_max = 0, overruns = 0;
+  for (;;) {
+    if (xTaskDelayUntil(&wake, 1) == pdFALSE) ++overruns;   // the previous tick ran long
+    const uint32_t t0 = static_cast<uint32_t>(esp_timer_get_time());
+
+    orth::Inputs in;
+    for (int i = 0; i < 4; ++i) in.adc[i] = analogRead(PIN_EMG[i]);
+    in.enc = encSnapshot();
+    in.now_us = static_cast<uint32_t>(esp_timer_get_time());
+    in.kill_closed = digitalRead(PIN_KILL_SENSE) == LOW;
+    in.mot_ok = digitalRead(PIN_MOT_FAULT) == HIGH;
+    const auto req = static_cast<orth::Request>(
+        pendingRequest.exchange(static_cast<uint8_t>(orth::Request::None)));
+
+    const orth::Outputs out = ctl.step(in, req);
+    driveMotor(out);
+
+    const uint32_t dt = static_cast<uint32_t>(esp_timer_get_time()) - t0;
+    if (dt > loop_us_max) loop_us_max = dt;
+
+    Telemetry t;
+    t.t_ms = millis();
+    t.state = ctl.state();
+    for (int i = 0; i < 2; ++i) { t.env[i] = ctl.channel(i).envelope(); t.act[i] = ctl.channel(i).activation; }
+    t.cmd = ctl.speedCommand();
+    t.ref = ctl.speedRef();
+    t.vel = ctl.jointDps();
+    t.pos = ctl.jointDeg();
+    t.duty = out.enable ? out.duty : 0.0f;
+    t.raw_count = in.enc.count;
+    t.enc_errors = in.enc.errors;
+    t.kill_closed = in.kill_closed;
+    t.mot_ok = in.mot_ok;
+    t.zeroed = ctl.zeroed();
+    t.msg = ctl.lastMessage();
+    t.msg_seq = ctl.messageSeq();
+    t.fault = ctl.faultReason();
+    t.ident = ctl.ident();
+    const orth::Config& cfg = ctl.config();
+    t.k = cfg.dps_per_duty;
+    t.friction = cfg.friction_duty;
+    t.tau = cfg.plant_tau_s;
+    t.kp = cfg.kp();
+    t.ki = cfg.ki();
+    t.loop_us_max = loop_us_max;
+    t.overruns = overruns;
+    portENTER_CRITICAL(&telMux);
+    tel = t;
+    portEXIT_CRITICAL(&telMux);
+
+    esp_task_wdt_reset();
+  }
+}
+
+// =============================================================================
+// SERIAL INTERFACE (loop task)
+// =============================================================================
+static bool streaming = false;
+static int32_t ratioMark = 0;
 
 static void printHelp() {
   Serial.println(F(
-    "\ncommands:\n"
-    "  c  recalibrate (rest, then flexor MVC, then extensor MVC)\n"
-    "  a  arm   - motor goes live. kill switch must be closed.\n"
-    "  d  disarm\n"
-    "  z  zero the encoder at the current position\n"
-    "  m  gear-ratio measurement: zero, hand-turn N output revs, then '?'\n"
-    "  ?  status\n"));
+      "\ncommands:\n"
+      "  c  calibrate: relax 4 s, flexor max 4 s, extensor max 4 s\n"
+      "  z  zero the joint here (do it at the lower limit)\n"
+      "  a  arm - the motor goes live. needs: calibrated, zeroed, kill switch closed, MOT_OK\n"
+      "  d  disarm / clear a fault\n"
+      "  j  identify the motor (limb OUT, joint mid-range): open-loop steps, prints K, friction,\n"
+      "     tau and whether the encoder sign is right, and loads them into the loop\n"
+      "  m  gear-ratio check: mark here, hand-turn the gearbox output N revs, then '?'\n"
+      "  s  toggle 50 Hz CSV telemetry\n"
+      "  ?  status      h  this help"));
 }
 
 static void printStatus() {
-  Serial.printf("\nstate=%s  kill=%s  duty=%+.2f",
-                stateName(state), killSwitchArmed() ? "ARMED" : "OPEN", dutyCmd);
-#if USE_ENCODER
-  Serial.printf("  joint=%+.1f deg (%.0f dps)", jointDeg, jointDps);
-#endif
-  Serial.printf("  motOK=%d\n", digitalRead(PIN_MOT_FAULT));
-#if USE_ENCODER
-  {
-    int32_t raw = encRead();
-    Serial.printf("  raw counts %ld  (since 'm': %ld = %.3f motor rev = %.4f output rev)\n",
-                  (long)raw, (long)(raw - ratioZero),
-                  (float)(raw - ratioZero) / COUNTS_PER_MOTOR_REV,
-                  (float)(raw - ratioZero) / COUNTS_PER_OUTPUT_REV);
-  }
-#endif
-  for (uint8_t i = 0; i < 4; i++) {
-    Serial.printf("  ch%u env %7.1f  on %7.1f  mvc %7.1f  act %.2f%s\n",
-                  i, ch[i].env, ch[i].onset, ch[i].mvc, ch[i].activation,
-                  ch[i].active ? "  *" : "");
-  }
-  if (state == ST_FAULT) Serial.printf("  fault: %s\n", faultReason);
+  const Telemetry t = telemetry();
+  const orth::Config& c = ctl.config();   // transmission constants only: never changed at run time
+  Serial.printf("\nstate=%s  kill=%s  driver=%s  zeroed=%s\n", orth::stateName(t.state),
+                t.kill_closed ? "closed" : "OPEN", t.mot_ok ? "ok" : "NOT OK", t.zeroed ? "yes" : "no");
+  Serial.printf("joint %+.2f deg  %+.1f deg/s  (cmd %+.1f, ref %+.1f)  duty %+.3f\n", t.pos, t.vel, t.cmd,
+                t.ref, t.duty);
+  Serial.printf("EMG  flexor env %.1f act %.2f | extensor env %.1f act %.2f\n", t.env[0], t.act[0], t.env[1],
+                t.act[1]);
+  Serial.printf("loop  worst %lu us of 1000, %lu overruns | encoder errors %lu\n",
+                static_cast<unsigned long>(t.loop_us_max), static_cast<unsigned long>(t.overruns),
+                static_cast<unsigned long>(t.enc_errors));
+  const int32_t since = t.raw_count - ratioMark;
+  Serial.printf("counts since 'm': %ld = %.3f motor revs = %.4f gearbox-output revs at %.2f:1\n",
+                static_cast<long>(since), since / c.counts_per_motor_rev,
+                since / (c.counts_per_motor_rev * c.gear_ratio), c.gear_ratio);
+  Serial.printf("loop model  K %.1f deg/s/duty  friction %.3f  tau %.1f ms  -> Kp %.5f  Ki %.4f\n",
+                t.k, t.friction, 1e3f * t.tau, t.kp, t.ki);
+  if (t.state == orth::State::Fault) Serial.printf("FAULT: %s  ('d' to clear)\n", t.fault);
 }
+
+static void printIdent(const orth::IdentResult& r) {
+  if (!r.sign_ok) return;
+  Serial.printf("   K = %.1f deg/s per duty, friction = %.3f duty, tau = %.1f ms\n", r.dps_per_duty,
+                r.friction_duty, 1e3f * r.tau_s);
+  Serial.printf("   paste into makeConfig():  c.dps_per_duty = %.1ff; c.friction_duty = %.3ff; "
+                "c.plant_tau_s = %.4ff;\n", r.dps_per_duty, r.friction_duty, r.tau_s);
+}
+
+static void post(orth::Request r) { pendingRequest.store(static_cast<uint8_t>(r)); }
 
 static void handleSerial() {
-  if (!Serial.available()) return;
-  int c = Serial.read();
-  switch (c) {
-    case 'c':
-      motorCoast();
-      state = ST_IDLE;
-      calBegin(ST_CAL_REST, "CALIBRATION - relax completely for 4 s");
-      break;
-    case 'a':
-      if (state == ST_IDLE) {
-        if (!killSwitchArmed()) {
-          Serial.println("\n!! cannot arm: kill switch is open");
-        } else if (ch[CH_FLEXOR].active || ch[CH_EXTENSOR].active) {
-          Serial.println("\n!! cannot arm: muscle active - relax first");
-        } else {
-          dutyCmd = dutyTarget = 0.0f;
-          driveStartMs = stallStartMs = 0;
-          state = ST_ARMED;
-          Serial.println("\n>> ARMED");
-        }
-      } else {
-        Serial.printf("\n!! cannot arm from %s\n", stateName(state));
-      }
-      break;
-    case 'd':
-      motorCoast();
-      if (state == ST_ARMED || state == ST_FAULT) state = ST_IDLE;
-      Serial.println("\n>> disarmed");
-      break;
-#if USE_ENCODER
-    case 'z':
-      encZero = encRead();
-      lastEncSnapshot = encZero;
-      Serial.println("\n>> encoder zeroed");
-      break;
-#endif
-#if USE_ENCODER
-    case 'm':
-      // Gear-ratio measurement. Motor must be DISARMED and back-drivable.
-      motorCoast();
-      if (state == ST_ARMED) state = ST_IDLE;
-      ratioZero = encRead();
-      Serial.println(F(
-        "\n>> RATIO MEASUREMENT\n"
-        "   Mark the OUTPUT shaft. Hand-turn it exactly N full revolutions\n"
-        "   (N = 5 or 10 is easiest to see), then press '?'.\n"
-        "   gear ratio = (counts since 'm') / 28 / N"));
-      break;
-#endif
-    case '?': printStatus(); break;
-    case 'h': printHelp();   break;
-    default: break;
+  while (Serial.available()) {
+    switch (Serial.read()) {
+      case 'c': post(orth::Request::Calibrate); break;
+      case 'z': post(orth::Request::Zero); break;
+      case 'a': post(orth::Request::Arm); break;
+      case 'd': post(orth::Request::Disarm); break;
+      case 'j': post(orth::Request::Identify); break;
+      case 'm':
+        ratioMark = telemetry().raw_count;
+        Serial.println(F("\n>> marked. Hand-turn the gearbox OUTPUT exactly N revs (5 or 10), then '?'.\n"
+                         "   gear ratio = counts / 28 / N"));
+        break;
+      case 's': streaming = !streaming;
+        if (streaming) Serial.println(F("t_ms,state,env_flex,env_ext,act_flex,act_ext,cmd,ref,vel,pos,duty"));
+        break;
+      case '?': printStatus(); break;
+      case 'h': printHelp(); break;
+      default: break;
+    }
   }
 }
 
 // =============================================================================
-// SECTION 11 - SETUP / LOOP
+// SETUP / LOOP
 // =============================================================================
-
 void setup() {
   // Motor pins first and safe, before anything else can take time.
   pinMode(PIN_MOT_EN, OUTPUT);
   digitalWrite(PIN_MOT_EN, LOW);
-  PWM_SETUP(PIN_MOT_RPWM);
-  PWM_SETUP(PIN_MOT_LPWM);
-  PWM_WRITE(PIN_MOT_RPWM, 0);
-  PWM_WRITE(PIN_MOT_LPWM, 0);
+  ledcAttach(PIN_MOT_RPWM, PWM_FREQ_HZ, PWM_BITS);
+  ledcAttach(PIN_MOT_LPWM, PWM_FREQ_HZ, PWM_BITS);
+  ledcWrite(PIN_MOT_RPWM, 0);
+  ledcWrite(PIN_MOT_LPWM, 0);
 
-  pinMode(PIN_KILL_SENSE, INPUT_PULLUP);
-  pinMode(PIN_MOT_FAULT,  INPUT);
+  pinMode(PIN_KILL_SENSE, INPUT_PULLUP);  // pole B shorts it to GND when closed
+  pinMode(PIN_MOT_FAULT, INPUT);          // driven by the isolator; R66 defaults it LOW (= not OK)
+  pinMode(PIN_ENC_A, INPUT);              // driven by the isolator
+  pinMode(PIN_ENC_B, INPUT);
 
   Serial.begin(115200);
   delay(300);
 
   analogReadResolution(12);
-  analogSetAttenuation(ADC_11db);          // full 0..3.3 V span
+  analogSetAttenuation(ADC_11db);         // ~0-3.1 V: VREF (1.65 V) sits mid-scale
 
-#if USE_ENCODER
-  pinMode(PIN_ENC_A, INPUT_PULLUP);
-  pinMode(PIN_ENC_B, INPUT_PULLUP);
-  encState = (uint8_t)((digitalRead(PIN_ENC_A) << 1) | digitalRead(PIN_ENC_B));
+  enc.reset(readAB());
   attachInterrupt(digitalPinToInterrupt(PIN_ENC_A), encISR, CHANGE);
   attachInterrupt(digitalPinToInterrupt(PIN_ENC_B), encISR, CHANGE);
-#endif
 
-  // Filter coefficients for a one-pole IIR at the given corner.
-  aDc  = 1.0f - expf(-2.0f * (float)M_PI * DC_BLOCK_FC_HZ  / (float)FS_HZ);
-  aEnv = 1.0f - expf(-2.0f * (float)M_PI * ENVELOPE_FC_HZ / (float)FS_HZ);
+  uint16_t adc[4];
+  for (int i = 0; i < 4; ++i) adc[i] = analogRead(PIN_EMG[i]);
+  ctl.prime(adc);
 
-  // Prime the DC trackers so the envelope does not start with a huge step.
-  for (uint8_t i = 0; i < 4; i++) ch[i].dc = (float)analogRead(PIN_EMG[i]);
-  for (int n = 0; n < FS_HZ / 2; n++) { emgSample(); delayMicroseconds(1000000 / FS_HZ); }
+  // Task watchdog: 200 ms, panic (= reset) on timeout, watching only our task.
+  esp_task_wdt_config_t wdt;
+  wdt.timeout_ms = 200;
+  wdt.idle_core_mask = 0;
+  wdt.trigger_panic = true;
+  if (esp_task_wdt_reconfigure(&wdt) != ESP_OK) esp_task_wdt_init(&wdt);
 
+  const orth::Config& c = ctl.config();
   Serial.println(F("\nOpenEREMG v2 - EMG orthosis control"));
-  Serial.printf("transmission: %.1f:1 gearbox, %.1f mm/rev screw, %.0f mm pulley\n",
-                GEAR_RATIO, SCREW_PITCH_MM, PULLEY_DIA_MM);
-  Serial.printf("  %.1f counts/motor rev | %.3f joint deg/motor rev | %.5f deg/count\n",
-                COUNTS_PER_OUTPUT_REV, JOINT_DEG_PER_REV, DEG_PER_COUNT);
-  Serial.printf("  travel %.0f..%.0f deg = %.0f counts | speed cap %.0f deg/s\n",
-                JOINT_MIN_DEG, JOINT_MAX_DEG,
-                (JOINT_MAX_DEG - JOINT_MIN_DEG) / DEG_PER_COUNT, JOINT_MAX_DPS);
+  Serial.printf("transmission %.1f:1, %.1f mm screw, %.0f mm pulley = %.5f deg/count\n", c.gear_ratio,
+                c.screw_pitch_mm, c.pulley_dia_mm, c.degPerCount());
+  Serial.printf("limits %.0f..%.0f deg, %.0f deg/s max | envelope %.1f Hz (%.0f ms mean delay)\n",
+                c.joint_min_deg, c.joint_max_deg, c.joint_max_dps, c.envelope_hz,
+                2000.0f / (2.0f * orth::kPi * c.envelope_hz));
   printHelp();
-  calBegin(ST_CAL_REST, "CALIBRATION - relax completely for 4 s");
+
+  xTaskCreatePinnedToCore(controlTask, "ctrl", 6144, nullptr, configMAX_PRIORITIES - 2, nullptr, 1);
 }
 
 void loop() {
-  static uint32_t nextSampleUs = 0;
-  static uint32_t nextCtrlUs   = 0;
-  static uint32_t nextTelemUs  = 0;
-  uint32_t now = micros();
-
-  // --- 1 kHz: acquire and filter -------------------------------------------
-  if ((int32_t)(now - nextSampleUs) >= 0) {
-    nextSampleUs = now + 1000000UL / FS_HZ;
-    emgSample();
-    emgActivation();
-
-    // Calibration states consume samples rather than running the control law.
-    switch (state) {
-      case ST_CAL_REST:
-        calAccumulate();
-        if (millis() - calStartMs > CAL_REST_MS) {
-          calFinishRest();
-          calBegin(ST_CAL_FLEX, "contract the FLEXOR as hard as you can for 4 s");
-        }
-        break;
-      case ST_CAL_FLEX:
-        calAccumulate();
-        if (millis() - calStartMs > CAL_MVC_MS) {
-          calFinishMvc(CH_FLEXOR);
-          calBegin(ST_CAL_EXT, "contract the EXTENSOR as hard as you can for 4 s");
-        }
-        break;
-      case ST_CAL_EXT:
-        calAccumulate();
-        if (millis() - calStartMs > CAL_MVC_MS) {
-          calFinishMvc(CH_EXTENSOR);
-          calComputeThresholds();
-          state = ST_IDLE;
-          Serial.println("\n>> calibrated. type 'a' to arm.");
-        }
-        break;
-      default: break;
-    }
-  }
-
-  // --- 100 Hz: control ------------------------------------------------------
-  if ((int32_t)(now - nextCtrlUs) >= 0) {
-    nextCtrlUs = now + 1000000UL / CTRL_HZ;
-    controlStep(1.0f / (float)CTRL_HZ);
-  }
-
-  // --- Command watchdog -----------------------------------------------------
-  if (state == ST_ARMED && millis() - lastCtrlMs > CMD_WATCHDOG_MS) {
-    enterFault("control loop watchdog");
-  }
-
-  // --- 20 Hz: telemetry -----------------------------------------------------
-  if ((int32_t)(now - nextTelemUs) >= 0) {
-    nextTelemUs = now + 1000000UL / TELEM_HZ;
-    if (state == ST_ARMED || state == ST_IDLE) {
-      Serial.printf("%lu,%s,%.1f,%.1f,%.2f,%.2f,%+.3f",
-                    (unsigned long)millis(), stateName(state),
-                    ch[CH_FLEXOR].env, ch[CH_EXTENSOR].env,
-                    ch[CH_FLEXOR].activation, ch[CH_EXTENSOR].activation,
-                    dutyCmd);
-#if USE_ENCODER
-      Serial.printf(",%+.2f,%+.1f", jointDeg, jointDps);
-#endif
-      Serial.println();
-    }
-  }
-
+  static uint32_t lastSeq = 0, nextTelMs = 0;
+  static bool identPrinted = true;
   handleSerial();
+
+  const Telemetry t = telemetry();
+  if (t.msg_seq != lastSeq) {
+    lastSeq = t.msg_seq;
+    Serial.printf("\n>> %s\n", t.msg);
+    if (t.state == orth::State::Identify) identPrinted = false;
+  }
+  if (!identPrinted && t.ident.done) {
+    printIdent(t.ident);
+    identPrinted = true;
+  }
+  if (streaming && static_cast<int32_t>(millis() - nextTelMs) >= 0) {
+    nextTelMs = millis() + 20;
+    Serial.printf("%lu,%s,%.1f,%.1f,%.3f,%.3f,%+.2f,%+.2f,%+.2f,%+.2f,%+.3f\n",
+                  static_cast<unsigned long>(t.t_ms), orth::stateName(t.state), t.env[0], t.env[1], t.act[0],
+                  t.act[1], t.cmd, t.ref, t.vel, t.pos, t.duty);
+  }
+  delay(2);
 }
