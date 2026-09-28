@@ -89,6 +89,11 @@ static const float DUTY_MAX          = 0.55f;  // fraction of full scale. START 
 static const float DUTY_MIN          = 0.12f;  // below this the gearbox won't break stiction
 static const float DUTY_SLEW_PER_S   = 2.0f;   // max duty change per second
 
+/* Dynamic-brake at zero command instead of coasting. The ball screw is
+ * back-drivable, so a coasting joint sags under load. See motorDrive().
+ * Set false if you add a mechanical brake or a non-back-drivable screw. */
+static const bool  BRAKE_ON_STOP     = true;
+
 // =============================================================================
 // SECTION 2 - PIN MAP  (matches the v2 schematic)
 // =============================================================================
@@ -280,7 +285,21 @@ static void motorCoast() {
   dutyCmd = 0.0f;
 }
 
-/* duty in -1..1. Positive drives the joint toward JOINT_MAX. */
+/* duty in -1..1. Positive drives the joint toward JOINT_MAX.
+ *
+ * At zero command this DYNAMIC BRAKES rather than coasting: EN stays high with
+ * both PWM inputs low, which turns on both low-side FETs and shorts the motor
+ * through itself. The ball screw is back-drivable, so a coasting joint sags
+ * under the weight of the limb. Braking resists that.
+ *
+ * Note what it does NOT do: a dynamic brake opposes motion proportionally to
+ * speed, so it slows the sag, it does not hold a static position. If the joint
+ * must hold against gravity indefinitely, that wants a mechanical brake or a
+ * non-back-drivable screw, not firmware.
+ *
+ * motorCoast() is the separate true-coast path, used for disarm, fault and
+ * kill. Releasing the limb is the right failure mode; holding it is not.
+ */
 static void motorDrive(float duty) {
   duty = constrain(duty, -1.0f, 1.0f);
   uint16_t mag = (uint16_t)(fabsf(duty) * PWM_MAX);
@@ -291,7 +310,7 @@ static void motorDrive(float duty) {
     PWM_WRITE(PIN_MOT_RPWM, 0);
     PWM_WRITE(PIN_MOT_LPWM, mag);
   }
-  digitalWrite(PIN_MOT_EN, mag > 0 ? HIGH : LOW);
+  digitalWrite(PIN_MOT_EN, BRAKE_ON_STOP ? HIGH : (mag > 0 ? HIGH : LOW));
 }
 
 static bool killSwitchArmed() {
