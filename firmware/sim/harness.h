@@ -41,6 +41,8 @@ class Harness {
   // driver is enabled the limb's full weight is on the orthosis.
   bool user_supports_when_disabled = true;
   EmgProfile emg;   // empty = every channel at rest_amp (no captured `this`, so Harness copies safely)
+  // Optional: replace channel values with recorded ADC samples (return false = use the synthetic value).
+  std::function<bool(double t, int ch, uint16_t& adc)> adc_override;
   std::vector<Sample> log;
   bool record = false;
 
@@ -84,6 +86,10 @@ class Harness {
       double x = 2048.0 + amp[i] * n(rng_);
       if (railed[i]) x = 4095.0;
       in.adc[i] = static_cast<uint16_t>(std::lround(std::fmin(std::fmax(x, 0.0), 4095.0)));
+      if (adc_override) {
+        uint16_t v;
+        if (adc_override(t_, i, v)) in.adc[i] = v;
+      }
     }
     in.enc = enc_;
     in.now_us = us(t_);
@@ -128,6 +134,24 @@ inline void calibrateZeroArm(Harness& h, double start_deg = 15.0) {
   h.run(0.3);
   h.ctl.setSpeedOverride(true, 0.0);
   h.run(0.01, orth::Request::Arm);
+}
+
+// The bench identification ('j') on this plant with the limb out, exactly as
+// the README's bring-up does it. Returns the config with the measured model
+// loaded and the fast tier unlocked (or `base` unchanged if it failed).
+inline orth::Config identifiedConfig(orth::Config base, PlantParams pp) {
+  pp.limb_mgr = 0.0;
+  base.joint_max_deg = std::max(base.joint_max_deg, 60.0f);
+  Harness h(base, pp);
+  h.calibrate();
+  h.run(0.01, orth::Request::Zero);
+  handMove(h, 30.0);
+  h.run(0.2);
+  h.run(0.01, orth::Request::Identify);
+  h.run(3.0);
+  orth::Config c = h.ctl.config();
+  c.joint_max_deg = base.joint_max_deg;
+  return c;
 }
 
 }  // namespace sim

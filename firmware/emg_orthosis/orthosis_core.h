@@ -51,7 +51,10 @@ struct Config {
   float joint_min_deg = 0.0f;           // measured from the 'z' zero
   float joint_max_deg = 30.0f;          // real travel is 120; widen once proven
   float joint_max_dps = 25.0f;          // top speed a user can command
-  float joint_accel_dps2 = 150.0f;      // setpoint ramp: 0 -> 25 deg/s in 0.17 s
+  // Setpoint ramp. It also bounds how fast the joint stops once the EMG does.
+  // Two tiers - see "Two tiers" under the velocity loop below.
+  float joint_accel_dps2 = 150.0f;      // model from the datasheet: 0 -> 25 deg/s in 167 ms
+  float joint_accel_fast_dps2 = 500.0f; // model identified on this motor ('j'): 50 ms
   float limit_decel_dps2 = 120.0f;      // braking curve into the soft limits
   float limit_margin_deg = 0.5f;        // stop this far inside each limit
 
@@ -67,16 +70,39 @@ struct Config {
   //   Kp = tau / (K lambda) [duty per deg/s],  Ki = 1 / (K lambda) [duty per deg]
   // Ki is also the holding stiffness at zero command: the integral of a speed
   // error is a position error, so the loop holds the joint where it stopped.
+  //
+  // Two tiers. Fast response leans on the feed-forward, and feed-forward is only
+  // as good as the motor model. With datasheet numbers, a fast ramp overshoots
+  // up to ~45 % when friction or supply voltage differ from the model; no loop
+  // tuning fixes a wrong model. So the loop starts conservative and the fast
+  // tier (ramp 500 deg/s^2, lambda 30 ms) unlocks only once 'j' has measured
+  // this motor, or model_identified is set with measured values pasted in.
+  // Across 36 perturbed motors, each identified first, the fast tier's worst
+  // step overshoot is ~20 % (600 deg/s^2 reached 27 %). 30 ms is the floor for
+  // lambda: at 20 ms the stop starts to ring (latency_sweep).
   float lambda_s = 0.050f;
+  float lambda_fast_s = 0.030f;
+  bool model_identified = false;
   bool closed_loop = true;              // false = feed-forward only (used for comparison)
 
   // --- EMG ------------------------------------------------------------------
   float fs_hz = 1000.0f;                // sample and control rate
   float dc_track_hz = 0.5f;             // follows VREF/electrode drift
-  // Two equal poles (critically damped: no overshoot on a step). Mean delay is
-  // 2/(2 pi fc) = 80 ms at 4 Hz. On 115 days of real forearm EMG run through a
-  // model of the v2 board, dropping to 3 Hz cut envelope ripple only 12 % for
-  // 26 ms more delay: most of the ripple is the muscle, not the filter.
+  // Envelope estimator. Bayes (default) is a recursive posterior over EMG
+  // amplitude (Sanger 2007): it can jump within a few samples at a contraction
+  // onset and still averages hard during a steady one. On 200 real forearm
+  // contractions through the v2 board model (firmware/analysis/latency_study.py)
+  // it halved onset-to-half-command time against the 4 Hz two-pole filter
+  // (97 -> 49 ms median), cut the stop lag from 73 to 15 ms (p90), and had
+  // slightly LESS jitter. A jump model reacts to single spikes, so an onset
+  // must hold for confirm_ms: with 20 ms, zero false starts at one motion
+  // artefact per second; with none, 62 a minute.
+  enum class Envelope : uint8_t { Bayes, TwoPole };
+  Envelope envelope = Envelope::Bayes;
+  float bayes_alpha = 1e-4f;            // per-sample diffusion between neighbouring amplitude bins
+  float bayes_beta = 1e-12f;            // per-sample probability of a jump to any amplitude
+  uint32_t confirm_ms = 20;             // envelope must stay above onset this long
+  // TwoPole: two equal one-pole low passes, mean delay 2/(2 pi fc) = 80 ms at 4 Hz.
   float envelope_hz = 4.0f;
   float mvc_fraction = 0.60f;           // full command at 60 % of calibrated max
   float onset_k_sigma = 6.0f;           // onset = rest mean + k * rest SD ...
@@ -115,8 +141,10 @@ struct Config {
     const float joint_deg_per_output_rev = screw_pitch_mm / mm_per_joint_deg;
     return joint_deg_per_output_rev / (counts_per_motor_rev * gear_ratio);
   }
-  float kp() const { return closed_loop ? plant_tau_s / (dps_per_duty * lambda_s) : 0.0f; }
-  float ki() const { return closed_loop ? 1.0f / (dps_per_duty * lambda_s) : 0.0f; }
+  float lambda() const { return model_identified ? lambda_fast_s : lambda_s; }
+  float accel() const { return model_identified ? joint_accel_fast_dps2 : joint_accel_dps2; }
+  float kp() const { return closed_loop ? plant_tau_s / (dps_per_duty * lambda()) : 0.0f; }
+  float ki() const { return closed_loop ? 1.0f / (dps_per_duty * lambda()) : 0.0f; }
 };
 
 // =============================================================================
@@ -214,8 +242,64 @@ class VelocityEstimator {
 // =============================================================================
 // EMG channel: raw ADC counts -> envelope -> activation
 // =============================================================================
+// Bayesian amplitude estimator (Sanger, "Bayesian filtering of myoelectric
+// signals", J Neurophysiol 2007). The state is the EMG's local RMS amplitude,
+// kept as a probability over kBins log-spaced levels. Each sample:
+//   predict: diffuse to neighbouring levels (alpha) and allow a jump anywhere (beta)
+//   update:  multiply by the likelihood of this sample, Laplacian with that RMS
+//            (EMG is heavier-tailed than Gaussian; a Gaussian model is thrown
+//            around more by single large samples)
+//   output:  the posterior mean of log-amplitude (continuous; the most probable
+//            bin would step in 12 % increments and gave slightly more jitter)
+// Cost: 2 x kBins exp() per sample, ~50 us per channel on an ESP32-S3.
+class BayesEnvelope {
+ public:
+  static constexpr int kBins = 64;
+  void design(float alpha, float beta, float lo = 1.0f, float hi = 2000.0f) {
+    alpha_ = alpha;
+    beta_ = beta;
+    for (int i = 0; i < kBins; ++i) {
+      log_level_[i] = std::log(lo) + std::log(hi / lo) * i / (kBins - 1);
+      level_[i] = std::exp(log_level_[i]);
+      inv_[i] = 1.41421356f / level_[i];
+      p_[i] = 1.0f / kBins;
+    }
+  }
+  float step(float e) {
+    const float ae = std::fabs(e);
+    float q[kBins];
+    float s = 0.0f;
+    for (int i = 0; i < kBins; ++i) {
+      const float l = i > 0 ? p_[i - 1] : p_[i];
+      const float r = i < kBins - 1 ? p_[i + 1] : p_[i];
+      float v = (1.0f - 2.0f * alpha_) * p_[i] + alpha_ * (l + r);
+      v = (1.0f - beta_) * v + beta_ / kBins;
+      v *= std::exp(-ae * inv_[i]) * inv_[i];
+      q[i] = v;
+      s += v;
+    }
+    const float inv_s = s > 0.0f ? 1.0f / s : 0.0f;
+    float log_mean = 0.0f;
+    for (int i = 0; i < kBins; ++i) {
+      p_[i] = s > 0.0f ? q[i] * inv_s : 1.0f / kBins;
+      log_mean += p_[i] * log_level_[i];
+    }
+    y_ = std::exp(log_mean);
+    return y_;
+  }
+  float y() const { return y_; }
+
+ private:
+  float alpha_ = 1e-4f, beta_ = 1e-12f;
+  float level_[kBins] = {}, log_level_[kBins] = {}, inv_[kBins] = {}, p_[kBins] = {};
+  float y_ = 0.0f;
+};
+
 struct EmgChannel {
-  OnePole dc, e1, e2;
+  OnePole dc, e1, e2, slow;
+  BayesEnvelope bayes;
+  bool use_bayes = true;
+  uint32_t above_n = 0;       // consecutive samples above onset (for confirm_ms)
   float rest_mean = 0.0f, rest_sd = 1.0f, mvc = 1.0f;
   float onset = 1e9f, release = 1e9f;
   bool active = false;
@@ -232,14 +316,22 @@ struct EmgChannel {
     dc.design(c.dc_track_hz, c.fs_hz);
     e1.design(c.envelope_hz, c.fs_hz);
     e2.design(c.envelope_hz, c.fs_hz);
+    slow.design(2.0f, c.fs_hz);
+    use_bayes = c.envelope == Config::Envelope::Bayes;
+    bayes.design(c.bayes_alpha, c.bayes_beta);
   }
   void prime(float x) { dc.y = x; }
-  float envelope() const { return e2.y; }
+  float envelope() const { return use_bayes ? bayes.y() : e2.y; }
+  // A 2 Hz smoothing of the envelope: used for the MVC peak, so one lucky
+  // sample during calibration can't set the scale.
+  float slowEnvelope() const { return slow.y; }
 
   void sample(uint16_t raw, const Config& c) {
     const float x = static_cast<float>(raw);
     const float ac = x - dc.step(x);
-    e2.step(e1.step(std::fabs(ac)));
+    if (use_bayes) bayes.step(ac);
+    else e2.step(e1.step(std::fabs(ac)));
+    slow.step(envelope());
     const bool railed = raw <= c.adc_rail_margin || raw >= 4095 - c.adc_rail_margin;
     rail_run = railed ? static_cast<uint16_t>(std::min(rail_run + 1, 60000)) : 0;
     if (railed) ++rail_hits;
@@ -260,8 +352,10 @@ struct EmgChannel {
 
   void updateActivation(const Config& c) {
     const float e = envelope();
+    above_n = e > onset ? above_n + 1 : 0;
+    const uint32_t confirm_n = static_cast<uint32_t>(c.confirm_ms * c.fs_hz / 1000.0f);
     if (active) { if (e < release) active = false; }
-    else if (e > onset) { active = true; }
+    else if (above_n > confirm_n) { active = true; }
     if (!active) { activation = 0.0f; return; }
     const float span = std::max(c.mvc_fraction * mvc - onset, 1.0f);
     activation = std::clamp((e - onset) / span, 0.0f, 1.0f);
@@ -286,7 +380,8 @@ inline float intentToSpeed(float a_flex, float a_ext, const Config& c) {
 class SetpointShaper {
  public:
   float step(float target_dps, float pos_deg, float dt, const Config& c) {
-    const float max_step = c.joint_accel_dps2 * dt;
+    const float max_step = c.accel() * dt;
+    ramping_ = std::fabs(target_dps - ref_) > max_step;
     ref_ += std::clamp(target_dps - ref_, -max_step, max_step);
     const float to_max = (c.joint_max_deg - c.limit_margin_deg) - pos_deg;
     const float to_min = pos_deg - (c.joint_min_deg + c.limit_margin_deg);
@@ -295,11 +390,14 @@ class SetpointShaper {
     ref_ = std::clamp(ref_, -down, up);   // store the clamp so the ramp can't wind up
     return ref_;
   }
-  void reset() { ref_ = 0.0f; }
+  void reset() { ref_ = 0.0f; ramping_ = false; }
   float ref() const { return ref_; }
+  // True while the acceleration limit is shaping the setpoint (a transient).
+  bool ramping() const { return ramping_; }
 
  private:
   float ref_ = 0.0f;
+  bool ramping_ = false;
 };
 
 // =============================================================================
@@ -318,7 +416,14 @@ class SetpointShaper {
 // =============================================================================
 class VelocityPI {
  public:
-  float step(float ref_dps, float meas_dps, float dt, const Config& c) {
+  // ramping: the setpoint is being shaped by the acceleration limit this tick.
+  // Tracking a ramp is the feed-forward's job. An integrator that charges on
+  // the joint lagging a ramp (large when the model's inertia is off) comes back
+  // out as overshoot, so while ramping it may only discharge - pull back a joint
+  // that is AHEAD of the setpoint (feed-forward too strong: friction or supply
+  // voltage above the model) - never push harder. Its real job, the
+  // quasi-static load (limb weight, friction), is untouched.
+  float step(float ref_dps, float meas_dps, float dt, const Config& c, bool ramping = false) {
     const float e = ref_dps - meas_dps;
     const float dref = (ref_dps - prev_ref_) / dt;
     prev_ref_ = ref_dps;
@@ -327,7 +432,8 @@ class VelocityPI {
     const float unsat = ff + c.kp() * e + integ_;
     const float out = std::clamp(unsat, -c.duty_max, c.duty_max);
     const bool pushing_further = (unsat != out) && ((e > 0.0f) == (unsat > 0.0f));
-    if (!pushing_further) integ_ += c.ki() * e * dt;
+    const bool charging = ramping && (e > 0.0f) == (ref_dps > 0.0f);
+    if (!pushing_further && !charging) integ_ += c.ki() * e * dt;
     integ_ = std::clamp(integ_, -c.duty_max, c.duty_max);
     last_ = out;
     return out;
@@ -507,7 +613,7 @@ class Controller {
       const float e = ch_[i].envelope();
       acc_[i].sum += e;
       acc_[i].sum_sq += static_cast<double>(e) * e;
-      acc_[i].peak = std::max(acc_[i].peak, e);
+      acc_[i].peak = std::max(acc_[i].peak, ch_[i].slowEnvelope());
       ++acc_[i].n;
     }
     const uint32_t ms = ++cal_ticks_ * 1000u / static_cast<uint32_t>(cfg_.fs_hz);
@@ -546,7 +652,7 @@ class Controller {
     const float a_flex = ch_[0].activation, a_ext = ch_[1].activation;
     cmd_dps_ = override_ ? override_dps_ : intentToSpeed(a_flex, a_ext, cfg_);
     const float ref = shaper_.step(cmd_dps_, pos_deg_, dt, cfg_);
-    const float duty = pi_.step(ref, vel_dps_, dt, cfg_);
+    const float duty = pi_.step(ref, vel_dps_, dt, cfg_, shaper_.ramping());
 
     if (const char* why = superviseMotion(ref, duty)) return fault(why);
     out_ = Outputs{duty, true};
@@ -559,8 +665,9 @@ class Controller {
     if (in.enc.errors - enc_err_base_ > cfg_.encoder_error_limit) return "encoder errors (noise or missed edges)";
     for (int i = 0; i < 2; ++i)
       if (ch_[i].leadOff(cfg_)) return "EMG lead off / channel railed";
-    for (int i = 0; i < 2; ++i)
-      if (ch_[i].envelope() > cfg_.artefact_mvc_ratio * ch_[i].mvc) return "EMG artefact (envelope > 2x MVC)";
+    const bool artefact = ch_[0].envelope() > cfg_.artefact_mvc_ratio * ch_[0].mvc ||
+                          ch_[1].envelope() > cfg_.artefact_mvc_ratio * ch_[1].mvc;
+    if (timer(artefact_n_, artefact, cfg_.confirm_ms)) return "EMG artefact (envelope > 2x MVC)";
     if (pos_deg_ > cfg_.joint_max_deg + cfg_.overtravel_deg ||
         pos_deg_ < cfg_.joint_min_deg - cfg_.overtravel_deg) return "over-travel past soft limit";
     if (timer(overspeed_n_, std::fabs(vel_dps_) > cfg_.overspeed_ratio * cfg_.joint_max_dps, cfg_.overspeed_ms))
@@ -664,6 +771,7 @@ class Controller {
       cfg_.dps_per_duty = r.dps_per_duty;
       cfg_.friction_duty = std::min(r.friction_duty, 0.2f);
       cfg_.plant_tau_s = r.tau_s;
+      cfg_.model_identified = true;   // unlocks the fast tier
     }
     ident_ = r;
     state_ = State::Idle;
@@ -686,7 +794,7 @@ class Controller {
   void motionReset() {
     pi_.reset();
     shaper_.reset();
-    stall_n_ = runaway_n_ = track_n_ = motion_n_ = overspeed_n_ = 0;
+    stall_n_ = runaway_n_ = track_n_ = motion_n_ = overspeed_n_ = artefact_n_ = 0;
   }
   // Counts consecutive ticks a condition holds; true once it has held `ms`.
   bool timer(uint32_t& ticks, bool cond, uint32_t ms) const {
@@ -713,7 +821,7 @@ class Controller {
   int ident_phase_ = 0;
   uint32_t cal_ticks_ = 0, ticks_ = 0;
   // consecutive-tick counters for the supervisor timers
-  uint32_t stall_n_ = 0, runaway_n_ = 0, track_n_ = 0, motion_n_ = 0, overspeed_n_ = 0;
+  uint32_t stall_n_ = 0, runaway_n_ = 0, track_n_ = 0, motion_n_ = 0, overspeed_n_ = 0, artefact_n_ = 0;
   uint32_t enc_err_base_ = 0;
   int32_t zero_count_ = 0, raw_count_ = 0;
   float pos_deg_ = 0.0f, vel_dps_ = 0.0f, cmd_dps_ = 0.0f;

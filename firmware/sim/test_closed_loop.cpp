@@ -140,6 +140,38 @@ TEST(ClosedLoop, RobustToModelError) {
          "worst overshoot %.1f %%\n", cases, 100 * worst_os);
 }
 
+TEST(ClosedLoop, FastTierIsRobustOnceTheMotorIsIdentified) {
+  // Same 36 variants, but each one is identified with 'j' first (limb out),
+  // which unlocks the fast tier: 600 deg/s^2 ramp, lambda 30 ms.
+  int cases = 0;
+  double worst_os = 0, worst_rise = 0;
+  for (double jmul : {0.3, 1.0, 3.0})
+    for (double vbus : {10.5, 12.0, 13.5})
+      for (double fmul : {0.5, 2.0})
+        for (double mmul : {0.5, 1.5}) {
+          PlantParams pp;
+          pp.J_rotor *= jmul;
+          pp.vbus = vbus;
+          pp.tau_coulomb *= fmul;
+          pp.limb_mgr *= mmul;
+          pp.limb_I *= mmul;
+          const Config cfg = identifiedConfig(Config{}, pp);
+          ASSERT_TRUE(cfg.model_identified) << "J x" << jmul << " V " << vbus << " f x" << fmul;
+          Harness h = armedAt(10.0, cfg, pp);
+          h.run(0.3);
+          const StepStats s = stepResponse(h, 20.0, 1.0);
+          worst_os = std::max(worst_os, s.overshoot);
+          worst_rise = std::max(worst_rise, s.rise_s);
+          EXPECT_EQ(h.ctl.state(), State::Armed) << "J x" << jmul << " V " << vbus << " f x" << fmul;
+          EXPECT_LT(s.overshoot, 0.25) << "J x" << jmul << " V " << vbus << " f x" << fmul << " m x" << mmul;
+          EXPECT_LT(std::fabs(s.ss_err), 0.5);
+          EXPECT_LT(s.ss_ripple, 1.5);
+          ++cases;
+        }
+  printf("  %d identified variants, fast tier: worst overshoot %.1f %%, worst rise %.0f ms\n", cases,
+         100 * worst_os, 1e3 * worst_rise);
+}
+
 TEST(ClosedLoop, BrakesSmoothlyIntoTheSoftLimit) {
   Config cfg;
   cfg.joint_max_deg = 30.0f;

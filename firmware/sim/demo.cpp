@@ -125,7 +125,8 @@ int main(int argc, char** argv) {
   }
 
   const Config c;
-  std::fprintf(m, "  \"envelope_mean_delay_ms\": %.1f,\n", 2000.0 / (2.0 * kPi * c.envelope_hz));
+  std::fprintf(m, "  \"envelope\": \"%s\",\n  \"onset_confirm_ms\": %u,\n",
+               c.envelope == Config::Envelope::Bayes ? "bayes" : "two-pole", static_cast<unsigned>(c.confirm_ms));
   std::fprintf(m, "  \"kp_duty_per_dps\": %.5f,\n  \"ki_duty_per_deg\": %.4f,\n", c.kp(), c.ki());
   std::fprintf(m, "  \"deg_per_count\": %.5f\n}\n", c.degPerCount());
   std::fclose(m);

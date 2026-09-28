@@ -22,8 +22,9 @@ if(NOT GTest_FOUND)
 endif()
 
 enable_testing()
-add_executable(firmware_tests sim/test_core.cpp sim/test_closed_loop.cpp)
+add_executable(firmware_tests sim/test_core.cpp sim/test_closed_loop.cpp sim/test_latency.cpp)
 target_link_libraries(firmware_tests GTest::gtest_main)
+target_compile_definitions(firmware_tests PRIVATE ORTH_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/sim/data")
 include(GoogleTest)
 gtest_discover_tests(firmware_tests)
 
@@ -33,3 +34,5 @@ add_executable(sim_demo sim/demo.cpp)
 # on a laptop; the real ESP32 compile runs in CI (.github/workflows/firmware.yml).
 add_executable(sketch_syntax_check sim/sketch_check.cpp)
 target_include_directories(sketch_syntax_check PRIVATE sim/arduino_stub emg_orthosis)
+
+add_executable(latency_sweep sim/latency_sweep.cpp)

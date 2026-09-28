@@ -18,4 +18,5 @@ struct Telemetry {
   orth::IdentResult ident;
   uint32_t loop_us_max, overruns;
   float k, friction, tau, kp, ki;   // loop model: 'j' can change these at run time
+  bool fast_tier;
 };

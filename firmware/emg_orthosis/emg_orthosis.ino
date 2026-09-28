@@ -80,6 +80,7 @@ static orth::Config makeConfig() {
   // c.dps_per_duty = ...;         // from 'j'
   // c.friction_duty = ...;        // from 'j'
   // c.plant_tau_s = ...;          // from 'j'
+  // c.model_identified = true;    // with the three above: unlocks the fast tier
   // c.joint_max_deg = 30.0f;      // widen only after watching the full range unloaded
   return c;
 }
@@ -206,6 +207,7 @@ static void controlTask(void*) {
     t.tau = cfg.plant_tau_s;
     t.kp = cfg.kp();
     t.ki = cfg.ki();
+    t.fast_tier = cfg.model_identified;
     t.loop_us_max = loop_us_max;
     t.overruns = overruns;
     portENTER_CRITICAL(&telMux);
@@ -252,8 +254,9 @@ static void printStatus() {
   Serial.printf("counts since 'm': %ld = %.3f motor revs = %.4f gearbox-output revs at %.2f:1\n",
                 static_cast<long>(since), since / c.counts_per_motor_rev,
                 since / (c.counts_per_motor_rev * c.gear_ratio), c.gear_ratio);
-  Serial.printf("loop model  K %.1f deg/s/duty  friction %.3f  tau %.1f ms  -> Kp %.5f  Ki %.4f\n",
-                t.k, t.friction, 1e3f * t.tau, t.kp, t.ki);
+  Serial.printf("loop model  K %.1f deg/s/duty  friction %.3f  tau %.1f ms  -> Kp %.5f  Ki %.4f  (%s tier)\n",
+                t.k, t.friction, 1e3f * t.tau, t.kp, t.ki,
+                t.fast_tier ? "fast: identified" : "conservative: run 'j' to unlock fast");
   if (t.state == orth::State::Fault) Serial.printf("FAULT: %s  ('d' to clear)\n", t.fault);
 }
 
@@ -261,8 +264,9 @@ static void printIdent(const orth::IdentResult& r) {
   if (!r.sign_ok) return;
   Serial.printf("   K = %.1f deg/s per duty, friction = %.3f duty, tau = %.1f ms\n", r.dps_per_duty,
                 r.friction_duty, 1e3f * r.tau_s);
-  Serial.printf("   paste into makeConfig():  c.dps_per_duty = %.1ff; c.friction_duty = %.3ff; "
-                "c.plant_tau_s = %.4ff;\n", r.dps_per_duty, r.friction_duty, r.tau_s);
+  Serial.printf("   fast tier unlocked for this session. To keep it, paste into makeConfig():\n"
+                "     c.dps_per_duty = %.1ff; c.friction_duty = %.3ff; c.plant_tau_s = %.4ff; "
+                "c.model_identified = true;\n", r.dps_per_duty, r.friction_duty, r.tau_s);
 }
 
 static void post(orth::Request r) { pendingRequest.store(static_cast<uint8_t>(r)); }
@@ -332,9 +336,10 @@ void setup() {
   Serial.println(F("\nOpenEREMG v2 - EMG orthosis control"));
   Serial.printf("transmission %.1f:1, %.1f mm screw, %.0f mm pulley = %.5f deg/count\n", c.gear_ratio,
                 c.screw_pitch_mm, c.pulley_dia_mm, c.degPerCount());
-  Serial.printf("limits %.0f..%.0f deg, %.0f deg/s max | envelope %.1f Hz (%.0f ms mean delay)\n",
-                c.joint_min_deg, c.joint_max_deg, c.joint_max_dps, c.envelope_hz,
-                2000.0f / (2.0f * orth::kPi * c.envelope_hz));
+  Serial.printf("limits %.0f..%.0f deg, %.0f deg/s max | envelope %s, %lu ms onset confirm\n",
+                c.joint_min_deg, c.joint_max_deg, c.joint_max_dps,
+                c.envelope == orth::Config::Envelope::Bayes ? "Bayesian" : "two-pole",
+                static_cast<unsigned long>(c.confirm_ms));
   printHelp();
 
   xTaskCreatePinnedToCore(controlTask, "ctrl", 6144, nullptr, configMAX_PRIORITIES - 2, nullptr, 1);

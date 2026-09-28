@@ -1,7 +1,9 @@
 // Unit tests for the building blocks in orthosis_core.h.
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
+#include <random>
 
 #include "../emg_orthosis/orthosis_core.h"
 #include "plant.h"
@@ -88,10 +90,11 @@ TEST(VelocityEstimator, DecaysToZeroWhenTheShaftStops) {
   EXPECT_EQ(est.update(e, t + 300000), 0.0f);
 }
 
-TEST(Envelope, DelayMatchesTheDesign) {
+TEST(Envelope, TwoPoleDelayMatchesTheDesign) {
   // Two equal one-pole stages at fc: the step response reaches 50 % at 1.678 tau.
   // A 150 Hz tone switched on at t = 0 is a step in rectified amplitude.
   Config c;
+  c.envelope = Config::Envelope::TwoPole;
   auto run = [&](int n_samples, int* t50, float final_env) {
     EmgChannel ch;
     ch.design(c);
@@ -108,13 +111,78 @@ TEST(Envelope, DelayMatchesTheDesign) {
   run(3000, &t50, final_env);
   const float tau_ms = 1000.0f / (2.0f * kPi * c.envelope_hz);
   EXPECT_NEAR(t50, 1.678f * tau_ms, 4.0f);
-  printf("  envelope: 50 %% of a step after %d ms (design %.0f ms), mean delay %.0f ms\n", t50,
+  printf("  two-pole envelope: 50 %% of a step after %d ms (design %.0f ms), mean delay %.0f ms\n", t50,
          1.678f * tau_ms, 2.0f * tau_ms);
+}
+
+// Gaussian-noise "EMG" at a given RMS, as ADC counts about mid-scale.
+static uint16_t noiseSample(std::mt19937& g, double rms) {
+  std::normal_distribution<double> n(0.0, rms);
+  return static_cast<uint16_t>(std::lround(std::clamp(2048.0 + n(g), 0.0, 4095.0)));
+}
+
+TEST(Envelope, BayesTracksAStepFastAndHoldsSteady) {
+  Config c;   // Bayes is the default
+  EmgChannel ch;
+  ch.design(c);
+  ch.prime(2048);
+  std::mt19937 g(1);
+  for (int k = 0; k < 2000; ++k) ch.sample(noiseSample(g, 4.0), c);
+  const float rest = ch.envelope();
+  int t50 = -1;
+  double sum = 0, sum2 = 0;
+  int n = 0;
+  for (int k = 0; k < 3000; ++k) {
+    ch.sample(noiseSample(g, 200.0), c);
+    if (t50 < 0 && ch.envelope() >= 100.0f) t50 = k;
+    if (k >= 1000) { sum += ch.envelope(); sum2 += ch.envelope() * ch.envelope(); ++n; }
+  }
+  const double mean = sum / n, cv = std::sqrt(sum2 / n - mean * mean) / mean;
+  printf("  Bayes envelope: rest %.1f, 50 %% of a 4 -> 200 RMS step after %d ms, steady %.0f (CV %.3f)\n",
+         rest, t50, mean, cv);
+  EXPECT_LT(rest, 10.0f);
+  EXPECT_LE(t50, 10);                     // the two-pole filter at 4 Hz takes 67 ms
+  EXPECT_NEAR(mean, 200.0, 30.0);         // the MAP level is the RMS, to within a bin or two
+  EXPECT_LT(cv, 0.10);
+}
+
+TEST(Activation, ConfirmWindowRejectsASpike) {
+  Config c;
+  EmgChannel ch;
+  ch.design(c);
+  ch.prime(2048);
+  std::mt19937 g(2);
+  for (int k = 0; k < 3000; ++k) ch.sample(noiseSample(g, 4.0), c);
+  ch.rest_mean = ch.envelope();
+  ch.rest_sd = 1.0f;
+  ch.mvc = 400.0f;
+  ch.setThresholds(c);
+  bool fired = false;
+  // a 3 ms, 400-count biphasic electrode pop
+  const int pop[3] = {400, -400, 200};
+  for (int k = 0; k < 200; ++k) {
+    const uint16_t raw = k < 3 ? static_cast<uint16_t>(2048 + pop[k]) : noiseSample(g, 4.0);
+    ch.sample(raw, c);
+    ch.updateActivation(c);
+    fired |= ch.active;
+  }
+  EXPECT_FALSE(fired) << "a single artefact must not start the motor";
+  // a real contraction does get through, one confirm window later
+  int on_at = -1;
+  for (int k = 0; k < 200 && on_at < 0; ++k) {
+    ch.sample(noiseSample(g, 150.0), c);
+    ch.updateActivation(c);
+    if (ch.active) on_at = k;
+  }
+  EXPECT_GT(on_at, static_cast<int>(c.confirm_ms) - 1);
+  EXPECT_LT(on_at, static_cast<int>(c.confirm_ms) + 15);
 }
 
 TEST(Activation, HysteresisAndScaling) {
   Config c;
+  c.confirm_ms = 0;
   EmgChannel ch;
+  ch.use_bayes = false;
   ch.rest_mean = 10.0f;
   ch.rest_sd = 2.0f;
   ch.mvc = 400.0f;

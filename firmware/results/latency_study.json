@@ -1,0 +1,332 @@
+{
+ "lp2 3 Hz": {
+  "t_on_ms": 71.0,
+  "t_50_ms": 121.5,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 182.1,
+  "t_off_p90_ms": 104.1,
+  "jitter_dps": 4.509917023444019,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "lp2 4 Hz": {
+  "t_on_ms": 59.0,
+  "t_50_ms": 97.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 151.49999999999997,
+  "t_off_p90_ms": 73.19999999999999,
+  "jitter_dps": 4.84357107349026,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "lp2 6 Hz": {
+  "t_on_ms": 47.0,
+  "t_50_ms": 73.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 109.0,
+  "t_off_p90_ms": 44.099999999999994,
+  "jitter_dps": 5.319262664900192,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "lp2 8 Hz": {
+  "t_on_ms": 40.0,
+  "t_50_ms": 62.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 99.0,
+  "t_off_p90_ms": 31.099999999999994,
+  "jitter_dps": 5.627815563430361,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "lp2 12 Hz": {
+  "t_on_ms": 33.0,
+  "t_50_ms": 52.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 87.0,
+  "t_off_p90_ms": 21.0,
+  "jitter_dps": 5.989164502903122,
+  "false_starts_per_min": 1.0,
+  "n": 200
+ },
+ "bayes gauss a=0.0001 b=1e-12 confirm 0": {
+  "t_on_ms": 20.0,
+  "t_50_ms": 45.5,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 95.19999999999999,
+  "t_off_p90_ms": 12.0,
+  "jitter_dps": 4.921282297992862,
+  "false_starts_per_min": 62.0,
+  "n": 200
+ },
+ "bayes gauss a=0.0001 b=1e-12 confirm 10": {
+  "t_on_ms": 25.0,
+  "t_50_ms": 46.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 95.19999999999999,
+  "t_off_p90_ms": 12.0,
+  "jitter_dps": 4.921282297992862,
+  "false_starts_per_min": 47.0,
+  "n": 200
+ },
+ "bayes gauss a=0.0001 b=1e-12 confirm 20": {
+  "t_on_ms": 35.0,
+  "t_50_ms": 47.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 95.19999999999999,
+  "t_off_p90_ms": 12.0,
+  "jitter_dps": 4.953626929155163,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes gauss a=0.0001 b=1e-08 confirm 0": {
+  "t_on_ms": 20.0,
+  "t_50_ms": 44.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 88.0,
+  "t_off_p90_ms": 8.0,
+  "jitter_dps": 5.157455926010655,
+  "false_starts_per_min": 62.0,
+  "n": 200
+ },
+ "bayes gauss a=0.0001 b=1e-08 confirm 10": {
+  "t_on_ms": 25.0,
+  "t_50_ms": 44.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 88.0,
+  "t_off_p90_ms": 8.0,
+  "jitter_dps": 5.181823777614989,
+  "false_starts_per_min": 2.0,
+  "n": 200
+ },
+ "bayes gauss a=0.0001 b=1e-08 confirm 20": {
+  "t_on_ms": 35.0,
+  "t_50_ms": 46.5,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 90.49999999999997,
+  "t_off_p90_ms": 8.0,
+  "jitter_dps": 5.195262036523777,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes gauss a=0.001 b=1e-12 confirm 0": {
+  "t_on_ms": 19.0,
+  "t_50_ms": 44.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 95.1,
+  "t_off_p90_ms": 12.0,
+  "jitter_dps": 5.138837260619544,
+  "false_starts_per_min": 62.0,
+  "n": 200
+ },
+ "bayes gauss a=0.001 b=1e-12 confirm 10": {
+  "t_on_ms": 25.0,
+  "t_50_ms": 44.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 95.1,
+  "t_off_p90_ms": 12.0,
+  "jitter_dps": 5.141843164771984,
+  "false_starts_per_min": 47.0,
+  "n": 200
+ },
+ "bayes gauss a=0.001 b=1e-12 confirm 20": {
+  "t_on_ms": 35.0,
+  "t_50_ms": 46.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 95.1,
+  "t_off_p90_ms": 12.0,
+  "jitter_dps": 5.141843164771984,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes gauss a=0.001 b=1e-08 confirm 0": {
+  "t_on_ms": 19.0,
+  "t_50_ms": 44.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 87.19999999999999,
+  "t_off_p90_ms": 8.0,
+  "jitter_dps": 5.267361517569691,
+  "false_starts_per_min": 62.0,
+  "n": 200
+ },
+ "bayes gauss a=0.001 b=1e-08 confirm 10": {
+  "t_on_ms": 25.0,
+  "t_50_ms": 44.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 87.19999999999999,
+  "t_off_p90_ms": 8.0,
+  "jitter_dps": 5.276765066886008,
+  "false_starts_per_min": 2.0,
+  "n": 200
+ },
+ "bayes gauss a=0.001 b=1e-08 confirm 20": {
+  "t_on_ms": 34.5,
+  "t_50_ms": 45.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 90.49999999999997,
+  "t_off_p90_ms": 8.0,
+  "jitter_dps": 5.292545043775263,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes laplace a=0.0001 b=1e-12 confirm 0": {
+  "t_on_ms": 18.5,
+  "t_50_ms": 48.5,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 100.19999999999999,
+  "t_off_p90_ms": 15.0,
+  "jitter_dps": 4.627926274237617,
+  "false_starts_per_min": 62.0,
+  "n": 200
+ },
+ "bayes laplace a=0.0001 b=1e-12 confirm 10": {
+  "t_on_ms": 25.0,
+  "t_50_ms": 49.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 100.19999999999999,
+  "t_off_p90_ms": 15.0,
+  "jitter_dps": 4.627926274237617,
+  "false_starts_per_min": 34.0,
+  "n": 200
+ },
+ "bayes laplace a=0.0001 b=1e-12 confirm 20": {
+  "t_on_ms": 34.0,
+  "t_50_ms": 49.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 100.19999999999999,
+  "t_off_p90_ms": 15.0,
+  "jitter_dps": 4.627926274237617,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes laplace a=0.0001 b=1e-08 confirm 0": {
+  "t_on_ms": 18.0,
+  "t_50_ms": 48.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 100.0,
+  "t_off_p90_ms": 10.0,
+  "jitter_dps": 4.83664933547273,
+  "false_starts_per_min": 62.0,
+  "n": 200
+ },
+ "bayes laplace a=0.0001 b=1e-08 confirm 10": {
+  "t_on_ms": 24.0,
+  "t_50_ms": 48.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 100.0,
+  "t_off_p90_ms": 10.0,
+  "jitter_dps": 4.83664933547273,
+  "false_starts_per_min": 12.0,
+  "n": 200
+ },
+ "bayes laplace a=0.0001 b=1e-08 confirm 20": {
+  "t_on_ms": 34.0,
+  "t_50_ms": 48.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 100.0,
+  "t_off_p90_ms": 10.0,
+  "jitter_dps": 4.83664933547273,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes laplace a=0.001 b=1e-12 confirm 0": {
+  "t_on_ms": 18.0,
+  "t_50_ms": 47.5,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 99.1,
+  "t_off_p90_ms": 14.0,
+  "jitter_dps": 4.768234137966794,
+  "false_starts_per_min": 62.0,
+  "n": 200
+ },
+ "bayes laplace a=0.001 b=1e-12 confirm 10": {
+  "t_on_ms": 25.0,
+  "t_50_ms": 48.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 99.1,
+  "t_off_p90_ms": 14.0,
+  "jitter_dps": 4.768234137966794,
+  "false_starts_per_min": 34.0,
+  "n": 200
+ },
+ "bayes laplace a=0.001 b=1e-12 confirm 20": {
+  "t_on_ms": 35.0,
+  "t_50_ms": 48.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 99.1,
+  "t_off_p90_ms": 14.0,
+  "jitter_dps": 4.768234137966794,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes laplace a=0.001 b=1e-08 confirm 0": {
+  "t_on_ms": 18.0,
+  "t_50_ms": 47.5,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 97.19999999999999,
+  "t_off_p90_ms": 10.0,
+  "jitter_dps": 4.932921658368449,
+  "false_starts_per_min": 62.0,
+  "n": 200
+ },
+ "bayes laplace a=0.001 b=1e-08 confirm 10": {
+  "t_on_ms": 24.0,
+  "t_50_ms": 48.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 97.19999999999999,
+  "t_off_p90_ms": 10.0,
+  "jitter_dps": 4.943885416372271,
+  "false_starts_per_min": 12.0,
+  "n": 200
+ },
+ "bayes laplace a=0.001 b=1e-08 confirm 20": {
+  "t_on_ms": 34.0,
+  "t_50_ms": 48.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 97.19999999999999,
+  "t_off_p90_ms": 10.0,
+  "jitter_dps": 4.943885416372271,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes laplace a=0.0001 b=1e-12 MEAN confirm 15": {
+  "t_on_ms": 29.0,
+  "t_50_ms": 47.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 101.39999999999998,
+  "t_off_p90_ms": 13.0,
+  "jitter_dps": 4.599945702324382,
+  "false_starts_per_min": 1.0,
+  "n": 200
+ },
+ "bayes laplace a=0.0001 b=1e-12 MEAN confirm 20": {
+  "t_on_ms": 34.0,
+  "t_50_ms": 47.5,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 101.39999999999998,
+  "t_off_p90_ms": 13.0,
+  "jitter_dps": 4.599945702324382,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ },
+ "bayes laplace a=0.001 b=1e-12 MEAN confirm 15": {
+  "t_on_ms": 30.0,
+  "t_50_ms": 46.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 100.0,
+  "t_off_p90_ms": 13.0,
+  "jitter_dps": 4.69209704342638,
+  "false_starts_per_min": 1.0,
+  "n": 200
+ },
+ "bayes laplace a=0.001 b=1e-12 MEAN confirm 20": {
+  "t_on_ms": 35.0,
+  "t_50_ms": 47.0,
+  "t_off_ms": 0.0,
+  "t_50_p90_ms": 100.0,
+  "t_off_p90_ms": 13.0,
+  "jitter_dps": 4.69209704342638,
+  "false_starts_per_min": 0.0,
+  "n": 200
+ }
+}
