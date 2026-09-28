@@ -29,34 +29,55 @@
 // SECTION 1 - THINGS YOU MUST SET FOR YOUR HARDWARE
 // =============================================================================
 
-/* --- Gearbox ---------------------------------------------------------------
- * The 5203 encoder produces 7 pulses per channel per MOTOR revolution.
- * In 4x quadrature decoding that is 28 counts per motor revolution.
- * Counts per OUTPUT revolution = 28 * gear ratio.
+/* --- Transmission chain ----------------------------------------------------
  *
- * Read the exact ratio off your motor's label / goBILDA part number. It is
- * NOT a round number. Common ones:
- *     3.7:1  -> 103.8      26.9:1 ->  751.8      99.5:1 -> 2786.2
- *     5.2:1  -> 145.1      43.7:1 -> 1223.6     139:1   -> 3895.9
- *    13.7:1  -> 384.5      50.9:1 -> 1425.1     188:1   -> 5264.0
- *    19.2:1  -> 537.7      71.2:1 -> 1993.6
+ *   motor --> planetary gearbox --> lead/ball screw --> cable --> pulley --> joint
  *
- * Both of your reference docs used CPR values (12, and 728 for a 26:1) that
- * do not match this motor. 28 * ratio is the one to trust - goBILDA's own
- * published 537.7 counts/rev for the 19.2:1 confirms it.
+ * The encoder is on the MOTOR shaft, so every stage below sits between what we
+ * count and what actually moves. All of these come from Motor_Calculations_ASME_2.
+ *
+ * Encoder: 7 pulses per channel per motor revolution, 4x quadrature = 28
+ * counts per motor revolution. Counts per gearbox-output revolution = 28*ratio.
+ *
+ * Gear ratio 5.2:1 is inferred from RPM_M = 1150 in the notebook - goBILDA's
+ * 5.2:1 Yellow Jacket is the 1150 RPM variant. Verify with the 'm' command or
+ * off the motor label; see the note on back-drivability below before you try.
+ *
+ * Ignore the CPR values in the two Arduino reference docs (12, and 728 for a
+ * 26:1). Neither matches this motor. goBILDA's own published 537.7 counts/rev
+ * for the 19.2:1 is 28 * 19.2, which is what confirms the 28.
  */
-static const float GEAR_RATIO        = 19.2f;                        // <<< SET ME
-static const float COUNTS_PER_MOTOR_REV = 28.0f;                     // 7 PPR x4
+static const float GEAR_RATIO        = 5.2f;    // <<< VERIFY (notebook: RPM_M = 1150)
+static const float SCREW_PITCH_MM    = 4.0f;    // notebook: PITCH, mm of cable per screw rev
+static const float PULLEY_DIA_MM     = 47.0f;   // <<< VERIFY: notebook uses 47 early, 65 late
+
+static const float COUNTS_PER_MOTOR_REV  = 28.0f;                  // 7 PPR x4
 static const float COUNTS_PER_OUTPUT_REV = COUNTS_PER_MOTOR_REV * GEAR_RATIO;
-static const float DEG_PER_COUNT     = 360.0f / COUNTS_PER_OUTPUT_REV;
+
+/* mm of cable per degree of joint rotation = circumference / 360 */
+static const float MM_PER_JOINT_DEG  = (float)M_PI * PULLEY_DIA_MM / 360.0f;
+/* joint degrees per gearbox-output revolution */
+static const float JOINT_DEG_PER_REV = SCREW_PITCH_MM / MM_PER_JOINT_DEG;
+/* the number the control loop actually uses */
+static const float DEG_PER_COUNT     = JOINT_DEG_PER_REV / COUNTS_PER_OUTPUT_REV;
 
 /* --- Joint range of motion ------------------------------------------------
- * Measured from the zero position you set with the 'z' command.
- * Positive = whatever direction POSITIVE encoder counts correspond to.
- * Start these CONSERVATIVE and open them up once you've watched it move.
+ * Notebook TRAVEL = 120 degrees, which at the above works out to ~1791 counts
+ * end to end. Measured from the zero you set with 'z'.
+ *
+ * START NARROWER THAN THE REAL TRAVEL. Open these up only once you have
+ * watched the joint move through the range with nothing in it.
  */
-static const float JOINT_MIN_DEG     = -5.0f;                        // <<< SET ME
-static const float JOINT_MAX_DEG     = 60.0f;                        // <<< SET ME
+static const float JOINT_MIN_DEG     = 0.0f;
+static const float JOINT_MAX_DEG     = 30.0f;   // <<< real travel is 120; start at 30
+
+/* --- Joint speed limit -----------------------------------------------------
+ * At full duty this drivetrain runs 1150 RPM into a 4 mm screw, which is about
+ * 187 deg/s at the joint - 120 degrees in 0.64 s, per the notebook's own cycle
+ * time. That is far too fast for something strapped to a person. The governor
+ * below scales the command back whenever measured joint speed exceeds this.
+ */
+static const float JOINT_MAX_DPS     = 25.0f;   // <<< SET ME. deg/s at the joint.
 
 /* --- Which EMG channel is which ------------------------------------------- */
 static const uint8_t CH_FLEXOR       = 0;   // EMGC1 -> drives positive motion
@@ -425,6 +446,17 @@ static void controlStep(float dt) {
 #if USE_ENCODER
   if (jointDeg >= JOINT_MAX_DEG && dutyTarget > 0.0f) dutyTarget = 0.0f;
   if (jointDeg <= JOINT_MIN_DEG && dutyTarget < 0.0f) dutyTarget = 0.0f;
+
+  // --- Joint speed governor -------------------------------------------------
+  // Crude proportional back-off, not a velocity loop. It exists because this
+  // drivetrain's full-duty speed is roughly 7x what a limb should see, so the
+  // useful duty band is narrow and easy to overshoot.
+  {
+    float sp = fabsf(jointDps);
+    if (sp > JOINT_MAX_DPS && sp > 0.0f) {
+      dutyTarget *= constrain(JOINT_MAX_DPS / sp, 0.0f, 1.0f);
+    }
+  }
 #endif
 
   // --- Slew limit -----------------------------------------------------------
@@ -594,8 +626,13 @@ void setup() {
   for (int n = 0; n < FS_HZ / 2; n++) { emgSample(); delayMicroseconds(1000000 / FS_HZ); }
 
   Serial.println(F("\nOpenEREMG v2 - EMG orthosis control"));
-  Serial.printf("gear ratio %.1f:1  -> %.1f counts/output rev  (%.4f deg/count)\n",
-                GEAR_RATIO, COUNTS_PER_OUTPUT_REV, DEG_PER_COUNT);
+  Serial.printf("transmission: %.1f:1 gearbox, %.1f mm/rev screw, %.0f mm pulley\n",
+                GEAR_RATIO, SCREW_PITCH_MM, PULLEY_DIA_MM);
+  Serial.printf("  %.1f counts/motor rev | %.3f joint deg/motor rev | %.5f deg/count\n",
+                COUNTS_PER_OUTPUT_REV, JOINT_DEG_PER_REV, DEG_PER_COUNT);
+  Serial.printf("  travel %.0f..%.0f deg = %.0f counts | speed cap %.0f deg/s\n",
+                JOINT_MIN_DEG, JOINT_MAX_DEG,
+                (JOINT_MAX_DEG - JOINT_MIN_DEG) / DEG_PER_COUNT, JOINT_MAX_DPS);
   printHelp();
   calBegin(ST_CAL_REST, "CALIBRATION - relax completely for 4 s");
 }
