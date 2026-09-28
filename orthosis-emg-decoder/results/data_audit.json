@@ -1,0 +1,117 @@
+{
+ "identical_day_groups": [
+  [
+   5,
+   7
+  ],
+  [
+   63,
+   68
+  ],
+  [
+   110,
+   112
+  ]
+ ],
+ "skewness_sign_segments_ch1234": [
+  {
+   "first_day": 1,
+   "last_day": 1,
+   "pattern": "+--+"
+  },
+  {
+   "first_day": 2,
+   "last_day": 25,
+   "pattern": "---+"
+  },
+  {
+   "first_day": 26,
+   "last_day": 50,
+   "pattern": "+++-"
+  },
+  {
+   "first_day": 51,
+   "last_day": 51,
+   "pattern": "-++-"
+  },
+  {
+   "first_day": 52,
+   "last_day": 67,
+   "pattern": "+++-"
+  },
+  {
+   "first_day": 69,
+   "last_day": 105,
+   "pattern": "--+-"
+  },
+  {
+   "first_day": 106,
+   "last_day": 115,
+   "pattern": "+-++"
+  },
+  {
+   "first_day": 116,
+   "last_day": 121,
+   "pattern": "--++"
+  }
+ ],
+ "patterns_in_training_days_1_60": [
+  "+++-",
+  "+--+",
+  "-++-",
+  "---+"
+ ],
+ "test_days_with_unseen_pattern": [
+  69,
+  70,
+  71,
+  72,
+  73,
+  74,
+  75,
+  76,
+  77,
+  78,
+  79,
+  80,
+  81,
+  82,
+  83,
+  84,
+  85,
+  86,
+  87,
+  88,
+  89,
+  90,
+  91,
+  92,
+  93,
+  94,
+  95,
+  96,
+  97,
+  98,
+  99,
+  100,
+  101,
+  102,
+  103,
+  104,
+  105,
+  106,
+  107,
+  108,
+  109,
+  111,
+  113,
+  114,
+  115,
+  116,
+  117,
+  118,
+  119,
+  120,
+  121
+ ]
+}
