@@ -120,6 +120,7 @@ These come from `make test` and `make results`, with the nominal plant unless st
 ```
 emg_orthosis/emg_orthosis.ino    hardware layer: pins, ADC, PWM, encoder ISR, 1 kHz task, watchdog, serial
 emg_orthosis/orthosis_core.h     everything that decides what the motor does (portable C++17)
+emg_orthosis/telemetry.h         snapshot the control task publishes for the serial task
 sim/plant.h                      motor + transmission + forearm + imperfect encoder
 sim/harness.h                    runs the real Controller against the plant at 1 kHz
 sim/test_core.cpp                unit tests: decoder, estimator, envelope, activation, shaper, PI

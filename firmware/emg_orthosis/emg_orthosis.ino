@@ -44,6 +44,7 @@
 #include "soc/soc.h"
 
 #include "orthosis_core.h"
+#include "telemetry.h"
 
 #if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
 #error "Needs Arduino-ESP32 core 3.x (Boards Manager -> esp32 by Espressif -> 3.x)"
@@ -143,21 +144,8 @@ static void driveMotor(const orth::Outputs& o) {
 // =============================================================================
 static std::atomic<uint8_t> pendingRequest{static_cast<uint8_t>(orth::Request::None)};
 
-struct Telemetry {
-  uint32_t t_ms;
-  orth::State state;
-  float env[2], act[2];
-  float cmd, ref, vel, pos, duty;
-  int32_t raw_count;
-  uint32_t enc_errors;
-  bool kill_closed, mot_ok, zeroed;
-  const char* msg;
-  uint32_t msg_seq;
-  const char* fault;
-  orth::IdentResult ident;
-  uint32_t loop_us_max, overruns;
-  float k, friction, tau, kp, ki;   // loop model: 'j' can change these at run time
-};
+// struct Telemetry lives in telemetry.h: the Arduino IDE generates prototypes
+// above the sketch body, so any type a function returns must be declared in a header.
 static portMUX_TYPE telMux = portMUX_INITIALIZER_UNLOCKED;
 static Telemetry tel;
 
