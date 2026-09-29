@@ -622,10 +622,10 @@ footer{padding:36px 0 44px;text-align:center}
           <ul>
             <li>Engineered a forward-kinematics pipeline that propagates 6-DOF floating-base poses through multi-joint kinematic chains, using fixed-axis roll-pitch-yaw matrices and Rodrigues' rotation formula. It derives end-effector velocities by exact rigid-body velocity composition (base velocity plus ω × r lever arms) instead of noisy numerical differentiation.</li>
             <li>Fused low-rate state-estimator kinematics with high-rate inertial data into absolute velocity anchors. That made energy changes across impacts computable, with dead-reckoning drift sized explicitly rather than assumed away.</li>
-            <li>Designed the impact signal chain around a 4th-order zero-phase Bessel anti-alias filter, sized so short transients keep their true peak. I validated it against synthetic pulses of known amplitude and chose Bessel over Butterworth by measurement: Butterworth ringing biases windowed impulse integrals, because the compensating undershoot falls outside the window.</li>
+            <li>Designed a 4th-order zero-phase Bessel anti-alias filter for impact analysis that captures 85% of a 3 ms impact peak, against 30% at 100 Hz. Validated against synthetic pulses of known amplitude, it holds under 1.3% error across 3–30 ms pulses; I chose it over Butterworth by measurement, because Butterworth ringing biases windowed impulse integrals.</li>
             <li>Designed a Δv severity metric that is immune to the bandwidth limits of peak-based metrics, and measured its noise floor with a null-control experiment. Refactors landed only after bit-identical regression proofs across the full event table. Metrics whose physical constants had no traceable source were withheld rather than shipped with plausible values.</li>
-            <li>Built and shipped a Flask/Plotly forensics dashboard, deployed on a Linux VM, over tens of thousands of impact events from robot test logs. It covers ETL from a time-series telemetry store into a queryable SQLite cache, per-event waveform inspection, and a 3D impact heatmap normalized by per-facet solid angle, so it reads as density rather than facet size.</li>
-            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy). The pipeline detects regimes within heating cycles and fits exponential segments by multi-start least squares, then projects steady-state temperatures gated on residual RMSE.</li>
+            <li>Built and shipped a Flask/Plotly forensics dashboard, deployed on a Linux VM, analyzing ~28k impact events from ~900 test logs. It covers ETL from a time-series telemetry store into a queryable SQLite cache, per-event waveform inspection, and a 3D impact heatmap normalized by per-facet solid angle, so it reads as density rather than facet size.</li>
+            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy), applying Savitzky–Golay smoothing and regime detection within heating cycles to fit exponential segments by multi-start least squares. Projected steady-state temperatures across hundreds of units, gated on residual RMSE.</li>
           </ul>
           <div class="tl-tags">
             <span class="tag">Python</span><span class="tag">Rigid-Body Kinematics</span><span class="tag">Sensor Fusion</span><span class="tag">Filter Design</span><span class="tag">SQLite</span><span class="tag">Flask</span><span class="tag">Plotly</span><span class="tag">Linux</span><span class="tag">Pandas</span><span class="tag">SciPy</span>
@@ -643,9 +643,9 @@ footer{padding:36px 0 44px;text-align:center}
           <div class="tl-role">Machine Learning Researcher</div>
           <div class="tl-loc">West Lafayette, IN</div>
           <ul>
-            <li>Built an LSTM time-series forecasting model to predict material consumption rates from historical sequence data, achieving a 5% reduction in material usage.</li>
-            <li>Developed Monte Carlo simulations over thousands of iterations to quantify variance in resource allocation outcomes under uncertainty.</li>
-            <li>Built Python pipelines to ingest, clean, and structure months of noisy legacy data, contributing to a 4% reduction in manufacturing cycle time.</li>
+            <li>Built an LSTM time-series model forecasting next-day primer, topcoat, and solvent consumption from five years of paint-line data, achieving a 5% reduction in material usage.</li>
+            <li>Developed Monte Carlo simulations over thousands of iterations to attach confidence intervals to each forecast and quantify variance under uncertainty.</li>
+            <li>Built Python pipelines to ingest, clean, and consolidate five years of noisy legacy data into one daily series, contributing to a 4% reduction in manufacturing cycle time.</li>
           </ul>
           <div class="tl-tags">
             <span class="tag">LSTM</span><span class="tag">Monte Carlo</span><span class="tag">Python</span><span class="tag">Data Pipelines</span><span class="tag">Power BI</span><span class="tag">Snowflake</span>
@@ -819,7 +819,6 @@ footer{padding:36px 0 44px;text-align:center}
         <div class="side-block">
           <h4>Decoder</h4>
           <p>I ran 115 days of real 4-channel forearm EMG through a sample-level emulation of each board. Through v2, cross-day 11-class accuracy holds at <strong>87.3%</strong>, against 87.9% with no board at all; v1 manages 30.8%. A PyTorch CNN dropped to 68% on later days. I traced that to electrode-polarity changes between sessions, and polarity augmentation brought it back to <strong>86%</strong>.</p>
-          <p><a href="orthosis_v2_schematic.pdf" target="_blank" rel="noopener">Full v2 schematic (PDF) →</a></p>
         </div>
         <div class="skill-block">
           <div class="hd">Core Skills</div>
@@ -839,7 +838,7 @@ footer{padding:36px 0 44px;text-align:center}
         </figure>
         <figure class="shot">
           <img src="orthosis_v2_schematic_main.png" alt="KiCad schematic of the v2 EMG board's main sheet" loading="lazy">
-          <figcaption>v2 main sheet: the ESP32-S3; the ISO7763 isolator and kill switch between the logic and the motor driver; the buffered 1.65 V reference and right-leg drive; USB-C. The four channel sheets hang off the right side. <a href="orthosis_v2_schematic.pdf" target="_blank" rel="noopener">Full schematic (PDF)</a>.</figcaption>
+          <figcaption>v2 main sheet: the ESP32-S3; the ISO7763 isolator and kill switch between the logic and the motor driver; the buffered 1.65 V reference and right-leg drive; USB-C. The four channel sheets hang off the right side.</figcaption>
         </figure>
         <figure class="shot">
           <img src="orthosis_v2_schematic_channel.png" alt="KiCad schematic of one EMG channel: instrumentation amp, band-pass filters, and trim gain" loading="lazy">
