@@ -11,8 +11,8 @@ Publish it with GitHub Pages (Settings → Pages → Deploy from branch → `mai
 | About | `#about` | Bio, fast facts, interests |
 | Experience | `#experience` | Timeline: Boston Dynamics → Caterpillar → Chortos Lab → Emerson |
 | Projects | `#work` | Filterable card grid |
-| Write-ups | `#state-estimation` `#orthosis` `#soft-robotics` `#caterpillar` `#emerson` | Full project detail pages |
-| Code | [`quadruped-eskf/`](quadruped-eskf/) | The state-estimation project: C++/Python, tests, results, debug log |
+| Write-ups | `#orthosis` `#state-estimation` `#soft-robotics` `#caterpillar` `#emerson` | Full project detail pages |
+| Code | [`firmware/`](firmware/) · [`orthosis-emg-decoder/`](orthosis-emg-decoder/) · [`quadruped-eskf/`](quadruped-eskf/) | Orthosis firmware + simulator, EMG decoder, state estimator: code, tests, results |
 | Skills | `#skills` | Grouped skill matrix |
 | Contact | `#contact` | Email, LinkedIn, résumé |
 
@@ -36,9 +36,12 @@ drawn by hand. The page uses `quadruped-eskf/results/figures/card_trajectory.png
 `velocity_tracking.png`, `covariance_observability.png` and `exp_contact_delay.png` (write-up). If you
 regenerate results (`make -C quadruped-eskf reproduce`), run `./sync-docs.sh` so the published copy in `docs/` picks up the new images.
 
-**The résumé PDF still says 0.08 m/s.** The reproducible number is **0.013 m/s** (mean of 10 sensor-noise
-seeds on the 60-second walk; seed 0 alone is 0.0108). Update the PDF bullet, then run
-`make -C quadruped-eskf claims`, which scans this page and the PDF for numbers that no result file backs.
+The résumé PDF now carries the reproducible **0.013 m/s** (mean of 10 sensor-noise seeds on the 60-second
+walk; seed 0 alone is 0.0108). After any résumé edit, run `make -C quadruped-eskf claims`, which scans this
+page and the PDF for numbers that no result file backs.
+
+**The published résumé is the public copy.** Its Boston Dynamics bullets describe methods without the
+internal counts and ratios; the version with those numbers is for applications only and is not in this repo.
 
 ### 2. Hero portrait — **replace `image_f58a52.png`**
 The current shot is a formal headshot on a gray studio backdrop. Every strong engineering
@@ -47,8 +50,21 @@ you at a bench with the orthosis arm, in the Chortos Lab, or at a workstation wi
 on screen. Landscape or square, good light, 1200px+ on the short edge.
 
 ### 3. Orthosis — DONE
-`orthosis_built.jpg` is in. It now leads the gallery and is the project card image.
-A short video of the arm actuating from a muscle flex would still beat it.
+`orthosis_built.jpg` leads the gallery and is the project card image. The rest of the gallery is the
+v2 schematic (`orthosis_v2_schematic_main.png`, `orthosis_v2_schematic_channel.png`, rendered from
+`orthosis_v2_schematic.pdf`), the decoder's `cross_day.png` and the firmware's `emg_end_to_end.png`.
+The v1 3D render, the v1 routing screenshot, the chassis CAD render and the FEA shot were taken off the page.
+
+After changing the schematic: in KiCad, File → Plot → PDF (all sheets), save over `orthosis_v2_schematic.pdf`, then
+
+```
+python3 -c "import pymupdf as m; d=m.open('orthosis_v2_schematic.pdf'); r=d[0].rect; \
+d[0].get_pixmap(dpi=190, clip=m.Rect(20,20,r.width-20,r.height-20)).save('orthosis_v2_schematic_main.png'); \
+d[1].get_pixmap(dpi=230, clip=m.Rect(40,48,805,335)).save('orthosis_v2_schematic_channel.png')"
+./sync-docs.sh
+```
+
+A short video of the arm actuating from a muscle flex would still beat any of it.
 
 ### 4. Emerson — **`valve_machined.jpg`** (check with Emerson first)
 A photo of a piston you actually machined, or you at the lathe, would prove the
@@ -56,8 +72,8 @@ A photo of a piston you actually machined, or you at the lathe, would prove the
 confidentiality agreement — the disclaimer on that section covers CAD, not photos.
 
 ### 5. Chortos Lab — DONE
-`gel_samples.jpg` (the DIW-printed sample batch) and `keyence_rig.jpg` (the laser
-displacement bench) are both in. The samples shot is the project card image.
+`keyence_rig.jpg` (the laser displacement bench) is in. The cantilever macro (`image_05119d.png`) is the
+project card image. `gel_samples.jpg` (the DIW-printed sample batch) was taken off the page.
 
 ### 6. `og-card.png` (optional)
 A 1200×630 preview card for link sharing. Right now the Open Graph image points at the
@@ -68,7 +84,9 @@ portrait, which crops badly in Slack and LinkedIn.
 - Plots and screenshots: PNG, 1400–2000px wide, readable axis labels.
 - Everything already in the repo is used except `autonetwork_code.png`,
   `autonetwork_terminal.png` (see below), `about.jpeg` and `image_0518a3.png`
-  (both removed — see the git history for why).
+  (both removed — see the git history for why), and `FEA.jpg`, `openeremg12.png`,
+  `image_04a4f7.png`, `orthosis_chassis_cad.jpg` and `gel_samples.jpg`, which were
+  taken off the page but kept here in case you want them back.
 - **Before publishing any lab photo, read it at full size first.** `keyence_rig.jpg`
   had to be cropped because a login PIN was legible on tape stuck to the laptop.
 

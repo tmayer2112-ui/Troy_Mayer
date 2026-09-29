@@ -1,0 +1,63 @@
+{
+  "sallen_key": {
+    "K": 1.5556,
+    "Q": 0.6923,
+    "hpf_f0_hz": 22.58,
+    "lpf_f0_hz": 482.3
+  },
+  "cascade_passband_gain": 2.405,
+  "cascade_minus3db_hz_analog": [
+    23.0,
+    473.9
+  ],
+  "cascade_minus3db_hz_digital_fs2048": [
+    23.0,
+    476.4
+  ],
+  "max_digital_vs_analog_error_db_below_400hz": 0.384,
+  "v1_front_end_vs_electrode_impedance": [
+    {
+      "z_electrode_ohm": 0,
+      "diff_gain": 47.0,
+      "cmrr_db": 62.0,
+      "input_for_0.4V_at_max_pot_uV": 23.8,
+      "input_for_0.4V_at_min_pot_uV": 73.3
+    },
+    {
+      "z_electrode_ohm": 5000.0,
+      "diff_gain": 8.64,
+      "cmrr_db": 32.3,
+      "input_for_0.4V_at_max_pot_uV": 129.2,
+      "input_for_0.4V_at_min_pot_uV": 398.5
+    },
+    {
+      "z_electrode_ohm": 20000.0,
+      "diff_gain": 2.45,
+      "cmrr_db": 22.6,
+      "input_for_0.4V_at_max_pot_uV": 455.8,
+      "input_for_0.4V_at_min_pot_uV": 1405.4
+    },
+    {
+      "z_electrode_ohm": 50000.0,
+      "diff_gain": 0.99,
+      "cmrr_db": 17.8,
+      "input_for_0.4V_at_max_pot_uV": 1131.3,
+      "input_for_0.4V_at_min_pot_uV": 3488.1
+    },
+    {
+      "z_electrode_ohm": 100000.0,
+      "diff_gain": 0.49,
+      "cmrr_db": 15.4,
+      "input_for_0.4V_at_max_pot_uV": 2280.8,
+      "input_for_0.4V_at_min_pot_uV": 7032.4
+    }
+  ],
+  "v2": {
+    "ina_gain": 10.091,
+    "effective_cmrr_db_incl_rld": 116.1,
+    "gain_range": [
+      269.0,
+      2710.0
+    ]
+  }
+}
