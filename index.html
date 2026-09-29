@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Troy Mayer | Robotics &amp; Mechanical Engineering</title>
-<meta name="description" content="Troy Mayer — Mechanical Engineering &amp; Applied Statistics at Purdue. Sensors &amp; Perception Co-Op on Atlas at Boston Dynamics. Robotics, state estimation, controls, and test data infrastructure.">
+<title>Troy Mayer | Robotics Software &amp; Controls</title>
+<meta name="description" content="Troy Mayer — Mechanical Engineering &amp; Applied Statistics at Purdue. Sensors &amp; Perception Co-Op on Atlas at Boston Dynamics. Robot software, kinematics, real-time control, state estimation, and test data.">
 <meta name="author" content="Troy Mayer">
-<meta property="og:title" content="Troy Mayer | Robotics &amp; Mechanical Engineering">
-<meta property="og:description" content="Sensors &amp; Perception Co-Op on Atlas at Boston Dynamics. Purdue ME + Applied Statistics.">
+<meta property="og:title" content="Troy Mayer | Robotics Software &amp; Controls">
+<meta property="og:description" content="Sensors &amp; Perception Co-Op on Atlas at Boston Dynamics. Real-time control, kinematics, and state estimation. Purdue ME + Applied Statistics.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="image_f58a52.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
@@ -540,8 +540,8 @@ footer{padding:36px 0 44px;text-align:center}
   <div class="hero-inner">
     <div class="hero-text">
       <div class="status-pill"><span class="live"></span>Sensors &amp; Perception Co-Op on Atlas @ Boston Dynamics</div>
-      <h1>I build the <span class="grad">hardware</span> and the <span class="grad">software</span> that proves it works.</h1>
-      <p class="hero-lede">Mechanical Engineering &amp; Applied Statistics at Purdue. I work where mechanism design meets estimation, controls, and test data — characterizing impact events on a humanoid, closing real-time control loops on EMG hardware, and turning raw benchtop signals into models engineers actually use.</p>
+      <h1>I write <span class="grad">real-time robot software</span> and prove it with <span class="grad">data</span>.</h1>
+      <p class="hero-lede">Mechanical Engineering &amp; Applied Statistics at Purdue. I work on kinematics, control, and estimation: impact and kinematics analysis on a humanoid at Boston Dynamics, a fault-gated control loop for an EMG-driven orthosis, and a contact-aided state estimator for a legged robot. Each comes with the tests and measurements behind its numbers.</p>
       <div class="hero-meta">
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Waltham, MA · West Lafayette, IN</span>
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>Purdue University · B.S. ME + B.S. Applied Statistics</span>
@@ -564,10 +564,10 @@ footer{padding:36px 0 44px;text-align:center}
   </div>
   <div class="metrics">
     <div class="metrics-inner">
-      <div class="metric"><div class="v">500 Hz</div><div class="l">EMG control loop</div></div>
+      <div class="metric"><div class="v">43 ms</div><div class="l">EMG-to-motion latency (sim)</div></div>
+      <div class="metric"><div class="v">1 kHz</div><div class="l">Fault-gated control loop</div></div>
       <div class="metric"><div class="v">0.013 m/s</div><div class="l">EKF velocity RMSE (sim)</div></div>
-      <div class="metric"><div class="v">50,000+</div><div class="l">Data points processed</div></div>
-      <div class="metric"><div class="v">159</div><div class="l">Actuators built &amp; tested</div></div>
+      <div class="metric"><div class="v">87%</div><div class="l">Cross-day EMG decoding</div></div>
     </div>
   </div>
 </header>
@@ -578,15 +578,15 @@ footer{padding:36px 0 44px;text-align:center}
     <div class="about-grid">
       <div class="about-body reveal">
         <div class="eyebrow">About</div>
-        <h2 class="section-title">Mechanism, signal, and the model in between.</h2>
-        <p>I'm Troy Mayer — a Mechanical Engineering and Applied Statistics student at Purdue with a minor in Economics. The two degrees aren't a coincidence: most of the engineering problems I find interesting are the ones where you can't separate the hardware from the data it produces.</p>
-        <p>That's been the through-line. At <strong>Boston Dynamics</strong> I characterize impact events on Atlas — decomposing force vectors to localize loads, filtering the signal, and fitting damped sinusoidal models to pull out natural frequency, damping ratio, and absorbed energy. At <strong>Purdue ASME</strong> I write the real-time C++ firmware that closes a 500&nbsp;Hz loop from EMG electrode to actuator, and I routed the PCB it runs on. In between, I've built LSTM forecasters for a Caterpillar paint line and LabVIEW acquisition rigs for soft-robotics gels.</p>
-        <p>Right now I'm most interested in <strong>legged robotics and state estimation</strong> — enough that I've been building a contact-aided error-state EKF for a simulated quadruped on my own time, mostly to understand observability by breaking it myself.</p>
+        <h2 class="section-title">Code that has to agree with the physics.</h2>
+        <p>I'm Troy Mayer — a Mechanical Engineering and Applied Statistics student at Purdue with a minor in Economics. The two degrees point at the same kind of work: software for physical systems, where the code is only right if the measurements agree.</p>
+        <p>At <strong>Boston Dynamics</strong> I build impact-analysis software: forward kinematics for floating-base poses and end-effector velocities, filters chosen by measurement rather than convention, and a forensics dashboard engineers use to inspect every event. At <strong>Purdue ASME</strong> I lead the electronics for an EMG-driven orthosis. I redesigned its isolated 4-channel EMG board and wrote the C++ firmware that turns muscle activity into a 1&nbsp;kHz, fault-gated velocity loop. Before that came LSTM forecasting for a Caterpillar paint line and computer-vision measurement for soft-robotics gels.</p>
+        <p>Right now I'm most interested in <strong>robot software, controls, and state estimation</strong> — enough that I built a contact-aided error-state EKF for a simulated quadruped on my own time, mostly to understand observability by breaking it myself.</p>
         <div class="fact-card">
           <div class="fact-row"><div class="fact-k">Education</div><div class="fact-v">Purdue University — B.S. Mechanical Engineering, B.S. Applied Statistics, Minor in Economics · May 2028 · GPA 3.4</div></div>
           <div class="fact-row"><div class="fact-k">Currently</div><div class="fact-v">Sensors &amp; Perception Co-Op, Atlas — Boston Dynamics (Waltham, MA)</div></div>
           <div class="fact-row"><div class="fact-k">Languages</div><div class="fact-v">English (native) · Turkish (fluent) · Spanish (fluent — NJ Seal of Biliteracy)</div></div>
-          <div class="fact-row"><div class="fact-k">Status</div><div class="fact-v">Open to Summer 2027 robotics, controls, and mechanical engineering internships</div></div>
+          <div class="fact-row"><div class="fact-k">Status</div><div class="fact-v">Open to Summer 2027 internships in robot software, controls, and data, plus mechanical roles close to the robot</div></div>
         </div>
         <div class="chip-row">
           <span class="chip">Club Swimming</span>
@@ -620,13 +620,15 @@ footer{padding:36px 0 44px;text-align:center}
           <div class="tl-role">Sensors and Perception Co-Op — Atlas</div>
           <div class="tl-loc">Waltham, MA</div>
           <ul>
-            <li>Characterized hundreds of impact events by decomposing force vectors to localize load application, applying Butterworth filtering and fitting damped sinusoidal models to extract natural frequency, damping ratio, and absorbed energy.</li>
-            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy), applying Savitzky–Golay smoothing and regime detection within heating cycles to fit exponential segments via multi-start least squares; projected steady-state temperatures across hundreds of units, gated on residual RMSE.</li>
-            <li>Built and deployed a Flask/Plotly dashboard that runs the fitting pipeline automatically as test runs complete, with drill-down into individual time series and fit diagnostics; deployed on a Linux VM for continuous use by engineers during live testing.</li>
-            <li>Extended onboard logging to capture additional impact and telemetry data during live operation, expanding the dataset from controlled tests to real-world runs.</li>
+            <li>Engineered a forward-kinematics pipeline that propagates 6-DOF floating-base poses through multi-joint kinematic chains, using fixed-axis roll-pitch-yaw matrices and Rodrigues' rotation formula. It derives end-effector velocities by exact rigid-body velocity composition (base velocity plus ω × r lever arms) instead of noisy numerical differentiation.</li>
+            <li>Fused low-rate state-estimator kinematics with high-rate inertial data into absolute velocity anchors. That made energy changes across impacts computable, with dead-reckoning drift sized explicitly rather than assumed away.</li>
+            <li>Traced a systematic under-reporting of peak impact acceleration to a legacy anti-alias filter that attenuated short transients. I characterized the loss against synthetic pulses of known amplitude and replaced the filter with a 4th-order zero-phase Bessel design. I chose Bessel over Butterworth by measurement: Butterworth ringing biases windowed impulse integrals, because the compensating undershoot falls outside the window.</li>
+            <li>Designed a Δv severity metric that is immune to the bandwidth limits of peak-based metrics, and measured its noise floor with a null-control experiment. Refactors landed only after bit-identical regression proofs across the full event table. Metrics whose physical constants had no traceable source were withheld rather than shipped with plausible values.</li>
+            <li>Built and shipped a Flask/Plotly forensics dashboard, deployed on a Linux VM, over tens of thousands of impact events from robot test logs. It covers ETL from a time-series telemetry store into a queryable SQLite cache, per-event waveform inspection, and a 3D impact heatmap normalized by per-facet solid angle, so it reads as density rather than facet size.</li>
+            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy). The pipeline detects regimes within heating cycles and fits exponential segments by multi-start least squares, then projects steady-state temperatures gated on residual RMSE.</li>
           </ul>
           <div class="tl-tags">
-            <span class="tag">Python</span><span class="tag">Pandas</span><span class="tag">SciPy</span><span class="tag">Signal Processing</span><span class="tag">Flask</span><span class="tag">Plotly</span><span class="tag">Linux</span><span class="tag">System Identification</span>
+            <span class="tag">Python</span><span class="tag">Rigid-Body Kinematics</span><span class="tag">Sensor Fusion</span><span class="tag">Filter Design</span><span class="tag">SQLite</span><span class="tag">Flask</span><span class="tag">Plotly</span><span class="tag">Linux</span><span class="tag">Pandas</span><span class="tag">SciPy</span>
           </div>
           <p class="nda-note">Work shown for this role is limited to method and approach. No proprietary hardware, imagery, test data, or internal tooling from Boston Dynamics appears anywhere on this site.</p>
         </div>
@@ -701,7 +703,7 @@ footer{padding:36px 0 44px;text-align:center}
     <div class="reveal">
       <div class="eyebrow">Selected Work</div>
       <h2 class="section-title">Projects</h2>
-      <p class="section-sub">Five builds that span estimation, embedded firmware, mechanism design, and applied machine learning. Each one links to a full write-up below.</p>
+      <p class="section-sub">Five builds spanning real-time control, state estimation, embedded firmware, applied machine learning, and mechanism design. Each one links to a full write-up below.</p>
     </div>
 
     <div class="filter-bar reveal" id="filterBar">
@@ -712,6 +714,19 @@ footer{padding:36px 0 44px;text-align:center}
     </div>
 
     <div class="cards" id="cardGrid">
+
+      <a href="#orthosis" class="card reveal" data-tags="robotics hardware data">
+        <div class="card-media">
+          <img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand">
+          <div class="card-badge">Purdue ASME</div>
+        </div>
+        <div class="card-body">
+          <h3>EMG-Controlled Active Orthosis</h3>
+          <div class="card-org">C++17 · FreeRTOS · KiCad · PyTorch · Team Lead</div>
+          <p class="card-desc">A 1 kHz, fault-gated velocity loop driven by muscle signals, an isolated 4-channel EMG board redesign, and a gesture decoder. EMG-to-motion latency cut from 103 to 43 ms in closed-loop simulation on real EMG.</p>
+          <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </div>
+      </a>
 
       <a href="#state-estimation" class="card reveal" data-tags="robotics">
         <div class="card-media">
@@ -726,22 +741,9 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
       </a>
 
-      <a href="#orthosis" class="card reveal" data-tags="robotics hardware">
-        <div class="card-media">
-          <img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand">
-          <div class="card-badge">Purdue ASME</div>
-        </div>
-        <div class="card-body">
-          <h3>Active Orthosis Mechatronics</h3>
-          <div class="card-org">C++ Firmware · KiCad · FEA · Team Lead</div>
-          <p class="card-desc">Real-time firmware closing a 500 Hz loop from EMG electrode to actuator command under 10 ms end-to-end, on a custom PCB control hub inside an FEA-validated chassis producing over 150 N.</p>
-          <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-        </div>
-      </a>
-
       <a href="#soft-robotics" class="card reveal" data-tags="hardware data">
         <div class="card-media">
-          <img src="gel_samples.jpg" alt="Direct-ink-write printed gel samples on metal substrates">
+          <img src="image_05119d.png" alt="Macro photograph of a dielectric gel cantilever against a micrometer scale">
           <div class="card-badge">Chortos Lab</div>
         </div>
         <div class="card-body">
@@ -778,6 +780,80 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
       </a>
 
+    </div>
+  </div>
+</section>
+
+<!-- ============================== DETAIL: ORTHOSIS ============================== -->
+<section class="detail" id="orthosis">
+  <div class="wrap">
+    <div class="detail-head reveal">
+      <div class="detail-kicker">Purdue ASME — Biomechanics · Apr 2024 — Present</div>
+      <h2>EMG-Controlled Active Orthosis</h2>
+      <div class="detail-org">Electronics Team Lead · C++17 Firmware · KiCad · Machine Learning</div>
+    </div>
+    <div class="detail-layout">
+      <div class="detail-side reveal">
+        <div class="side-block">
+          <h4>Summary</h4>
+          <p>A rehabilitative arm orthosis driven by the wearer's own muscle signals: flex to raise the forearm, extend to lower it, contract both to stop. I lead the 5-engineer electronics team and own the EMG board, the control firmware, and the decoder.</p>
+        </div>
+        <div class="side-block">
+          <h4>Status</h4>
+          <p>The team's first board (v1) was fabricated. My v2 redesign is schematic-complete, with layout and fabrication next. Until it's built, every firmware and decoder number below comes from simulation or emulation driven by <strong>real recorded EMG</strong>, not from the board.</p>
+        </div>
+        <div class="side-block">
+          <h4>Control Firmware</h4>
+          <ul>
+            <li>A C++17 core with no hardware dependencies, run by a <strong>1 kHz FreeRTOS task</strong> on an ESP32-S3. The same file compiles into a simulator of the motor, transmission, and forearm.</li>
+            <li>PI velocity loop on the motor encoder, IMC-tuned, with plant-inversion feed-forward and anti-windup. Lifting the forearm, speed error falls from 98% with feed-forward alone to <strong>0.8%</strong>.</li>
+            <li>A Bayesian EMG amplitude estimator plus a 20 ms onset confirm. The joint moves <strong>43 ms</strong> after the muscle does (was 103 ms) and stops <strong>32 ms</strong> after it relaxes (was 89 ms), with zero false starts from motion artefacts.</li>
+            <li>Ten runtime fault monitors (runaway, stall, electrode lead-off, tracking error, over-travel, and more) latch the motor off. A hardware watchdog and a kill switch act independently of the code.</li>
+            <li>26 GoogleTest unit, closed-loop, and real-EMG latency tests, plus an ESP32-S3 build, run in CI.</li>
+          </ul>
+        </div>
+        <div class="side-block">
+          <h4>v2 EMG Board</h4>
+          <p>Four INA333 instrumentation-amp channels with a shared right-leg drive and a 23–474 Hz band-pass, centred on a buffered 1.65 V reference for the ESP32-S3's ADC. An ISO7763 digital isolator separates everything touching the body from the motor driver, and a hardware kill switch cuts the driver's enable line.</p>
+        </div>
+        <div class="side-block">
+          <h4>Decoder</h4>
+          <p>I ran 115 days of real 4-channel forearm EMG through a sample-level emulation of each board. Through v2, cross-day 11-class accuracy holds at <strong>87.3%</strong>, against 87.9% with no board at all; v1 manages 30.8%. A PyTorch CNN dropped to 68% on later days. I traced that to electrode-polarity changes between sessions, and polarity augmentation brought it back to <strong>86%</strong>.</p>
+          <p><a href="https://github.com/tmayer2112-ui/Troy_Mayer/tree/main/firmware">Firmware and simulator →</a><br><a href="https://github.com/tmayer2112-ui/Troy_Mayer/tree/main/orthosis-emg-decoder">Decoder and results →</a><br><a href="orthosis_v2_schematic.pdf" target="_blank" rel="noopener">Full v2 schematic (PDF) →</a></p>
+        </div>
+        <div class="skill-block">
+          <div class="hd">Core Skills</div>
+          <div class="bd">
+            <div>Embedded C++</div>
+            <div>Control Design</div>
+            <div>KiCad Schematic</div>
+            <div>PyTorch / ML</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery reveal">
+        <figure class="shot">
+          <img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand">
+          <figcaption>The built arm: a goBILDA gear motor drives a screw-and-cable transmission to the elbow pulley.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="orthosis_v2_schematic_main.png" alt="KiCad schematic of the v2 EMG board's main sheet" loading="lazy">
+          <figcaption>v2 main sheet: the ESP32-S3; the ISO7763 isolator and kill switch between the logic and the motor driver; the buffered 1.65 V reference and right-leg drive; USB-C. The four channel sheets hang off the right side. <a href="orthosis_v2_schematic.pdf" target="_blank" rel="noopener">Full schematic (PDF)</a>.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="orthosis_v2_schematic_channel.png" alt="KiCad schematic of one EMG channel: instrumentation amp, band-pass filters, and trim gain" loading="lazy">
+          <figcaption>One of the four identical channels. The INA333's gain resistor is split in two so its midpoint gives the common-mode voltage for the right-leg drive. After it come a Sallen-Key high-pass and low-pass (23–474 Hz), 11–111× trim gain, and an anti-alias filter into the ADC.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="orthosis-emg-decoder/results/figures/cross_day.png" alt="Per-day gesture accuracy through the v1 board, the v2 board, and no board, for a decoder trained on days 1 to 60" loading="lazy">
+          <figcaption>The machine-learning result. The same real EMG runs through each board's emulated signal chain, and an LDA decoder trained on days 1–60 is scored on every later day. v2 tracks the no-board ceiling day after day; both v1 builds stay below 45%. <a href="https://github.com/tmayer2112-ui/Troy_Mayer/tree/main/orthosis-emg-decoder">orthosis-emg-decoder on GitHub</a>.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="firmware/results/figures/emg_end_to_end.png" alt="Simulated flex, co-contraction and extension: muscle activation, commanded and measured joint speed, and joint angle" loading="lazy">
+          <figcaption>Synthetic EMG through the real firmware and a simulated arm: flex, contract both to stop, extend. Muscle activation (top) becomes a speed command that the PI loop tracks (middle), which moves the joint (bottom). <a href="https://github.com/tmayer2112-ui/Troy_Mayer/tree/main/firmware">firmware on GitHub</a>.</figcaption>
+        </figure>
+      </div>
     </div>
   </div>
 </section>
@@ -867,68 +943,6 @@ footer{padding:36px 0 44px;text-align:center}
   </div>
 </section>
 
-<!-- ============================== DETAIL: ORTHOSIS ============================== -->
-<section class="detail" id="orthosis">
-  <div class="wrap">
-    <div class="detail-head reveal">
-      <div class="detail-kicker">Purdue ASME — Biomechanics · Apr 2024 — Present</div>
-      <h2>Active Orthosis Mechatronics</h2>
-      <div class="detail-org">Electronics Team Lead · C++ Firmware · KiCad · FEA</div>
-    </div>
-    <div class="detail-layout">
-      <div class="detail-side reveal">
-        <div class="side-block">
-          <h4>Summary</h4>
-          <p>A rehabilitative active orthosis: a high-force mechanical arm chassis driven by EMG signals read off the wearer's own muscle, with every layer — structure, board, and firmware — designed in house.</p>
-        </div>
-        <div class="side-block">
-          <h4>My Role</h4>
-          <p>Electronics Team Lead. I direct a 5-engineer cross-functional team and own the mechatronics and firmware myself.</p>
-        </div>
-        <div class="side-block">
-          <h4>Approach</h4>
-          <ul>
-            <li>Wrote real-time C++ firmware closing a <strong>500 Hz control loop</strong> from EMG sensor input to actuator command, holding end-to-end latency <strong>under 10 ms</strong>.</li>
-            <li>Designed, routed, and fabricated a custom PCB control hub to interface motor driver signals with sensor input as the system's central processing unit, ahead of integration onto the arm.</li>
-            <li>Led the team integrating FEA-validated structural design into a chassis producing <strong>over 150 N</strong> of force.</li>
-          </ul>
-        </div>
-        <div class="skill-block">
-          <div class="hd">Core Skills</div>
-          <div class="bd">
-            <div>C++ Firmware</div>
-            <div>KiCad PCB Design</div>
-            <div>FEA Analysis</div>
-            <div>Team Leadership</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="gallery reveal">
-        <figure class="shot">
-          <img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand">
-        </figure>
-        <figure class="shot">
-          <img src="openeremg12.png" alt="Photorealistic 3D render of the custom EMG control PCB">
-          <figcaption>Photorealistic 3D render of the custom PCB designed as the system's central control hub, interfacing motor driver signals with incoming EMG input. The board has been fabricated; integration onto the arm is the next step.</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="image_04a4f7.png" alt="KiCad 2D board layout showing signal routing">
-          <figcaption>2D board layout in KiCad — signal routing, ground pours, and keep-out zones around the analog front end.</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="orthosis_chassis_cad.jpg" alt="CAD model of the orthosis arm chassis">
-          <figcaption>CAD model of the mechanical arm chassis, engineered to sustain over 150 N of force.</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="FEA.jpg" alt="Fusion 360 structural buckling study of the chassis beam">
-          <figcaption>Fusion 360 structural buckling study on the chassis beam, used to validate the load path before machining.</figcaption>
-        </figure>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ============================== DETAIL: SOFT ROBOTICS ============================== -->
 <section class="detail" id="soft-robotics">
   <div class="wrap">
@@ -969,10 +983,6 @@ footer{padding:36px 0 44px;text-align:center}
       </div>
 
       <div class="gallery reveal">
-        <figure class="shot">
-          <img src="gel_samples.jpg" alt="Nine direct-ink-write printed gel samples on metal substrates">
-          <figcaption>A batch of direct-ink-write printed gel samples on metallized substrates with copper tape contacts. Line width and spacing vary across the set — each plate is one formulation and geometry in the iteration.</figcaption>
-        </figure>
         <figure class="shot">
           <img src="keyence_rig.jpg" alt="Keyence laser displacement sensor aimed at a flat gel sample beside a laptop running LabVIEW">
           <figcaption>The flat-sample path: a Keyence laser displacement head trained on a live sample — the red spot is the measurement point — feeding an NI USB-6001 into the LabVIEW VI on the laptop.</figcaption>
@@ -1109,37 +1119,37 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></div>
         <h3>Languages</h3>
-        <div class="sk-list"><span>C++</span><span>Python</span><span>MATLAB</span><span>SQL</span></div>
+        <div class="sk-list"><span>C++17</span><span>Python</span><span>MATLAB</span><span>SQL</span></div>
       </div>
 
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V5a3 3 0 0 1 6 0v3M9 14h.01M15 14h.01"/></svg></div>
         <h3>Robotics &amp; Controls</h3>
-        <div class="sk-list"><span>Eigen</span><span>MuJoCo</span><span>Error-State EKF</span><span>Real-Time Firmware</span><span>Rigid Body Kinematics</span><span>Control Loops</span></div>
+        <div class="sk-list"><span>Rigid-Body Kinematics</span><span>PI + Feed-Forward Control</span><span>Error-State EKF</span><span>Sensor Fusion</span><span>FreeRTOS</span><span>ESP32</span><span>Eigen</span><span>MuJoCo</span></div>
+      </div>
+
+      <div class="sk-card reveal">
+        <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/></svg></div>
+        <h3>Software &amp; Tooling</h3>
+        <div class="sk-list"><span>Linux</span><span>Git</span><span>GitHub Actions CI</span><span>CMake</span><span>GoogleTest</span><span>Flask</span><span>Plotly</span><span>SQLite</span></div>
       </div>
 
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-7"/></svg></div>
         <h3>Data &amp; Machine Learning</h3>
-        <div class="sk-list"><span>Pandas</span><span>SciPy</span><span>NumPy</span><span>LSTM</span><span>Monte Carlo</span><span>Least Squares Fitting</span><span>Snowflake</span><span>Power BI</span></div>
+        <div class="sk-list"><span>PyTorch</span><span>scikit-learn</span><span>Pandas</span><span>NumPy</span><span>SciPy</span><span>LSTM</span><span>Monte Carlo</span><span>Least Squares Fitting</span><span>Snowflake</span><span>Power BI</span></div>
+      </div>
+
+      <div class="sk-card reveal">
+        <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3 8 4-16 3 8h6"/></svg></div>
+        <h3>Signals &amp; Instrumentation</h3>
+        <div class="sk-list"><span>Filter Design (Bessel, Butterworth)</span><span>Savitzky–Golay</span><span>Computer Vision</span><span>Surface EMG</span><span>KiCad</span><span>LabVIEW</span><span>DAQ</span></div>
       </div>
 
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg></div>
         <h3>Mechanical &amp; CAD</h3>
         <div class="sk-list"><span>NX</span><span>Fusion 360</span><span>Creo Parametric</span><span>FEA</span><span>GD&amp;T</span><span>CNC / G-Code</span><span>DIW 3D Printing</span></div>
-      </div>
-
-      <div class="sk-card reveal">
-        <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3 8 4-16 3 8h6"/></svg></div>
-        <h3>Test &amp; Instrumentation</h3>
-        <div class="sk-list"><span>LabVIEW</span><span>Signal Processing</span><span>Butterworth Filtering</span><span>Savitzky–Golay</span><span>Computer Vision</span><span>KiCad</span><span>DAQ</span></div>
-      </div>
-
-      <div class="sk-card reveal">
-        <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/></svg></div>
-        <h3>Software &amp; Tooling</h3>
-        <div class="sk-list"><span>Git</span><span>Linux</span><span>Flask</span><span>Plotly</span><span>GoogleTest</span></div>
       </div>
 
     </div>
@@ -1151,7 +1161,7 @@ footer{padding:36px 0 44px;text-align:center}
   <div class="wrap">
     <div class="contact reveal">
       <h2>Let's build something.</h2>
-      <p>I'm open to Summer 2027 internships in robotics, controls, and mechanical engineering — and always happy to talk about legged robots, estimation, or test infrastructure.</p>
+      <p>I'm open to Summer 2027 internships in robot software, controls, and data — and always happy to talk about legged robots, estimation, or test infrastructure.</p>
       <div class="contact-actions">
         <a href="mailto:tmayer2112@gmail.com" class="btn btn-primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
