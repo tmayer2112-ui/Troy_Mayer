@@ -580,7 +580,7 @@ footer{padding:36px 0 44px;text-align:center}
         <div class="eyebrow">About</div>
         <h2 class="section-title">Code that has to agree with the physics.</h2>
         <p>I'm Troy Mayer — a Mechanical Engineering and Applied Statistics student at Purdue with a minor in Economics. The two degrees point at the same kind of work: software for physical systems, where the code is only right if the measurements agree.</p>
-        <p>At <strong>Boston Dynamics</strong> I build impact-analysis software: forward kinematics for floating-base poses and end-effector velocities, filters chosen by measurement rather than convention, and a forensics dashboard engineers use to inspect every event. At <strong>Purdue ASME</strong> I lead the electronics for an EMG-driven orthosis. I redesigned its isolated 4-channel EMG board and wrote the C++ firmware that turns muscle activity into a 1&nbsp;kHz, fault-gated velocity loop. Before that came LSTM forecasting for a Caterpillar paint line and computer-vision measurement for soft-robotics gels.</p>
+        <p>At <strong>Boston Dynamics</strong> I build impact-analysis software: forward kinematics for floating-base poses and end-effector velocities, an impact-severity metric with its filtering characterized against known pulses, and a forensics dashboard engineers use to inspect every event. At <strong>Purdue ASME</strong> I lead the electronics for an EMG-driven orthosis. I redesigned its isolated 4-channel EMG board and wrote the C++ firmware that turns muscle activity into a 1&nbsp;kHz, fault-gated velocity loop. Before that came LSTM forecasting for a Caterpillar paint line and computer-vision measurement for soft-robotics gels.</p>
         <p>Right now I'm most interested in <strong>robot software, controls, and state estimation</strong> — enough that I built a contact-aided error-state EKF for a simulated quadruped on my own time, mostly to understand observability by breaking it myself.</p>
         <div class="fact-card">
           <div class="fact-row"><div class="fact-k">Education</div><div class="fact-v">Purdue University — B.S. Mechanical Engineering, B.S. Applied Statistics, Minor in Economics · May 2028 · GPA 3.4</div></div>
@@ -620,12 +620,10 @@ footer{padding:36px 0 44px;text-align:center}
           <div class="tl-role">Sensors and Perception Co-Op — Atlas</div>
           <div class="tl-loc">Waltham, MA</div>
           <ul>
-            <li>Engineered a forward-kinematics pipeline that propagates 6-DOF floating-base poses through multi-joint kinematic chains, using fixed-axis roll-pitch-yaw matrices and Rodrigues' rotation formula. It derives end-effector velocities by exact rigid-body velocity composition (base velocity plus ω × r lever arms) instead of noisy numerical differentiation.</li>
-            <li>Fused low-rate state-estimator kinematics with high-rate inertial data into absolute velocity anchors. That made energy changes across impacts computable, with dead-reckoning drift sized explicitly rather than assumed away.</li>
-            <li>Designed a 4th-order zero-phase Bessel anti-alias filter for impact analysis that captures 85% of a 3 ms impact peak, against 30% at 100 Hz. Validated against synthetic pulses of known amplitude, it holds under 1.3% error across 3–30 ms pulses; I chose it over Butterworth by measurement, because Butterworth ringing biases windowed impulse integrals.</li>
-            <li>Designed a Δv severity metric that is immune to the bandwidth limits of peak-based metrics, and measured its noise floor with a null-control experiment. Refactors landed only after bit-identical regression proofs across the full event table. Metrics whose physical constants had no traceable source were withheld rather than shipped with plausible values.</li>
-            <li>Built and shipped a Flask/Plotly forensics dashboard, deployed on a Linux VM, analyzing ~28k impact events from ~900 test logs. It covers ETL from a time-series telemetry store into a queryable SQLite cache, per-event waveform inspection, and a 3D impact heatmap normalized by per-facet solid angle, so it reads as density rather than facet size.</li>
-            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy), applying Savitzky–Golay smoothing and regime detection within heating cycles to fit exponential segments by multi-start least squares. Projected steady-state temperatures across hundreds of units, gated on residual RMSE.</li>
+            <li>Built an impact forensics pipeline and Flask/Plotly dashboard, deployed on a Linux VM, covering ~28k impact events from ~900 robot test logs. It runs ETL from a time-series telemetry store into a queryable SQLite cache and gives engineers a 3D impact-location heatmap (normalized by per-facet solid angle, so it reads as density rather than facet size) and per-event waveform inspection during testing.</li>
+            <li>Developed forward kinematics that propagate 6-DOF floating-base poses through multi-joint chains using fixed-axis roll-pitch-yaw matrices and Rodrigues' rotation formula. End-effector velocities come from exact rigid-body velocity composition (base velocity plus ω × r lever arms) rather than numerical differentiation, and are fused with high-rate IMU data into absolute velocity anchors to measure energy change across impacts.</li>
+            <li>Designed a Δv impact-severity metric robust to the sensor bandwidth limits that affect peak-based metrics. Characterized the Butterworth anti-alias filtering against synthetic pulses of known amplitude, quantified the metric's noise floor with a null-control experiment, and landed every change only after bit-identical regression checks across the full event table.</li>
+            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy), applying Savitzky–Golay smoothing and regime detection within heating cycles, then fitting exponential models by multi-start least squares to project steady-state temperatures across hundreds of units, gated on residual RMSE.</li>
           </ul>
           <div class="tl-tags">
             <span class="tag">Python</span><span class="tag">Rigid-Body Kinematics</span><span class="tag">Sensor Fusion</span><span class="tag">Filter Design</span><span class="tag">SQLite</span><span class="tag">Flask</span><span class="tag">Plotly</span><span class="tag">Linux</span><span class="tag">Pandas</span><span class="tag">SciPy</span>
@@ -643,9 +641,8 @@ footer{padding:36px 0 44px;text-align:center}
           <div class="tl-role">Machine Learning Researcher</div>
           <div class="tl-loc">West Lafayette, IN</div>
           <ul>
-            <li>Built an LSTM time-series model forecasting next-day primer, topcoat, and solvent consumption from five years of paint-line data, achieving a 5% reduction in material usage.</li>
-            <li>Developed Monte Carlo simulations over thousands of iterations to attach confidence intervals to each forecast and quantify variance under uncertainty.</li>
-            <li>Built Python pipelines to ingest, clean, and consolidate five years of noisy legacy data into one daily series, contributing to a 4% reduction in manufacturing cycle time.</li>
+            <li>Built an LSTM model forecasting next-day primer, topcoat, and solvent consumption from five years of paint-line data, with Monte Carlo confidence intervals on each forecast, achieving a 4.7% reduction in material usage.</li>
+            <li>Built Python pipelines to ingest, clean, and consolidate five years of noisy legacy data into one daily series, contributing to a 3.3% reduction in manufacturing cycle time.</li>
           </ul>
           <div class="tl-tags">
             <span class="tag">LSTM</span><span class="tag">Monte Carlo</span><span class="tag">Python</span><span class="tag">Data Pipelines</span><span class="tag">Power BI</span><span class="tag">Snowflake</span>
@@ -762,7 +759,7 @@ footer{padding:36px 0 44px;text-align:center}
         <div class="card-body">
           <h3>Paint Line Forecasting</h3>
           <div class="card-org">LSTM · Monte Carlo · Python · Full-Stack Dashboard</div>
-          <p class="card-desc">Next-day primer, topcoat and solvent forecasting from five years of records, each prediction carrying a Monte Carlo confidence interval — 5% less material used, 4% off cycle time.</p>
+          <p class="card-desc">Next-day primer, topcoat and solvent forecasting from five years of records, each prediction carrying a Monte Carlo confidence interval — 4.7% less material used, 3.3% off cycle time.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
       </a>
@@ -1027,8 +1024,8 @@ footer{padding:36px 0 44px;text-align:center}
         <div class="side-block">
           <h4>Impact</h4>
           <ul>
-            <li><strong>5% reduction</strong> in material usage against existing practice.</li>
-            <li><strong>4% reduction</strong> in manufacturing cycle time.</li>
+            <li><strong>4.7% reduction</strong> in material usage against existing practice.</li>
+            <li><strong>3.3% reduction</strong> in manufacturing cycle time.</li>
             <li>Isolated process inefficiencies between the manual and robotic paint lines.</li>
           </ul>
         </div>
@@ -1141,7 +1138,7 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3 8 4-16 3 8h6"/></svg></div>
         <h3>Signals &amp; Instrumentation</h3>
-        <div class="sk-list"><span>Filter Design (Bessel, Butterworth)</span><span>Savitzky–Golay</span><span>Computer Vision</span><span>Surface EMG</span><span>KiCad</span><span>LabVIEW</span><span>DAQ</span></div>
+        <div class="sk-list"><span>Filter Design</span><span>Savitzky–Golay</span><span>Computer Vision</span><span>Surface EMG</span><span>KiCad</span><span>LabVIEW</span><span>DAQ</span></div>
       </div>
 
       <div class="sk-card reveal">
