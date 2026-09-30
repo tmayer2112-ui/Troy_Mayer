@@ -623,11 +623,11 @@ footer{padding:36px 0 44px;text-align:center}
             <li>Built an impact forensics pipeline and Flask/Plotly dashboard, deployed on a Linux VM, covering ~28k impact events from ~900 robot test logs. It runs ETL from a time-series telemetry store into a queryable SQLite cache and gives engineers a 3D impact-location heatmap (normalized by per-facet solid angle, so it reads as density rather than facet size) and per-event waveform inspection during testing.</li>
             <li>Developed forward kinematics that propagate 6-DOF floating-base poses through multi-joint chains using fixed-axis roll-pitch-yaw matrices and Rodrigues' rotation formula. End-effector velocities come from exact rigid-body velocity composition (base velocity plus ω × r lever arms) rather than numerical differentiation, and are fused with high-rate IMU data into absolute velocity anchors to measure energy change across impacts.</li>
             <li>Designed a Δv impact-severity metric robust to the sensor bandwidth limits that affect peak-based metrics. Characterized the Butterworth anti-alias filtering against synthetic pulses of known amplitude, quantified the metric's noise floor with a null-control experiment, and landed every change only after bit-identical regression checks across the full event table.</li>
-            <li>Designed test fixtures in CAD for standalone impact testing, plus protective hardware that lets sensitive components survive repeated impacts, so test campaigns can keep running without replacing parts between hits.</li>
+            <li>Designed test fixtures in CATIA 3DEXPERIENCE for standalone impact testing, plus protective hardware that lets sensitive components survive repeated impacts, so test campaigns can keep running without replacing parts between hits.</li>
             <li>Modeled hardware thermal behavior in Python (Pandas, SciPy), applying Savitzky–Golay smoothing and regime detection within heating cycles, then fitting exponential models by multi-start least squares to project steady-state temperatures across hundreds of units, gated on residual RMSE.</li>
           </ul>
           <div class="tl-tags">
-            <span class="tag">Python</span><span class="tag">Rigid-Body Kinematics</span><span class="tag">CAD</span><span class="tag">Test Fixtures</span><span class="tag">Sensor Fusion</span><span class="tag">Filter Design</span><span class="tag">SQLite</span><span class="tag">Flask</span><span class="tag">Plotly</span><span class="tag">Linux</span><span class="tag">Pandas</span><span class="tag">SciPy</span>
+            <span class="tag">Python</span><span class="tag">Rigid-Body Kinematics</span><span class="tag">CATIA 3DEXPERIENCE</span><span class="tag">Test Fixtures</span><span class="tag">Sensor Fusion</span><span class="tag">Filter Design</span><span class="tag">SQLite</span><span class="tag">Flask</span><span class="tag">Plotly</span><span class="tag">Linux</span><span class="tag">Pandas</span><span class="tag">SciPy</span>
           </div>
           <p class="nda-note">Work shown for this role is limited to method and approach. No proprietary hardware, imagery, test data, or internal tooling from Boston Dynamics appears anywhere on this site.</p>
         </div>
@@ -1145,7 +1145,7 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg></div>
         <h3>Mechanical &amp; CAD</h3>
-        <div class="sk-list"><span>NX</span><span>Fusion 360</span><span>Creo Parametric</span><span>FEA</span><span>GD&amp;T</span><span>CNC / G-Code</span><span>DIW 3D Printing</span></div>
+        <div class="sk-list"><span>CATIA 3DEXPERIENCE</span><span>NX</span><span>Fusion 360</span><span>Creo Parametric</span><span>FEA</span><span>GD&amp;T</span><span>CNC / G-Code</span><span>DIW 3D Printing</span></div>
       </div>
 
     </div>
