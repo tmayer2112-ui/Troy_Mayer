@@ -3,9 +3,9 @@ PY      ?= python3
 RUN     := PYTHONPATH=python $(PY)
 BUILD   := build
 
-.PHONY: all setup build test test-cpp test-py data tune reproduce observability experiments timing claims clean
+.PHONY: all setup build test test-cpp test-py data tune reproduce observability experiments closed-loop timing claims clean
 
-all: build test data tune reproduce observability experiments timing claims
+all: build test data tune reproduce observability experiments closed-loop timing claims
 
 setup:
 	$(PY) -m pip install -r requirements.txt
@@ -36,6 +36,9 @@ observability: build      ## covariance split over 300 s + null-space check
 
 experiments: build        ## ~15 min: hard/soft, slip, friction, contact delay, process noise
 	$(RUN) python/scripts/experiments.py
+
+closed-loop:              ## ~5 min: controller fed the estimate vs ground truth (5 seeds), push recovery
+	$(RUN) python/scripts/closed_loop.py
 
 timing: build             ## 60 s wall clock; run on an idle machine
 	$(RUN) python/scripts/timing.py

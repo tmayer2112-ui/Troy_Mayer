@@ -2,7 +2,8 @@
 
 One entry per problem: **symptom**, **hypothesis**, **how it was tested**, **actual cause**, **fix**,
 and a command that brings the failure back. Numbers are the ones printed at the time.
-Entries 1–12 were recorded during the initial build on 2026-09-23. Append new ones as they happen.
+Entries 1–12 were recorded during the initial build on 2026-09-23, 13–14 while closing the loop on 2026-10-05.
+Append new ones as they happen.
 
 `repro N` below means `PYTHONPATH=python python3 python/scripts/debug_repro.py N` (entries 4 and 7 need `make data`).
 
@@ -145,3 +146,29 @@ compute. Pinning to one core (`--cpu 3`) didn't help (0.23 %). Repeated runs mis
 **Actual cause:** The host. This is a shared cloud VM without an RT kernel; SCHED_FIFO + mlockall can't stop
 the hypervisor. The filter itself uses ~2 % of the 1 ms budget at the median.
 **Fix:** `timing.py` now runs three repetitions and reports the spread, not one lucky or unlucky run.
+
+### 13. First closed-loop run falls before the robot takes a step
+**Symptom:** With the controller fed the estimator's output, the robot fell at t = 2.9 s. Trunk pitch reached
+−33° during the 2 s standing phase, before the filter had even started.
+**Hypothesis:** Before the filter starts there is no attitude estimate, so the first version fed the
+controller roll/pitch from the low-passed accelerometer. That should be fine for a robot standing still.
+**Test:** Printed true vs fed-back pitch every 0.1 s. At t = 0.1 s the controller was told +16° while the true
+pitch was −6.5°: the robot is still settling from its start pose, so the accelerometer measures
+acceleration, not just gravity. The attitude loop corrected hard in the wrong direction, the stance legs hit
+their reach limit, and the robot stayed pitched at −33°. The filter then calibrated on a robot that was
+moving, and the walk started from garbage.
+**Fix:** Until the filter starts, the controller holds a fixed stance (level attitude, zero velocity and
+rates, height from leg kinematics). That is what a real robot does while it calibrates.
+
+### 14. Closed loop: the robot leans 3–6° on a straight walk
+**Symptom:** Fed the estimate, the robot walked the full 60 s without falling, but leaned 3.3–6.4° on the first
+straight segment, against 1.15° when fed ground truth. Velocity tracking barely changed.
+**Hypothesis:** The tilt/accelerometer-bias ambiguity from #7. The controller levels the estimated trunk, so
+the estimate's tilt error becomes the real lean.
+**Test:** (a) The estimator's tilt error over that segment is 5.6–10° closed loop, against 1.0–3.8° open loop on
+the same physics. (b) The lean disappears at the first turn (t ≈ 12–14 s). (c) Prepending a 4 s left/right turn
+before the same walk: lean 1.16°, tilt error 0.03°, the same as the ground-truth-fed controller.
+**Actual cause:** Weak observability of tilt without turning, made worse by the loop: three of five noise seeds
+give almost the same error (5.6–5.8°), so the closed-loop motion drives it, not sensor noise. The exact
+coupling isn't isolated.
+**Fix:** A 4 s turn at startup (`closed_loop.turn_first`). README, "Closing the loop".

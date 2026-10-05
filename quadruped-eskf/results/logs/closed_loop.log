@@ -1,0 +1,46 @@
+closed loop, 60 s walks, seeds [0, 1, 2, 3, 4], mean ± sd over seeds
+
+[headline]
+  controller fed truth: falls 0/5
+    velocity tracking RMSE vs command (m/s)              0.169 ± 0
+    yaw-rate tracking RMSE (rad/s)                       0.4034 ± 0
+    mean lean on the first straight segment (deg)        1.15 ± 0
+    estimate tilt error, same segment (deg)              2.344 ± 1.3
+    true roll RMS (deg)                                  0.8731 ± 0
+    true pitch RMS (deg)                                 1.054 ± 0
+    height error RMS (mm)                                4.026 ± 0
+    estimator velocity RMSE (m/s)                        0.01237 ± 0.0022
+  controller fed estimate: falls 0/5
+    velocity tracking RMSE vs command (m/s)              0.173 ± 0.0027
+    yaw-rate tracking RMSE (rad/s)                       0.4061 ± 0.0054
+    mean lean on the first straight segment (deg)        4.134 ± 1.3
+    estimate tilt error, same segment (deg)              6.766 ± 1.9
+    true roll RMS (deg)                                  1.837 ± 0.44
+    true pitch RMS (deg)                                 1.108 ± 0.048
+    height error RMS (mm)                                4.897 ± 0.97
+    estimator velocity RMSE (m/s)                        0.02503 ± 0.0099
+
+[turn_first]
+  controller fed truth: falls 0/5
+    velocity tracking RMSE vs command (m/s)              0.1691 ± 0
+    yaw-rate tracking RMSE (rad/s)                       0.4111 ± 6.2e-17
+    mean lean on the first straight segment (deg)        1.149 ± 0
+    estimate tilt error, same segment (deg)              0.04153 ± 0.022
+    true roll RMS (deg)                                  0.8919 ± 0
+    true pitch RMS (deg)                                 1.081 ± 0
+    height error RMS (mm)                                4.045 ± 0
+    estimator velocity RMSE (m/s)                        0.009006 ± 0.00049
+  controller fed estimate: falls 0/5
+    velocity tracking RMSE vs command (m/s)              0.1671 ± 0.00013
+    yaw-rate tracking RMSE (rad/s)                       0.4094 ± 0.00019
+    mean lean on the first straight segment (deg)        1.164 ± 0.01
+    estimate tilt error, same segment (deg)              0.03391 ± 0.018
+    true roll RMS (deg)                                  0.9076 ± 0.0012
+    true pitch RMS (deg)                                 1.102 ± 0.0059
+    height error RMS (mm)                                4.044 ± 0.00068
+    estimator velocity RMSE (m/s)                        0.008834 ± 0.00048
+
+[push] controller fed truth: survives 11.88 N·s, falls at 12.03 N·s (lateral, 0.1 s)
+[push] controller fed estimate: survives 11.88 N·s, falls at 12.03 N·s (lateral, 0.1 s)
+
+wall time 312 s
