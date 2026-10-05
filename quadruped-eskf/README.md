@@ -2,8 +2,9 @@
 
 Estimates the base velocity, attitude and IMU biases of a simulated Unitree Go1 by fusing a
 BMI088-class IMU at 1 kHz with leg kinematics. It includes a Python reference and a C++/Eigen
-implementation that agree to 1e-13, a GoogleTest suite, a 1 kHz real-time loop benchmark, and five
-experiments that break the filter on purpose to find where it stops working.
+implementation that agree to 1e-13, a GoogleTest suite, a 1 kHz real-time loop benchmark, five
+experiments that break the filter on purpose to find where it stops working, and a closed-loop test where
+the walking controller is driven by the estimate instead of by ground truth.
 
 This is written as an engineering note: what the filter assumes, where it holds, where it doesn't,
 and what's next. The bugs found along the way are in [`DEBUG_LOG.md`](DEBUG_LOG.md).
@@ -23,6 +24,9 @@ and what's next. The bugs found along the way are in [`DEBUG_LOG.md`](DEBUG_LOG.
 | Deadline misses at 1 kHz, non-RT cloud VM | 0.13–0.18 % over 3 × 60 s runs (host stalls, not filter compute) | `make timing` | `timing.json` → `all_runs` |
 | Python vs C++ on the same 60 s log | max \|Δp\| 1.4e-13 m, \|Δv\| 3.3e-13 m/s | `make reproduce`, `make test` | `metrics.json` → `parity_python_vs_cpp` |
 | Unobservable directions, numerically | exactly 4 (3 translations + yaw) in all 30 windows tested | `make observability` | [`results/observability.json`](results/observability.json) |
+| Closed loop, controller fed the estimate, 60 s walk × 5 seeds | 0 falls; velocity tracking 0.173 m/s vs 0.169 m/s fed ground truth | `make closed-loop` | [`results/logs/closed_loop.log`](results/logs/closed_loop.log), [`closed_loop.json`](results/closed_loop.json) |
+| Same, lean on the first straight segment (before any turn) | 3.3–6.4° vs 1.15° fed ground truth; 1.15–1.17° after a 4 s turn at startup | `make closed-loop` | [lean plot](results/figures/closed_loop_lean.png) |
+| Largest lateral push survived (0.1 s, walking 0.4 m/s) | 11.9 N·s fed the estimate, 11.9 N·s fed ground truth | `make closed-loop` | `closed_loop.json` → `push` |
 
 Everything is deterministic except the timing (it depends on the host). `make claims` compares every number the
 résumé and portfolio page state about this project against these files and exits non-zero on a mismatch.
@@ -41,11 +45,12 @@ Tested on Ubuntu 24.04: GCC 13.3, CMake 3.28, Eigen 3.4, GoogleTest 1.14, Python
 sudo apt install build-essential cmake libeigen3-dev libgtest-dev   # CMake fetches GoogleTest if it's missing
 python3 -m pip install -r requirements.txt
 
-make build test     # 0 warnings under -Wall -Wextra -Wpedantic; 26 C++ tests, 23 Python tests
+make build test     # 0 warnings under -Wall -Wextra -Wpedantic; 26 C++ tests, 26 Python tests
 make data           # ~2 min  simulate the walks, synthesize IMU/encoder streams
 make reproduce      # ~3 min  headline numbers, RMSE table, figures, run log
+make closed-loop    # ~5 min  controller driven by the estimate vs by ground truth, push recovery
 make claims         #         résumé numbers vs results/*.json
-make all            # ~27 min everything from scratch on 4 cores (tuning grid and experiments dominate)
+make all            # ~32 min everything from scratch on 4 cores (tuning grid and experiments dominate)
 ```
 
 ## The setup
@@ -56,9 +61,11 @@ from the simulator, recorded on the same step as the sensor sample (see DEBUG_LO
 alignment took three attempts).
 
 **Walking.** A model-based trot controller ([`gait.py`](python/qeskf/gait.py)): phase clock, 0.4 s period,
-60 % duty, ground-speed-matched swing, analytic leg IK, Menagerie's position servos. It reads ground truth;
-the estimator never does. See [Deviations from the plan](#deviations-from-the-plan) for why this isn't a
-Playground PPO policy.
+60 % duty, ground-speed-matched swing, analytic leg IK, Menagerie's position servos, at 500 Hz. Three
+feedback loops act on the body state: Raibert foot placement on velocity error, a PD loop on roll/pitch
+that raises or lowers the stance feet, and a PI loop on trunk height. In the estimator runs it reads
+ground truth and the estimator never does; [Closing the loop](#closing-the-loop) feeds it the estimate
+instead. See [Deviations from the plan](#deviations-from-the-plan) for why this isn't a Playground PPO policy.
 
 **Sensors** ([`imu_model.py`](python/qeskf/imu_model.py)):
 * IMU at the trunk origin, 1 kHz, 16-bit, ±6 g / ±1000 °/s, saturation and quantization.
@@ -350,6 +357,49 @@ Touchdown and liftoff detection delayed by 0–60 ms, for three detectors:
 
 Table above, in [Process noise](#process-noise-every-number-in-q-and-where-it-came-from).
 
+## Closing the loop
+
+Everything above scores the estimator while the controller reads ground truth. Here the estimator runs
+inside the 1 kHz physics loop ([`closed_loop.py`](python/qeskf/closed_loop.py)) and the controller reads
+its output instead: body-frame velocity, roll, pitch, bias-corrected gyro rate, and trunk height from leg
+kinematics. Nothing else changes: same controller and gains, same tuned filter, same sensor models. The
+controller never needs position or yaw, the two quantities the estimator can't observe. Everything is causal:
+contact flags use the force sensed one step (1 ms) earlier, ANDed with the gait schedule as before. With the
+controller fed ground truth, the loop reproduces the open-loop simulator bit for bit
+([`test_closed_loop.py`](python/tests/test_closed_loop.py)).
+
+![closed loop lean](results/figures/closed_loop_lean.png)
+
+| 60 s headline walk, mean of 5 seeds | Controller fed ground truth | Controller fed the estimate |
+|---|---|---|
+| Falls | 0 / 5 | 0 / 5 |
+| Velocity tracking RMSE vs command | 0.169 m/s | 0.173 m/s (± 0.003) |
+| Mean lean, first straight segment (before any turn) | 1.15° | 4.1° (3.3–6.4°) |
+| Estimator tilt error, same segment | 2.3° (1.0–3.8°) | 6.8° (5.6–10.0°) |
+| Estimator velocity RMSE | 0.012 m/s | 0.025 m/s (± 0.010) |
+| **Same walk after a 4 s left/right turn at startup** | | |
+| Mean lean, first straight segment | 1.15° | 1.16° |
+| Estimator tilt error, same segment | 0.04° | 0.03° |
+| Velocity tracking RMSE | 0.169 m/s | 0.167 m/s |
+
+* **The estimate is good enough to walk on.** No falls, and velocity tracking changes by 0.004 m/s. The
+  controller's own tracking error (0.17 m/s, mostly the loose scripted trot) is more than ten times the
+  estimator's velocity error, so the controller, not the estimator, limits tracking.
+* **Pushes show the same.** The largest lateral push survived (0.1 s on the trunk while walking straight at 0.4 m/s,
+  after the startup turn below, bisected to 0.25 N·s) is 11.9 N·s either way, and the bisection took the same path in both modes.
+  About 0.93 m/s of sideways velocity for the 12.7 kg robot.
+* **The new failure is a lean.** Until the first turn, tilt is only weakly observable: a tilt error and a
+  horizontal accelerometer bias look the same ([Observability](#observability), DEBUG_LOG #7). Open loop,
+  that just means a wrong number on a plot. Closed loop, the controller levels the *estimated* trunk, so the
+  tilt error becomes a real lean: up to 5° of roll in the plot above. The error is also larger in closed loop
+  (6.8° vs 2.3°), and it is mostly the same across noise seeds (5.6–5.8° for three of five), so it is driven by
+  the closed-loop motion rather than sensor noise. I haven't isolated the exact mechanism. The first turn
+  (t ≈ 12 s) removes it in both modes.
+* **The fix is a motion, not a filter change.** Turning left then right for 4 s at startup makes tilt
+  observable before the long straight segment. With that, the estimate-fed robot is indistinguishable from
+  the ground-truth-fed one (lean 1.16° vs 1.15°, tilt error 0.03°). Real robots often do a short calibration
+  motion for the same reason.
+
 ## How the numbers were chosen
 
 * **IMU noise:** the data sheet and product flyer only (table above). Never tuned.
@@ -383,7 +433,9 @@ the filter assumes. Contact comes from simulated forces. The kinematics are exac
 0.011–0.013 m/s here shouldn't be compared with numbers from hardware, where contact detection, leg flex,
 IMU calibration and terrain all add error that this simulation doesn't have. The filter is also overconfident (velocity NEES 13), its
 pitch and accel-x bias are unreliable until the robot has turned, and it can't detect a smooth foot slide
-at all (E2): it reports the slide as body motion.
+at all (E2): it reports the slide as body motion. In closed loop, that tilt error becomes a real lean of
+several degrees unless the robot turns first. The closed-loop test uses the same scripted trot; it shows
+the estimate is good enough for *this* controller, not for a faster or more aggressive one.
 
 ## Next steps
 
@@ -394,6 +446,7 @@ at all (E2): it reports the slide as body motion.
 3. **A learned or torque-based contact estimator** in place of simulated force, then rerun E4 with its
    real latency distribution.
 4. **A Playground PPO policy on a GPU** instead of the scripted trot, for gaits that aren't so regular.
+   Run it closed loop on the estimate, as in [Closing the loop](#closing-the-loop).
 5. **Temperature**: add a bias-temperature state or at least model the warm-up (E5 shows it dominates yaw).
 
 ## Deviations from the plan
@@ -411,15 +464,16 @@ at all (E2): it reports the slide as body motion.
 
 ```
 models/go1/            Go1 physics model (from MuJoCo Menagerie, BSD-3) and the 1 kHz scene
-python/qeskf/          sim, gait, IMU model, kinematics, ESKF (reference), observability, pipeline
-python/scripts/        generate_data, tune, reproduce, observability, experiments, timing,
+python/qeskf/          sim, gait, IMU model, kinematics, ESKF (reference), observability, pipeline,
+                       closed_loop (estimator inside the physics loop, feeding the controller)
+python/scripts/        generate_data, tune, reproduce, observability, experiments, closed_loop, timing,
                        check_claims, debug_repro, make_parity_fixture
 python/tests/          pytest: Jacobians vs finite differences, SPD, quaternion norm, sim/IMU alignment,
-                       null space
+                       null space, closed-loop wiring
 cpp/include, cpp/src   C++17/Eigen ESKF, kinematics, SO(3)
 cpp/apps               qeskf_replay (offline), qeskf_bench_loop (1 kHz real-time loop)
 cpp/tests              GoogleTest: Jacobians vs finite differences, invariants, Python parity fixture
-results/               metrics.json, rmse_table.md, observability.json, experiments.json, timing.json,
+results/               metrics.json, rmse_table.md, observability.json, experiments.json, closed_loop.json, timing.json,
                        tuned_params.json, logs/, figures/ (every PNG has a CSV of its plotted data)
 claims.json            every number the résumé states, mapped to the file and key that back it
 DEBUG_LOG.md           what broke, what it looked like, what it actually was
