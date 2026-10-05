@@ -67,21 +67,25 @@ def main():
         ctl = json.loads((R / "lda_control.json").read_text()) if (R / "lda_control.json").exists() else {}
         lines += ["## CNN vs LDA on identical training windows", "",
                   "Both trained on days 1-50 (every 4th window), validated on days 51-60, tested on days 61-121.", "",
-                  "| Chain | LDA val | LDA test | CNN val | CNN test | CNN + gain aug, test | CNN + polarity aug, test |",
-                  "|---|---|---|---|---|---|---|"]
+                  "| Chain | LDA val | LDA test | CNN val, best epoch | CNN val, last epoch | CNN test "
+                  "| CNN + gain aug, test | CNN + polarity aug, test |",
+                  "|---|---|---|---|---|---|---|---|"]
         for name in ("reference", "v2", "v1_envelope", "v1_raw"):
             if name not in cnn:
                 continue
             c, l = cnn[name], ctl.get(name)
             val = np.mean([max(r["val_history"]) for r in c["runs"]])
+            last = np.mean([r["val_history"][-1] for r in c["runs"]])
             augs = [cnn.get(f"{name}+{a}") for a in ("gain", "flip")]
             aug = " | ".join(f"{100 * a['test_mean_over_seeds']:.1f} ± {100 * a['test_sd_over_seeds']:.1f}"
                              if a else "-" for a in augs)
             lv = f"{100 * l['val_days_51_60']:.1f}" if l else "-"
             lt = pct(l["test_per_day"]) if l else "-"
-            lines.append(f"| {LABEL[name]} | {lv} | {lt} | {100 * val:.1f} "
+            lines.append(f"| {LABEL[name]} | {lv} | {lt} | {100 * val:.1f} | {100 * last:.1f} "
                          f"| {100 * c['test_mean_over_seeds']:.1f} ± {100 * c['test_sd_over_seeds']:.1f} | {aug} |")
-        lines += ["", "CNN: mean over 3 seeds; LDA and CNN test columns are mean over test days.", ""]
+        lines += ["", "CNN: mean over 3 seeds; LDA and CNN test columns are mean over test days. "
+                  "\"Best epoch\" is the score that picks the epoch, so it is optimistic by construction; "
+                  "\"last epoch\" (no selection) is the one to compare with the single-fit LDA.", ""]
 
     v2 = M["v2@0.0"]
     lines += ["## Same test windows, different training data (v2, LDA)", "",
@@ -137,6 +141,14 @@ def main():
                 s = M[f"{b}@{v}"]["cross_day"]["per_day"] if z == 20e3 else S[f"{b}@{v}@{z}"]["cross_day"]
                 cells.append(pct(s))
         lines.append(f"| {'0 (buffered)' if z == 0 else f'{z / 1e3:g} kΩ'} | " + " | ".join(cells) + " |")
+
+    sr = json.loads((R / "sample_rate.json").read_text()) if (R / "sample_rate.json").exists() else {}
+    if sr:
+        lines += ["", "## ADC sample rate (v2, LDA)", "",
+                  "Everything above runs at the dataset's 2048 Hz; the firmware samples at 1 kHz "
+                  "(`scripts/sample_rate.py`).", "",
+                  "| ADC | Cross-day | Within-day |", "|---|---|---|"]
+        lines += [f"| {k} | {pct(v['cross_day'])} | {pct(v['within_day'])} |" for k, v in sr.items()]
 
     lines += ["", "## Accuracy vs days since training (LDA trained on 5 consecutive days)", "",
               "| Days elapsed | " + " | ".join(LABEL[n] for n in ("reference", "v2")) + " |", "|---|---|---|"]

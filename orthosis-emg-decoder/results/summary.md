@@ -17,14 +17,14 @@ CNN column: mean over seeds of the per-day mean, ± SD over seeds.
 
 Both trained on days 1-50 (every 4th window), validated on days 51-60, tested on days 61-121.
 
-| Chain | LDA val | LDA test | CNN val | CNN test | CNN + gain aug, test | CNN + polarity aug, test |
-|---|---|---|---|---|---|---|
-| No board (digital 20-450 Hz) | 88.8 | 87.5 ± 5.2 | 92.6 | 68.5 ± 1.2 | 58.9 ± 0.8 | 86.8 ± 0.8 |
-| v2 (INA333) | 88.8 | 86.8 ± 5.4 | 92.5 | 68.2 ± 1.3 | 60.6 ± 1.2 | 86.3 ± 1.0 |
-| v1, C9/R15 fitted (envelope) | 32.2 | 31.2 ± 3.9 | 33.4 | 28.8 ± 0.9 | - | - |
-| v1, C9/R15 empty (rectified) | 26.5 | 22.4 ± 2.4 | 27.7 | 23.2 ± 0.2 | - | - |
+| Chain | LDA val | LDA test | CNN val, best epoch | CNN val, last epoch | CNN test | CNN + gain aug, test | CNN + polarity aug, test |
+|---|---|---|---|---|---|---|---|
+| No board (digital 20-450 Hz) | 88.8 | 87.5 ± 5.2 | 92.6 | 92.3 | 68.5 ± 1.2 | 58.9 ± 0.8 | 86.8 ± 0.8 |
+| v2 (INA333) | 88.8 | 86.8 ± 5.4 | 92.5 | 92.2 | 68.2 ± 1.3 | 60.6 ± 1.2 | 86.3 ± 1.0 |
+| v1, C9/R15 fitted (envelope) | 32.2 | 31.2 ± 3.9 | 33.4 | 28.4 | 28.8 ± 0.9 | - | - |
+| v1, C9/R15 empty (rectified) | 26.5 | 22.4 ± 2.4 | 27.7 | 27.5 | 23.2 ± 0.2 | - | - |
 
-CNN: mean over 3 seeds; LDA and CNN test columns are mean over test days.
+CNN: mean over 3 seeds; LDA and CNN test columns are mean over test days. "Best epoch" is the score that picks the epoch, so it is optimistic by construction; "last epoch" (no selection) is the one to compare with the single-fit LDA.
 
 ## Same test windows, different training data (v2, LDA)
 
@@ -82,6 +82,16 @@ All three score the last 40 % of each of days 61-121.
 | 10 kΩ | 87.3 ± 5.3 | 87.2 ± 5.4 | 39.5 ± 4.2 | 13.1 ± 6.1 | 39.7 ± 4.4 | 13.6 ± 4.8 |
 | 20 kΩ | 87.3 ± 5.3 | 87.1 ± 5.4 | 30.8 ± 4.0 | 13.8 ± 4.9 | 22.3 ± 2.4 | 12.7 ± 4.4 |
 | 50 kΩ | 87.3 ± 5.3 | 86.9 ± 5.7 | 11.7 ± 3.5 | 13.8 ± 3.7 | 9.9 ± 2.3 | 12.3 ± 3.1 |
+
+## ADC sample rate (v2, LDA)
+
+Everything above runs at the dataset's 2048 Hz; the firmware samples at 1 kHz (`scripts/sample_rate.py`).
+
+| ADC | Cross-day | Within-day |
+|---|---|---|
+| 2048 Hz | 87.3 ± 5.3 | 81.3 ± 3.6 |
+| 1000 Hz | 86.9 ± 5.3 | 81.3 ± 3.7 |
+| 1000 Hz, FIR anti-alias | 86.9 ± 5.4 | 81.2 ± 3.7 |
 
 ## Accuracy vs days since training (LDA trained on 5 consecutive days)
 

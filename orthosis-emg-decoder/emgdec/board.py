@@ -17,10 +17,11 @@ Common-mode hum is modelled separately (see `hum`) because the two boards reject
 very differently.
 """
 from dataclasses import dataclass
+from math import gcd
 
 import numpy as np
 from numba import njit
-from scipy.signal import bilinear, lfilter
+from scipy.signal import bilinear, firwin, lfilter, resample_poly
 
 # Shared Sallen-Key filters (values read off the v1 schematic, unchanged in v2).
 K_SK = 1 + 10e3 / 18e3                      # 1.556 per stage
@@ -58,6 +59,22 @@ def adc(v, rng, bits=ADC_BITS, full_scale=ADC_FULL_SCALE, enob=ADC_ENOB):
     v = v + rng.normal(0.0, lsb_eff / np.sqrt(12), v.shape)
     lsb = full_scale / 2 ** bits
     return np.round(np.clip(v, 0.0, full_scale) / lsb) * lsb
+
+
+def sample_at(v, fs, fs_adc, anti_alias=False):
+    """Re-sample the analog node `v` (emulated at `fs`) the way an ADC clocked at `fs_adc` would.
+
+    anti_alias=False: band-limited interpolation (its filter starts rolling off ~170 Hz below
+    fs/2), then every k-th point. Content between fs_adc/2 and fs/2 folds back into the band,
+    as on the real board.
+    anti_alias=True: resample_poly's own Kaiser FIR low-pass at fs_adc/2 first (transition
+    about +-80 Hz around it), for comparison.
+    Only content below fs/2 exists in the emulation, so aliasing from above fs/2 is missed.
+    """
+    g = gcd(int(fs), int(fs_adc))
+    up, down = int(fs_adc) // g, int(fs) // g
+    window = ("kaiser", 5.0) if anti_alias else firwin(20 * up + 1, 1 / up)
+    return resample_poly(v, up, down, axis=0, window=window)
 
 
 @njit(cache=True)
@@ -198,8 +215,11 @@ class BoardV2:
     def pre_adc(self, x, fs):
         return self._clip(self.out_gain(x.shape[1]) * self.filtered(x, fs))
 
-    def __call__(self, x, fs, rng):
-        return adc(VREF + self.pre_adc(x, fs), rng) - VREF   # firmware removes mid-scale
+    def __call__(self, x, fs, rng, adc_fs=None, anti_alias=False):
+        v = self.pre_adc(x, fs)
+        if adc_fs and adc_fs != fs:      # the firmware samples at 1 kHz, not at fs
+            v = sample_at(v, fs, adc_fs, anti_alias)
+        return adc(VREF + v, rng) - VREF   # firmware removes mid-scale
 
 
 def calibrate_pots(board, recordings, fs, target_v, max_pot=100e3):
@@ -217,7 +237,9 @@ def calibrate_pots(board, recordings, fs, target_v, max_pot=100e3):
 
 
 def hum(n, fs, v_cm, cm_to_diff, rng, f=60.0):
-    """Mains pickup that reaches the differential input, per channel, random phase."""
+    """Mains pickup that reaches the differential input: one waveform, random phase,
+    added identically to every channel (all channels share one Electrodes model, so
+    they share cm_to_diff too)."""
     t = np.arange(n) / fs
     phase = rng.uniform(0, 2 * np.pi, 1)
     return (v_cm * cm_to_diff * np.sin(2 * np.pi * f * t + phase))[:, None]

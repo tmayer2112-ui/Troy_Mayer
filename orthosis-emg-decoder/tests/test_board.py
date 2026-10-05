@@ -62,6 +62,18 @@ def test_v2_is_centred_and_linear_for_small_signals():
     assert abs(y.mean()) < 5e-3
 
 
+def test_sample_at_folds_content_above_the_new_nyquist():
+    # 700 Hz sampled at 1 kHz reappears at 300 Hz unless an anti-alias filter removes it.
+    t = np.arange(4 * FS) / FS
+    x = (np.sin(2 * np.pi * 100 * t) + np.sin(2 * np.pi * 700 * t))[:, None]
+    for anti_alias, at_300 in ((False, 1.0), (True, 0.0)):
+        y = B.sample_at(x, FS, 1000, anti_alias)[:, 0]
+        assert len(y) == 4000
+        amp = 2 * np.abs(np.fft.rfft(y)) / len(y)       # 0.25 Hz bins: both tones sit on a bin
+        assert amp[400] == pytest.approx(1.0, abs=0.05)
+        assert amp[1200] == pytest.approx(at_300, abs=0.05)
+
+
 def test_hudgins_counts_zero_crossings():
     t = np.arange(800) / FS
     x = np.sin(2 * np.pi * 100 * t)[:, None].repeat(4, 1)
