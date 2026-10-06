@@ -4,7 +4,8 @@ Estimates the base velocity, attitude and IMU biases of a simulated Unitree Go1 
 BMI088-class IMU at 1 kHz with leg kinematics. It includes a Python reference and a C++/Eigen
 implementation that agree to 1e-13, a GoogleTest suite, a 1 kHz real-time loop benchmark, five
 experiments that break the filter on purpose to find where it stops working, and a closed-loop test where
-the walking controller is driven by the estimate instead of by ground truth.
+the walking controller is driven by the estimate instead of by ground truth, with either the scripted trot or a
+QP force-balance controller on the stance legs.
 
 This is written as an engineering note: what the filter assumes, where it holds, where it doesn't,
 and what's next. The bugs found along the way are in [`DEBUG_LOG.md`](DEBUG_LOG.md).
@@ -25,8 +26,12 @@ and what's next. The bugs found along the way are in [`DEBUG_LOG.md`](DEBUG_LOG.
 | Python vs C++ on the same 60 s log | max \|Δp\| 1.4e-13 m, \|Δv\| 3.3e-13 m/s | `make reproduce`, `make test` | `metrics.json` → `parity_python_vs_cpp` |
 | Unobservable directions, numerically | exactly 4 (3 translations + yaw) in all 30 windows tested | `make observability` | [`results/observability.json`](results/observability.json) |
 | Closed loop, controller fed the estimate, 60 s walk × 5 seeds | 0 falls; velocity tracking 0.173 m/s vs 0.169 m/s fed ground truth | `make closed-loop` | [`results/logs/closed_loop.log`](results/logs/closed_loop.log), [`closed_loop.json`](results/closed_loop.json) |
-| Same, lean on the first straight segment (before any turn) | 3.3–6.4° vs 1.15° fed ground truth; 1.15–1.17° after a 4 s turn at startup | `make closed-loop` | [lean plot](results/figures/closed_loop_lean.png) |
+| Same, lean on the first straight segment (before any turn) | 3.3–6.3° vs 1.15° fed ground truth; 1.15–1.17° after a 4 s turn at startup | `make closed-loop` | [lean plot](results/figures/closed_loop_lean.png) |
 | Largest lateral push survived (0.1 s, walking 0.4 m/s) | 11.9 N·s fed the estimate, 11.9 N·s fed ground truth | `make closed-loop` | `closed_loop.json` → `push` |
+| QP force-balance controller, same 60 s walk × 5 seeds, velocity tracking RMSE | 0.091 m/s fed ground truth (scripted trot 0.169 m/s); 0.086 m/s fed the estimate | `make qp-compare` | [`results/logs/qp_compare.log`](results/logs/qp_compare.log), [`qp_compare.json`](results/qp_compare.json), [speed plot](results/figures/qp_compare_velocity.png) |
+| Same, yaw-rate tracking RMSE | 0.196 rad/s fed ground truth (scripted 0.403 rad/s); 0.199 rad/s fed the estimate | `make qp-compare` | `qp_compare.json` → `qp.summary` |
+| Same, falls | 0 / 5 fed ground truth; **1 / 5 fed the estimate** (seed 3, t = 7.0 s); 0 / 5 fed the estimate after a 4 s turn at startup | `make qp-compare` | `qp_compare.json` → `qp.rows` |
+| Same, largest lateral push survived | 8.9 N·s either way (scripted trot 11.9 N·s) | `make qp-compare` | `qp_compare.json` → `qp.push` |
 
 Everything is deterministic except the timing (it depends on the host). `make claims` compares every number the
 résumé and portfolio page state about this project against these files and exits non-zero on a mismatch.
@@ -45,12 +50,13 @@ Tested on Ubuntu 24.04: GCC 13.3, CMake 3.28, Eigen 3.4, GoogleTest 1.14, Python
 sudo apt install build-essential cmake libeigen3-dev libgtest-dev   # CMake fetches GoogleTest if it's missing
 python3 -m pip install -r requirements.txt
 
-make build test     # 0 warnings under -Wall -Wextra -Wpedantic; 26 C++ tests, 26 Python tests
+make build test     # 0 warnings under -Wall -Wextra -Wpedantic; 26 C++ tests, 29 Python tests
 make data           # ~2 min  simulate the walks, synthesize IMU/encoder streams
 make reproduce      # ~3 min  headline numbers, RMSE table, figures, run log
 make closed-loop    # ~5 min  controller driven by the estimate vs by ground truth, push recovery
+make qp-compare     # ~5 min  scripted trot vs QP force-balance controller on the same metrics (after closed-loop)
 make claims         #         résumé numbers vs results/*.json
-make all            # ~32 min everything from scratch on 4 cores (tuning grid and experiments dominate)
+make all            # ~37 min everything from scratch on 4 cores (tuning grid and experiments dominate)
 ```
 
 ## The setup
@@ -374,7 +380,7 @@ controller fed ground truth, the loop reproduces the open-loop simulator bit for
 |---|---|---|
 | Falls | 0 / 5 | 0 / 5 |
 | Velocity tracking RMSE vs command | 0.169 m/s | 0.173 m/s (± 0.003) |
-| Mean lean, first straight segment (before any turn) | 1.15° | 4.1° (3.3–6.4°) |
+| Mean lean, first straight segment (before any turn) | 1.15° | 4.1° (3.3–6.3°) |
 | Estimator tilt error, same segment | 2.3° (1.0–3.8°) | 6.8° (5.6–10.0°) |
 | Estimator velocity RMSE | 0.012 m/s | 0.025 m/s (± 0.010) |
 | **Same walk after a 4 s left/right turn at startup** | | |
@@ -399,6 +405,116 @@ controller fed ground truth, the loop reproduces the open-loop simulator bit for
   observable before the long straight segment. With that, the estimate-fed robot is indistinguishable from
   the ground-truth-fed one (lean 1.16° vs 1.15°, tilt error 0.03°). Real robots often do a short calibration
   motion for the same reason.
+
+### QP force-balance controller
+
+The scripted trot is a position controller: every foot follows a trajectory and stiff joint servos (kp = 100)
+track it. Nothing in it reasons about forces, and it tracks speed loosely (0.17 m/s RMSE). As a second
+controller to run on the estimate, [`qp_balance.py`](python/qeskf/qp_balance.py) force-controls the stance legs
+instead. This is the idea behind MIT Cheetah 3's balance controller (Bledt et al. 2018), simplified. Everything
+below is in simulation.
+
+**What it does, every 2 ms (500 Hz):**
+
+1. *Desired body motion.* A PD law (PI on velocity) turns the tracking errors into a desired acceleration
+   and angular acceleration of the trunk:
+
+   a_des = [ kv·e_vx + ki_v·∫e_vx,  kv·e_vy + ki_v·∫e_vy,  kpz·(h_des − h) − kdz·v_z ]
+   ω̇_des = [ −kr·roll − kdr·ω_x,  −kr·pitch − kdr·ω_y,  kdy·e_ωz + ki_ωz·∫e_ωz ]
+
+   with e_vx = vx_cmd − vx and so on.
+2. *Forces that produce it.* Treat the robot as one rigid body. The ground forces f_i at the stance feet must satisfy
+
+   Σ f_i = m (a_des − g),  Σ r_i × f_i = I ω̇_des   (r_i: foot relative to the centre of mass)
+
+   i.e. A f = b with A = [I₃ … I₃; [r₁]× … [r_n]×]. Solve min ‖W(A f − b)‖² + α‖f‖² subject to friction.
+3. *Torques that apply them.* τ_i = J_iᵀ(−f_i), with f_i rotated into the trunk frame (the foot pushes on the
+   ground with −f_i). Plus 0.5 N·m·s/rad of joint damping.
+
+Swing legs keep the scripted trajectory, including Raibert foot placement, tracked by a joint PD with Menagerie's
+servo stiffness (kp = 100). `sim.load_model(torque=True)` turns the position servos into torque motors with the
+same limits. m = 12.74 kg, the CoM-frame inertia and the CoM offset come from MuJoCo's mass matrix at the
+standing keyframe (`mj_fullM`, parallel-axis theorem). Standing, the QP gives 30.7–31.8 N per foot, summing to
+m·g ([`test_qp_balance.py`](python/tests/test_qp_balance.py)).
+
+**Design choices:**
+
+* **Friction pyramid inside the cone, μ = 0.6 vs foot friction 0.8.** Each foot force is a non-negative mix of
+  four edge vectors (±μ, 0, 1), (0, ±μ, 1). That allows exactly |f_x| + |f_y| ≤ μ f_z, a pyramid inscribed in
+  the true cone. With that change of variables the only constraint is β ≥ 0, so the QP is a non-negative least
+  squares problem, solved exactly by `scipy.optimize.nnls`. No QP solver dependency, and no tuning of solver
+  tolerances. The controller assumes μ = 0.6 while the foot geoms have 0.8, so commanded forces keep a margin
+  to slipping. The test checks that every solved force is inside the pyramid, and that the constraint actually
+  binds when the demand is too large.
+* **Level heading frame.** The force balance is written with z up and x along the body's heading. So the
+  controller needs only roll, pitch, body-frame velocity, rates and trunk height, which are the same five
+  quantities the scripted trot reads. It never needs yaw or position, which the estimator can't observe. It
+  plugs into [Closing the loop](#closing-the-loop) unchanged.
+* **Swing PD, schedule-based stance.** Which legs are in stance comes from the gait clock, as in the scripted
+  trot. Swing legs stay position controlled, because swing is a trajectory-tracking problem and a 100 N·m/rad
+  PD already does it.
+* **Integrals on velocity and yaw rate, the only tuning.** With the starting gains (no integrals) the robot
+  walked the full profile but settled at 0.11 m/s when 0.4 m/s was commanded (tracking RMSE 0.23 m/s). The
+  model's joint damping (1–2 N·m·s/rad) and the legs' own inertia aren't in the rigid-body model, and they absorbed
+  the forward force the QP commanded. Feeding the damping forward cost attitude and estimator accuracy, and with
+  the extra stance damping also removed, the estimate-fed robot fell. An integral on velocity (ki_v = 4 s⁻²) and on
+  yaw rate (ki_ωz = 10 s⁻²), each clamped to 0.5, cut the error to 0.09 m/s instead (seed 0, DEBUG_LOG #15).
+  Every other gain is as first written.
+
+**Results** (`make qp-compare`, [`results/logs/qp_compare.log`](results/logs/qp_compare.log); same walks,
+seeds, estimator and metrics as the table above; scripted numbers are read from `closed_loop.json`):
+
+![QP vs scripted speed tracking](results/figures/qp_compare_velocity.png)
+
+| 60 s headline walk, mean of 5 seeds, in simulation | Scripted, fed truth | QP, fed truth | Scripted, fed estimate | QP, fed estimate |
+|---|---|---|---|---|
+| Falls | 0 / 5 | 0 / 5 | 0 / 5 | **1 / 5** (seed 3, t = 7.0 s) |
+| Velocity tracking RMSE vs command | 0.169 m/s | 0.091 m/s | 0.173 m/s | 0.086 m/s ¹ |
+| Yaw-rate tracking RMSE | 0.403 rad/s | 0.196 rad/s | 0.406 rad/s | 0.199 rad/s ¹ |
+| Mean lean, first straight segment | 1.15° | 2.69° | 4.1° (3.3–6.3°) | 2.97° (2.73–3.14°) ¹ |
+| Estimator tilt error, same segment | 2.3° (1.0–3.8°) | 1.6° (0.6–4.0°) | 6.8° (5.6–10.0°) | 0.64° (0.51–0.82°) ¹ |
+| Estimator velocity RMSE | 0.012 m/s | 0.016 m/s | 0.025 m/s | 0.018 m/s ¹ |
+| Height error RMS | 4.0 mm | 2.0 mm | 4.9 mm | 2.2 mm ¹ |
+| **After a 4 s turn at startup** | | | | |
+| Falls | 0 / 5 | 0 / 5 | 0 / 5 | 0 / 5 |
+| Velocity tracking RMSE | 0.169 m/s | 0.092 m/s | 0.167 m/s | 0.087 m/s |
+| Mean lean, first straight segment | 1.15° | 2.74° | 1.16° | 2.81° |
+| Estimator velocity RMSE | 0.009 m/s | 0.018 m/s | 0.009 m/s | 0.018 m/s |
+| **Largest lateral push survived** (0.1 s, 0.4 m/s, seed 0) | 11.9 N·s | 8.9 N·s | 11.9 N·s | 8.9 N·s |
+
+¹ Mean over the four seeds that didn't fall.
+
+* **Tracking roughly halves.** Velocity tracking error drops from 0.169 to 0.091 m/s and yaw-rate error from 0.403
+  to 0.196 rad/s, fed ground truth. Fed the estimate, it's no worse (0.086 m/s). Height error also halves.
+  It still doesn't reach the commanded speed. On the straights it runs at about 0.30 m/s for 0.4 m/s because the
+  velocity integrator sits at its clamp from t ≈ 8 s. After a stop command it slows over several seconds
+  while the integrator unwinds (plot above). The scripted trot has a constant offset instead: on seed 0 it runs
+  about 0.15 m/s slower than commanded in every segment, so it drifts backwards when told to stand still.
+* **It leans more.** Fed ground truth, it leans 2.7° against 1.15°, almost all of it pitch (pitch RMS 2.4° vs
+  1.1°). It comes with the velocity integral: without it the lean is 1.07° (DEBUG_LOG #15). My reading, not
+  isolated: the extra forward force acts at the feet, below the centre of mass, and the attitude PD has no
+  integral to cancel the resulting pitch moment. Fed the estimate, the four surviving seeds lean *less* than
+  the scripted trot does (2.97° vs 4.1°), and their tilt estimate is ten times better (0.64° vs 6.8°).
+* **It fell once, and that's the real result.** Seed 3 has the worst startup alignment of the five (2.9° roll and
+  2.3–2.5° pitch error, nearly the same for both controllers, since both stand still while the filter calibrates). On the straight
+  walk that error is unobservable and grows in both cases. The scripted trot ends up 15° off in roll by t = 5 s
+  and survives because its position-servoed legs limit how far it can tilt. The QP controller has more attitude
+  authority and turns the error into real tilt faster: −24° of pitch error by t = 4 s, then the height
+  estimate (from leg kinematics through the wrong attitude) reads 0.29 m when the trunk is at 0.17 m, and it falls at
+  7.0 s. Lowering the attitude gain (kr 150 → 75) or removing the velocity integral only delays the fall (to
+  9.9 s and 10.6 s). The 4 s startup turn from the previous section fixes it: 0 / 5 falls (DEBUG_LOG #16).
+* **It takes smaller pushes.** 8.9 N·s against 11.9 N·s for the scripted trot, the same with either feedback.
+  I haven't isolated why. Likely contributors: stiff position servos resist a push at the joints directly, while
+  the QP only responds through the body state it reads at 500 Hz, with a velocity gain of 4 s⁻¹, and both use the
+  same Raibert foot placement.
+
+**Limitations.** This is a teaching-sized version of the idea, not a reproduction of a real balance controller.
+It's Python at 500 Hz in simulation (NNLS with 6 equations and 8–16 unknowns), with no timing guarantee. There's no MPC horizon:
+each step solves only for the forces now, so it can't plan through the swing phase or anticipate the next
+touchdown. The rigid-body model ignores leg mass (about 60 % of the robot) and joint damping, which is why it
+needs integrals. Stance comes from the schedule, not from sensed contact, so an early or late touchdown is
+force-controlled as if it were on time. The gains were tuned on the headline walk itself (ki_v, ki_ωz only),
+unlike the estimator's parameters, which were tuned on a separate walk.
 
 ## How the numbers were chosen
 
@@ -434,8 +550,10 @@ the filter assumes. Contact comes from simulated forces. The kinematics are exac
 IMU calibration and terrain all add error that this simulation doesn't have. The filter is also overconfident (velocity NEES 13), its
 pitch and accel-x bias are unreliable until the robot has turned, and it can't detect a smooth foot slide
 at all (E2): it reports the slide as body motion. In closed loop, that tilt error becomes a real lean of
-several degrees unless the robot turns first. The closed-loop test uses the same scripted trot; it shows
-the estimate is good enough for *this* controller, not for a faster or more aggressive one.
+several degrees unless the robot turns first. The closed-loop tests use two simple controllers (the scripted trot
+and a QP force balance without a prediction horizon) at 0.2–0.45 m/s. They show the estimate is good enough for
+*these* controllers, not for a faster or more aggressive one, and the QP controller, which has more attitude
+authority, fell on 1 of 5 seeds from the same startup tilt error unless the robot turned first.
 
 ## Next steps
 
@@ -448,6 +566,10 @@ the estimate is good enough for *this* controller, not for a faster or more aggr
 4. **A Playground PPO policy on a GPU** instead of the scripted trot, for gaits that aren't so regular.
    Run it closed loop on the estimate, as in [Closing the loop](#closing-the-loop).
 5. **Temperature**: add a bias-temperature state or at least model the warm-up (E5 shows it dominates yaw).
+6. **QP controller**: anti-windup and a feedforward for the legs' own drag instead of a saturating velocity
+   integral; a short MPC horizon (convex MPC, Di Carlo et al. 2018) in place of the instantaneous force balance;
+   contact-triggered stance; then rerun the push test, which it currently does worse than the scripted trot
+   (8.9 vs 11.9 N·s).
 
 ## Deviations from the plan
 
@@ -465,16 +587,17 @@ the estimate is good enough for *this* controller, not for a faster or more aggr
 ```
 models/go1/            Go1 physics model (from MuJoCo Menagerie, BSD-3) and the 1 kHz scene
 python/qeskf/          sim, gait, IMU model, kinematics, ESKF (reference), observability, pipeline,
-                       closed_loop (estimator inside the physics loop, feeding the controller)
-python/scripts/        generate_data, tune, reproduce, observability, experiments, closed_loop, timing,
-                       check_claims, debug_repro, make_parity_fixture
+                       closed_loop (estimator inside the physics loop, feeding the controller),
+                       qp_balance (QP force-balance controller for the stance legs)
+python/scripts/        generate_data, tune, reproduce, observability, experiments, closed_loop, qp_compare,
+                       timing, check_claims, debug_repro, make_parity_fixture
 python/tests/          pytest: Jacobians vs finite differences, SPD, quaternion norm, sim/IMU alignment,
-                       null space, closed-loop wiring
+                       null space, closed-loop wiring, QP force balance (forces, torque sign, friction)
 cpp/include, cpp/src   C++17/Eigen ESKF, kinematics, SO(3)
 cpp/apps               qeskf_replay (offline), qeskf_bench_loop (1 kHz real-time loop)
 cpp/tests              GoogleTest: Jacobians vs finite differences, invariants, Python parity fixture
-results/               metrics.json, rmse_table.md, observability.json, experiments.json, closed_loop.json, timing.json,
-                       tuned_params.json, logs/, figures/ (every PNG has a CSV of its plotted data)
+results/               metrics.json, rmse_table.md, observability.json, experiments.json, closed_loop.json,
+                       qp_compare.json, timing.json, tuned_params.json, logs/, figures/ (every PNG has a CSV of its plotted data)
 claims.json            every number the résumé states, mapped to the file and key that back it
 DEBUG_LOG.md           what broke, what it looked like, what it actually was
 ```

@@ -161,7 +161,7 @@ moving, and the walk started from garbage.
 rates, height from leg kinematics). That is what a real robot does while it calibrates.
 
 ### 14. Closed loop: the robot leans 3–6° on a straight walk
-**Symptom:** Fed the estimate, the robot walked the full 60 s without falling, but leaned 3.3–6.4° on the first
+**Symptom:** Fed the estimate, the robot walked the full 60 s without falling, but leaned 3.3–6.3° on the first
 straight segment, against 1.15° when fed ground truth. Velocity tracking barely changed.
 **Hypothesis:** The tilt/accelerometer-bias ambiguity from #7. The controller levels the estimated trunk, so
 the estimate's tilt error becomes the real lean.
@@ -172,3 +172,42 @@ before the same walk: lean 1.16°, tilt error 0.03°, the same as the ground-tru
 give almost the same error (5.6–5.8°), so the closed-loop motion drives it, not sensor noise. The exact
 coupling isn't isolated.
 **Fix:** A 4 s turn at startup (`closed_loop.turn_first`). README, "Closing the loop".
+
+### 15. QP controller walks at 0.11 m/s when told 0.4 m/s
+**Symptom:** The first full run of the QP force-balance controller (seed 0, fed ground truth) walked the whole
+60 s without falling, but velocity tracking RMSE was 0.23 m/s, worse than the scripted trot's 0.169. On the
+first straight it settled at 0.115 m/s for a 0.4 m/s command.
+**Hypothesis:** Either the QP can't deliver the forward force (friction, the moment balance), or it delivers it
+and something absorbs it.
+**Test:** (a) Over 7–12 s the QP's commanded forces summed to +13.2 N forward, close to what the velocity gain asks
+for (14.5 N), and well inside the friction pyramid (max |f_x| + |f_y| = 0.26 f_z). (b) The real contact forces
+from MuJoCo, split by scheduled stance and swing: the stance feet pushed the robot −2.7 N (backwards), and swing
+feet scuffing the ground +2.7 N. So the force the QP commanded never reached the ground. (c) The Menagerie
+model has 1–2 N·m·s/rad of joint damping and 0.2 N·m frictionloss on every joint, which the rigid-body model
+ignores. Feeding that damping forward on the stance legs raised the speed to 0.21 m/s, and to 0.31 m/s with the
+controller's own 0.5 N·m·s/rad stance damping also removed. But roll RMS rose to 1.7–2.6° (from 0.73°) and
+estimator velocity RMSE to 0.04–0.06 m/s (from 0.006). With no damping at all the estimate-fed robot fell at 2.9 s.
+**Actual cause:** Unmodelled leg dynamics (joint damping, leg inertia, swing-leg reaction). The scripted trot
+never noticed because stiff position servos override them.
+**Fix:** Integral action, not damping cancellation: ki_v = 4 s⁻² on horizontal velocity and ki_ωz = 10 s⁻² on
+yaw rate, each clamped to 0.5. Seed 0, fed ground truth: tracking 0.23 → 0.091 m/s, yaw rate 0.248 → 0.196 rad/s.
+The yaw integral alone cost nothing. The velocity integral raises the lean on the first straight from 1.07° to 2.69°
+and estimator velocity RMSE from 0.006 to 0.016 m/s. The vx integrator saturates at its clamp from t ≈ 8 s, so
+the robot still runs about 0.1 m/s slow and unwinds slowly at stops. `QPGains.comp_damping` (default 0) keeps the
+rejected variant reproducible.
+
+### 16. QP controller fed the estimate falls on seed 3
+**Symptom:** In `make qp-compare`, the QP controller fed the estimate fell on sensor seed 3 at t = 7.0 s, during
+the first straight. The other four seeds, and all five fed ground truth, walked the full 60 s.
+**Hypothesis:** The tilt/accelerometer-bias ambiguity again (#7, #14), with a controller that acts on it harder.
+**Test:** Estimated minus true roll/pitch at t = 2, 3, 4, 5 s for both controllers, seeds 0–4. Seed 3 starts
+worst for both controllers (−2.9° roll, −2.3° / −2.5° pitch at t = 2 s, from static alignment with that seed's
+accelerometer bias). The scripted trot's error grows to −15.4° roll by t = 5 s and it survives. The QP's grows to
+−24.3° pitch by t = 4 s. True pitch reaches 28°, and the height fed back (leg kinematics through the wrong
+attitude) reads 0.29–0.31 m while the trunk is at 0.17 m. Gains: kr 150 → 75 falls at 9.9 s; ki_v = 0 falls at
+10.6 s; ki_v = 2 falls at 7.1 s. So the fall isn't caused by the tuning in #15, and no gain I tried avoids it.
+**Actual cause:** Weak observability of tilt while walking straight, as in #14. The QP's force-controlled stance
+has more attitude authority than the position-servoed trot, so it converts the estimate's error into real tilt
+faster, and the height estimate collapses with it.
+**Fix:** None in the controller. With the 4 s startup turn (`closed_loop.turn_first`) all five seeds walk fed
+the estimate. Reported as 1/5 falls in the README.
