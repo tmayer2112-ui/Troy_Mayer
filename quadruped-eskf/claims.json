@@ -46,6 +46,18 @@
      "evidence": ["results/logs/closed_loop.log", "results/figures/closed_loop_lean.png", "make closed-loop"]},
     {"id": "closed_loop_lean_fixed", "text": "a 4 s startup turn removes it (1.16° vs 1.15° fed ground truth)",
      "source": "results/closed_loop.json", "path": "summary.turn_first/estimate.straight_lean_deg", "value": 1.16, "abs_tol": 0.01,
-     "evidence": ["results/logs/closed_loop.log", "results/figures/closed_loop_lean.png", "make closed-loop"]}
+     "evidence": ["results/logs/closed_loop.log", "results/figures/closed_loop_lean.png", "make closed-loop"]},
+    {"id": "qp_tracking_truth", "text": "QP force-balance controller: velocity tracking 0.091 m/s vs 0.169 m/s for the scripted trot (in simulation, fed ground truth)",
+     "source": "results/qp_compare.json", "path": "qp.summary.headline/truth.track_vxy_rmse", "value": 0.091, "abs_tol": 0.0005,
+     "evidence": ["results/logs/qp_compare.log", "results/figures/qp_compare_velocity.png", "make qp-compare"]},
+    {"id": "qp_yaw_rate_truth", "text": "QP force-balance controller: yaw-rate tracking 0.196 rad/s vs 0.403 rad/s for the scripted trot",
+     "source": "results/qp_compare.json", "path": "qp.summary.headline/truth.track_wz_rmse", "value": 0.196, "abs_tol": 0.0005,
+     "evidence": ["results/logs/qp_compare.log", "make qp-compare"]},
+    {"id": "qp_estimate_falls", "text": "QP controller fed the estimate: 1 fall in 5 × 60 s walks (0 in 5 after a 4 s startup turn)",
+     "source": "results/qp_compare.json", "path": "qp.summary.headline/estimate.falls", "equals": 1,
+     "evidence": ["results/logs/qp_compare.log", "DEBUG_LOG.md #16", "make qp-compare"]},
+    {"id": "qp_estimate_turn_first_falls", "text": "QP controller fed the estimate after a 4 s startup turn: 0 falls in 5 × 60 s walks",
+     "source": "results/qp_compare.json", "path": "qp.summary.turn_first/estimate.falls", "equals": 0,
+     "evidence": ["results/logs/qp_compare.log", "make qp-compare"]}
   ]
 }

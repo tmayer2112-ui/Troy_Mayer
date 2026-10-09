@@ -3,9 +3,9 @@ PY      ?= python3
 RUN     := PYTHONPATH=python $(PY)
 BUILD   := build
 
-.PHONY: all setup build test test-cpp test-py data tune reproduce observability experiments closed-loop timing claims clean
+.PHONY: all setup build test test-cpp test-py data tune reproduce observability experiments closed-loop qp-compare timing claims clean
 
-all: build test data tune reproduce observability experiments closed-loop timing claims
+all: build test data tune reproduce observability experiments closed-loop qp-compare timing claims
 
 setup:
 	$(PY) -m pip install -r requirements.txt
@@ -39,6 +39,9 @@ experiments: build        ## ~15 min: hard/soft, slip, friction, contact delay, 
 
 closed-loop:              ## ~5 min: controller fed the estimate vs ground truth (5 seeds), push recovery
 	$(RUN) python/scripts/closed_loop.py
+
+qp-compare:               ## ~7 min: scripted trot vs QP force-balance controller (needs closed-loop's results)
+	$(RUN) python/scripts/qp_compare.py
 
 timing: build             ## 60 s wall clock; run on an idle machine
 	$(RUN) python/scripts/timing.py

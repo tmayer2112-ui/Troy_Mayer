@@ -32,6 +32,7 @@ from .eskf import Eskf, EskfParams, initial_covariance, static_alignment
 from .gait import GaitParams, TrotController, command_profile
 from .imu_model import EncoderSpec, ImuSpec, imu_noise, measure_imu, quantize_encoders
 from .pipeline import CAL_WINDOW, CONTACT_FORCE_N, T_START
+from .qp_balance import QPBalanceController, QPGains
 from .sim import _mean_stance_foot_z, load_model
 from .so3 import quat_to_rot, rot_to_quat, rpy_from_rot
 
@@ -83,16 +84,21 @@ def _feet_height(R, qenc):
 
 def run(duration=60.0, feedback="estimate", seed=0, profile=command_profile, gait=GaitParams(),
         params: EskfParams = None, policy: ContactPolicy = ContactPolicy(liftoff_advance_ms=5.0),
-        imu=ImuSpec(), enc=EncoderSpec(), push=None, contact_delay_ms=0.0):
+        imu=ImuSpec(), enc=EncoderSpec(), push=None, contact_delay_ms=0.0, controller="scripted",
+        qp_gains=QPGains()):
     """One closed-loop run. feedback: "truth" (controller reads the simulator) or "estimate".
+
+    controller: "scripted" (gait.py: position targets for every foot, stiff joint servos) or
+    "qp" (qp_balance.py: force-controlled stance legs, same swing trajectory; torque actuators).
 
     The estimator runs in both modes, so "truth" mode also gives the estimator's accuracy on the
     same physics, for comparison. push: (t_start, t_end, force_world[3]) on the trunk.
     contact_delay_ms: extra latency on the force-based contact signal (on top of the 1 ms above).
     """
-    assert feedback in ("truth", "estimate")
+    assert feedback in ("truth", "estimate") and controller in ("scripted", "qp")
     params = params or EskfParams.from_imu_spec(imu)
-    m = load_model()
+    m = load_model(torque=controller == "qp")
+    qp = QPBalanceController(m, gait, qp_gains) if controller == "qp" else None
     d = mujoco.MjData(m)
     mujoco.mj_resetDataKeyframe(m, d, 0)
     mujoco.mj_forward(m, d)
@@ -115,7 +121,7 @@ def run(duration=60.0, feedback="estimate", seed=0, profile=command_profile, gai
     log = {k: np.full((n,) + s, np.nan) for k, s in dict(
         t=(), p=(3,), quat=(4,), v=(3,), omega_b=(3,), cmd=(3,), height=(),
         est_p=(3,), est_v=(3,), est_q=(4,), fb_v_b=(3,), fb_rpy=(3,), fb_height=(),
-        acc=(3,), gyro=(3,), contact_est=(4,),
+        acc=(3,), gyro=(3,), contact_est=(4,), qp_f=(4, 3),
     ).items()}
     force_hist = np.zeros((n, 4), dtype=bool)
     f = None
@@ -157,8 +163,11 @@ def run(duration=60.0, feedback="estimate", seed=0, profile=command_profile, gai
                 Rh = quat_to_rot(f.x.q)
                 w = log["gyro"][k - 1] - f.x.bg   # latest gyro sample, bias-corrected
                 fb = (Rh.T @ f.x.v, rpy_from_rot(Rh), w, _feet_height(Rh, qenc))
-            q_cmd = ctrl.joint_targets(t, cmd, *fb)
-        d.ctrl[:] = q_cmd
+            if qp is None:
+                q_cmd = ctrl.joint_targets(t, cmd, *fb)
+            else:
+                qp.plan(t, cmd, fb, qenc)
+        d.ctrl[:] = q_cmd if qp is None else qp.torque(d.qpos[7:19], d.qvel[6:18])
         d.xfrc_applied[trunk] = 0
         if push is not None and push[0] <= t < push[1]:
             d.xfrc_applied[trunk, :3] = push[2]
@@ -168,6 +177,8 @@ def run(duration=60.0, feedback="estimate", seed=0, profile=command_profile, gai
         log["cmd"][k] = cmd
         log["height"][k] = d.qpos[2] - _mean_stance_foot_z(d, foot_sites)
         log["fb_v_b"][k], log["fb_rpy"][k], log["fb_height"][k] = fb[0], fb[1], fb[3]
+        if qp is not None:
+            log["qp_f"][k] = qp.f
 
         mujoco.mj_step(m, d)
 

@@ -45,13 +45,16 @@ def _profile(name):
 
 
 def _walk(args):
-    name, feedback, seed = args
+    name, feedback, seed, *ctrl = args       # optional 4th element: controller ("scripted" or "qp")
+    controller = ctrl[0] if ctrl else "scripted"
     prm, pol = load_tuned()
     t0 = time.time()
-    r = cl.run(DURATION, feedback, seed, profile=_profile(name), params=prm, policy=pol)
+    r = cl.run(DURATION, feedback, seed, profile=_profile(name), params=prm, policy=pol, controller=controller)
     t_walk = T_START + (T_TURN if name == "turn_first" else 0.0)
     m = cl.metrics(r, t_from=t_walk + 3.0, straight=(t_walk + 3.0, t_walk + 10.0))
     m.update(exp=name, wall_s=time.time() - t0)
+    if controller != "scripted":
+        m["controller"] = controller
     trace = None
     if seed == 0:   # 50 Hz trace for the figure
         L = r.log
@@ -59,28 +62,33 @@ def _walk(args):
         rt = np.degrees([rpy_from_rot(quat_to_rot(q))[:2] for q in L["quat"][k]])
         re = np.degrees([rpy_from_rot(quat_to_rot(q))[:2] if np.all(np.isfinite(q)) else (np.nan, np.nan)
                          for q in L["est_q"][k]])
+        vx = [(quat_to_rot(q).T @ v)[0] for q, v in zip(L["quat"][k], L["v"][k])]
         trace = dict(t=L["t"][k].tolist(), roll=rt[:, 0].tolist(), pitch=rt[:, 1].tolist(),
-                     roll_err=(re[:, 0] - rt[:, 0]).tolist(), pitch_err=(re[:, 1] - rt[:, 1]).tolist())
+                     roll_err=(re[:, 0] - rt[:, 0]).tolist(), pitch_err=(re[:, 1] - rt[:, 1]).tolist(),
+                     vx=vx, cmd_vx=L["cmd"][k, 0].tolist())
     return m, trace
 
 
-def _survives(feedback, impulse):
+def _survives(feedback, impulse, controller="scripted"):
     prm, pol = load_tuned()
     f = impulse / PUSH_LEN
     r = cl.run(PUSH_T + 3.0 - T_START, feedback, 0, profile=_profile("push"), params=prm, policy=pol,
-               push=(PUSH_T, PUSH_T + PUSH_LEN, np.array([0.0, f, 0.0])))
+               push=(PUSH_T, PUSH_T + PUSH_LEN, np.array([0.0, f, 0.0])), controller=controller)
     return not r.fell
 
 
-def _push(feedback):
+def _push(feedback, controller="scripted"):
     lo, hi, tried = 0.0, PUSH_HI, []
-    assert not _survives(feedback, hi), "upper bracket survived; raise PUSH_HI"
+    assert not _survives(feedback, hi, controller), "upper bracket survived; raise PUSH_HI"
     while hi - lo > PUSH_RES:
         mid = 0.5 * (lo + hi)
-        ok = _survives(feedback, mid)
+        ok = _survives(feedback, mid, controller)
         tried.append((mid, ok))
         lo, hi = (mid, hi) if ok else (lo, mid)
-    return dict(feedback=feedback, max_survived_Ns=lo, min_fell_Ns=hi, tried=tried)
+    out = dict(feedback=feedback, max_survived_Ns=lo, min_fell_Ns=hi, tried=tried)
+    if controller != "scripted":
+        out["controller"] = controller
+    return out
 
 
 def figure(rows, traces):
