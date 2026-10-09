@@ -415,6 +415,7 @@ section.block.alt .nda-note{background:var(--bg-elev)}
   color:var(--accent);font-weight:700;margin-bottom:8px;
 }
 .side-block p{color:var(--text-2);font-size:.97rem;line-height:1.68}
+.side-block p + p{margin-top:10px}
 .side-block ul{list-style:none;display:grid;gap:10px}
 .side-block li{position:relative;padding-left:20px;color:var(--text-2);font-size:.95rem;line-height:1.62}
 .side-block li::before{content:"";position:absolute;left:2px;top:.66em;width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.6}
@@ -581,7 +582,7 @@ footer{padding:36px 0 44px;text-align:center}
         <h2 class="section-title">About me</h2>
         <p>I'm a Mechanical Engineering and Applied Statistics student at Purdue, with a minor in Economics, graduating in May 2028.</p>
         <p>At <strong>Boston Dynamics</strong> I'm a Sensors and Perception co-op on Atlas. I build impact-analysis software: forward kinematics to compute limb velocities at impact, a delta-v impact-severity metric, and a forensics dashboard covering ~28k impact events. I also design test fixtures in CATIA for impact testing.</p>
-        <p>At <strong>Purdue ASME</strong> I lead the electronics team for an EMG-controlled arm orthosis. I redesigned its 4-channel EMG board and designed and implemented its 1&nbsp;kHz PI velocity controller in C++. On my own, I built a contact-aided error-state Kalman filter for a simulated quadruped.</p>
+        <p>At <strong>Purdue ASME</strong> I lead the electronics team for an EMG-controlled arm orthosis. I redesigned its 4-channel EMG board and designed and implemented its 1&nbsp;kHz PI velocity controller in C++. On my own, I built a contact-aided error-state Kalman filter for a simulated quadruped and a QP force-balance controller that walks on its estimate.</p>
         <p>Before that, I did LSTM forecasting for a Caterpillar paint line, computer-vision measurement for soft-robotics gels in the Chortos Lab, and valve design and testing at Emerson.</p>
         <div class="fact-card">
           <div class="fact-row"><div class="fact-k">Education</div><div class="fact-v">Purdue University — B.S. Mechanical Engineering, B.S. Applied Statistics, Minor in Economics · May 2028 · GPA 3.4</div></div>
@@ -622,10 +623,10 @@ footer{padding:36px 0 44px;text-align:center}
           <div class="tl-loc">Waltham, MA</div>
           <ul>
             <li>Built an impact forensics pipeline and Flask/Plotly dashboard, deployed on a Linux VM, covering ~28k impact events from ~900 robot test logs. It runs ETL from a time-series telemetry store into a queryable SQLite cache and gives engineers a 3D impact-location heatmap (normalized by per-facet solid angle, so it reads as density rather than facet size) and per-event waveform inspection during testing.</li>
-            <li>Developed forward kinematics to compute limb velocities at impact, starting from the robot's 6-DOF floating-base state and working out through each joint chain with roll-pitch-yaw matrices and Rodrigues' rotation formula. Velocities come from exact rigid-body velocity composition (base velocity plus ω × r lever arms) rather than numerical differentiation, and are fused with high-rate IMU data to measure energy change across impacts.</li>
+            <li>Developed forward kinematics to compute limb velocities at impact, starting from the robot's 6-DOF floating-base state and working out through each joint chain with quaternions, roll-pitch-yaw matrices and Rodrigues' rotation formula. Velocities come from exact rigid-body velocity composition (base velocity plus ω × r lever arms) rather than numerical differentiation, and are fused with high-rate IMU data to measure energy change across impacts.</li>
             <li>Designed a Δv impact-severity metric robust to the sensor bandwidth limits that affect peak-based metrics. Characterized the Butterworth anti-alias filtering against synthetic pulses of known amplitude, quantified the metric's noise floor with a null-control experiment, and landed every change only after bit-identical regression checks across the full event table.</li>
             <li>Designed test fixtures in CATIA 3DEXPERIENCE for standalone impact testing, plus protective hardware that lets sensitive components survive repeated impacts, so test campaigns can keep running without replacing parts between hits.</li>
-            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy), applying Savitzky–Golay smoothing and regime detection within heating cycles, then fitting exponential models by multi-start least squares to project steady-state temperatures across hundreds of units, gated on residual RMSE.</li>
+            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy), detecting heating regimes and fitting exponential models by multi-start least squares to predict steady-state temperatures across hundreds of units without running each test to completion, gated on residual RMSE.</li>
           </ul>
           <div class="tl-tags">
             <span class="tag">Python</span><span class="tag">Rigid-Body Kinematics</span><span class="tag">CATIA 3DEXPERIENCE</span><span class="tag">Test Fixtures</span><span class="tag">Sensor Fusion</span><span class="tag">Filter Design</span><span class="tag">SQLite</span><span class="tag">Flask</span><span class="tag">Plotly</span><span class="tag">Linux</span><span class="tag">Pandas</span><span class="tag">SciPy</span>
@@ -735,7 +736,7 @@ footer{padding:36px 0 44px;text-align:center}
         <div class="card-body">
           <h3>Legged Robot State Estimation</h3>
           <div class="card-org">C++ · Eigen · MuJoCo · GoogleTest</div>
-          <p class="card-desc">A contact-aided error-state EKF fusing a simulated BMI088 IMU with leg kinematics on a walking Go1 in MuJoCo — 1 kHz, 0.013 m/s velocity RMSE against ground truth, and a set of experiments that break it on purpose.</p>
+          <p class="card-desc">A contact-aided error-state EKF fusing a simulated BMI088 IMU with leg kinematics on a walking Go1 in MuJoCo — 1 kHz, 0.013 m/s velocity RMSE against ground truth, a QP force-balance controller that walks on the estimate, and experiments that break it on purpose.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
       </a>
@@ -805,7 +806,7 @@ footer{padding:36px 0 44px;text-align:center}
           <h4>Control Firmware</h4>
           <ul>
             <li>A C++17 core with no hardware dependencies, run by a <strong>1 kHz FreeRTOS task</strong> on an ESP32-S3. The same file compiles into a simulator of the motor, transmission, and forearm.</li>
-            <li>PI velocity loop on the motor encoder, IMC-tuned, with plant-inversion feed-forward and anti-windup. Lifting the forearm, speed error falls from 98% with feed-forward alone to <strong>0.8%</strong>.</li>
+            <li>PI velocity loop on the motor encoder, IMC-tuned, with plant-inversion feed-forward and anti-windup, holding speed error to <strong>0.8%</strong> while lifting the forearm.</li>
             <li>A Bayesian EMG amplitude estimator plus a 20 ms onset confirm. The joint moves <strong>43 ms</strong> after the muscle does (was 103 ms) and stops <strong>32 ms</strong> after it relaxes (was 89 ms), with zero false starts from motion artefacts.</li>
             <li>Ten runtime fault monitors (runaway, stall, electrode lead-off, tracking error, over-travel, and more) latch the motor off. A hardware watchdog and a kill switch act independently of the code.</li>
             <li>26 GoogleTest unit, closed-loop, and real-EMG latency tests, plus an ESP32-S3 build, run in CI.</li>
@@ -817,7 +818,7 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
         <div class="side-block">
           <h4>Decoder</h4>
-          <p>I ran 115 days of real 4-channel forearm EMG through a sample-level emulation of each board. Through v2, cross-day 11-class accuracy holds at <strong>87.3%</strong>, against 87.9% with no board at all; v1 manages 30.8%. A PyTorch CNN dropped to 68% on later days. I traced that to electrode-polarity changes between sessions, and polarity augmentation brought it back to <strong>86%</strong>.</p>
+          <p>I ran 115 days of real 4-channel forearm EMG through a sample-level emulation of each board. Through v2, cross-day 11-class accuracy holds at <strong>87.3%</strong>, within a point of the 87.9% with no board at all. When a PyTorch CNN lost accuracy on later days, I traced it to electrode-polarity changes between sessions using per-channel skewness, and polarity augmentation brought it to <strong>86.3%</strong>, matching the LDA baseline.</p>
         </div>
         <div class="skill-block">
           <div class="hd">Core Skills</div>
@@ -877,10 +878,10 @@ footer{padding:36px 0 44px;text-align:center}
         <div class="side-block">
           <h4>Results</h4>
           <ul>
-            <li>Velocity RMSE <strong>0.013 m/s</strong> against MuJoCo ground truth over a 60-second walk (mean of 10 sensor-noise seeds), against 1.38 m/s for IMU-only dead reckoning.</li>
+            <li>Velocity RMSE <strong>0.013 m/s</strong> against MuJoCo ground truth over a 60-second walk (mean of 10 sensor-noise seeds), and about <strong>0.15 m</strong> of final position error after 13.1 m walked.</li>
             <li>Runs at <strong>1 kHz</strong>, one update per IMU sample; the C++ step takes about 20 µs of the 1 ms budget.</li>
             <li>Jacobians verified against finite differences in GoogleTest; the C++ filter matches the Python reference to 1e-13 on a recorded walk.</li>
-            <li>IMU noise and bias terms taken from the BMI088 data sheet, not tuned.</li>
+            <li>IMU noise and bias terms taken from the BMI088 data sheet, not tuned; contact parameters tuned on a separate walk with a different path.</li>
           </ul>
         </div>
         <div class="side-block">
@@ -891,16 +892,22 @@ footer{padding:36px 0 44px;text-align:center}
           <h4>What Breaks It</h4>
           <ul>
             <li>About <strong>2 cm/s of foot slip</strong> doubles the velocity error; the per-sample χ² gate never catches a smooth slide.</li>
-            <li>Force-only contact detection loses yaw fast as latency grows; ANDing with the gait schedule removes the cliff.</li>
+            <li>Force-only contact detection loses yaw fast as latency grows; gating it on the gait schedule holds yaw error under 0.6° even at 60 ms of latency.</li>
             <li>A tutorial-style <code>Q = 0.01·I</code> loses attitude entirely; data-sheet Q doesn't.</li>
           </ul>
+        </div>
+        <div class="side-block">
+          <h4>Closing the Loop</h4>
+          <p>The walking controller can run on the filter's estimate instead of ground truth. Fed the estimate, the robot completes 5 × 60 s walks without a fall, with velocity tracking within 0.004 m/s of the ground-truth-fed run.</p>
+          <p>The one new failure is a lean of about 4° before the first turn: tilt is only weakly observable while walking straight, and the controller levels the <em>estimated</em> trunk. A 4 s turn at startup makes tilt observable and removes it.</p>
+          <p>I also added a QP force-balance controller for the stance legs, in the style of MIT Cheetah 3's balance controller: one rigid body, with friction-limited foot forces solved as non-negative least squares at 500 Hz. Fed the estimate after the startup turn, it also completes 5 × 60 s walks without a fall.</p>
         </div>
         <div class="skill-block">
           <div class="hd">Core Skills</div>
           <div class="bd">
             <div>C++ / Eigen</div>
             <div>Kalman Filtering</div>
-            <div>Rigid Body Kinematics</div>
+            <div>QP Force Control</div>
             <div>Unit Testing</div>
           </div>
         </div>
@@ -934,6 +941,10 @@ footer{padding:36px 0 44px;text-align:center}
         <figure class="shot">
           <img src="quadruped-eskf/results/figures/exp_contact_delay.png" alt="Velocity and yaw error against contact-detection latency for three contact detectors">
           <figcaption>Breaking it on purpose: with force-only contact detection, 10 ms of latency costs 6.6° of yaw over the 60-second walk. Gating on the gait schedule removes the failure.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="quadruped-eskf/results/figures/closed_loop_lean.png" alt="True trunk roll with the controller fed ground truth versus fed the estimate, with and without a startup turn" loading="lazy">
+          <figcaption>Closing the loop: with the controller fed the estimate, tilt error before the first turn becomes a real lean of up to 5°. A 4 s turn at startup makes tilt observable, and the lean disappears.</figcaption>
         </figure>
       </div>
     </div>
@@ -1122,7 +1133,7 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V5a3 3 0 0 1 6 0v3M9 14h.01M15 14h.01"/></svg></div>
         <h3>Robotics &amp; Controls</h3>
-        <div class="sk-list"><span>Rigid-Body Kinematics</span><span>PI + Feed-Forward Control</span><span>Error-State EKF</span><span>Sensor Fusion</span><span>FreeRTOS</span><span>ESP32</span><span>Eigen</span><span>MuJoCo</span></div>
+        <div class="sk-list"><span>Rigid-Body Kinematics</span><span>PI + Feed-Forward Control</span><span>QP Force Control</span><span>Error-State EKF</span><span>Sensor Fusion</span><span>FreeRTOS</span><span>ESP32</span><span>Eigen</span><span>MuJoCo</span></div>
       </div>
 
       <div class="sk-card reveal">
@@ -1140,7 +1151,7 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3 8 4-16 3 8h6"/></svg></div>
         <h3>Signals &amp; Instrumentation</h3>
-        <div class="sk-list"><span>Filter Design</span><span>Savitzky–Golay</span><span>Computer Vision</span><span>Surface EMG</span><span>KiCad</span><span>LabVIEW</span><span>DAQ</span></div>
+        <div class="sk-list"><span>Filter Design</span><span>Computer Vision</span><span>Surface EMG</span><span>KiCad</span><span>LabVIEW</span><span>DAQ</span></div>
       </div>
 
       <div class="sk-card reveal">
