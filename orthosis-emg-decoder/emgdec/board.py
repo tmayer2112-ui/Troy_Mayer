@@ -17,10 +17,11 @@ Common-mode hum is modelled separately (see `hum`) because the two boards reject
 very differently.
 """
 from dataclasses import dataclass
+from math import gcd
 
 import numpy as np
 from numba import njit
-from scipy.signal import bilinear, lfilter
+from scipy.signal import bilinear, firwin, lfilter, resample_poly
 
 # Shared Sallen-Key filters (values read off the v1 schematic, unchanged in v2).
 K_SK = 1 + 10e3 / 18e3                      # 1.556 per stage
@@ -58,6 +59,22 @@ def adc(v, rng, bits=ADC_BITS, full_scale=ADC_FULL_SCALE, enob=ADC_ENOB):
     v = v + rng.normal(0.0, lsb_eff / np.sqrt(12), v.shape)
     lsb = full_scale / 2 ** bits
     return np.round(np.clip(v, 0.0, full_scale) / lsb) * lsb
+
+
+def sample_at(v, fs, fs_adc, anti_alias=False):
+    """Re-sample the analog node `v` (emulated at `fs`) the way an ADC clocked at `fs_adc` would.
+
+    anti_alias=False: band-limited interpolation (its filter starts rolling off ~170 Hz below
+    fs/2), then every k-th point. Content between fs_adc/2 and fs/2 folds back into the band,
+    as on the real board.
+    anti_alias=True: resample_poly's own Kaiser FIR low-pass at fs_adc/2 first (transition
+    about +-80 Hz around it), for comparison.
+    Only content below fs/2 exists in the emulation, so aliasing from above fs/2 is missed.
+    """
+    g = gcd(int(fs), int(fs_adc))
+    up, down = int(fs_adc) // g, int(fs) // g
+    window = ("kaiser", 5.0) if anti_alias else firwin(20 * up + 1, 1 / up)
+    return resample_poly(v, up, down, axis=0, window=window)
 
 
 @njit(cache=True)
@@ -129,6 +146,16 @@ class BoardV1:
         gd, gc = diff_amp_gains(self.electrodes.z_pos, self.electrodes.z_neg)
         return abs(gc) / gd + 10 ** (-self.cmrr_resistors_db / 20)
 
+    def cm_coupling(self, mismatch, board_sign):
+        """Signed common-mode -> differential gain per channel, referred to the input.
+
+        mismatch[i] is channel i's (Z+ - Z-)/Z_nominal, signed; board_sign[i] (+-1) is
+        the sign of that channel's resistor-matching error, fixed by its parts.
+        """
+        z, m = self.electrodes.z_nominal, np.asarray(mismatch, float)
+        gd, gc = diff_amp_gains(z * (1 + m / 2), z * (1 - m / 2))
+        return gc / gd + np.asarray(board_sign, float) * 10 ** (-self.cmrr_resistors_db / 20)
+
     def out_gain(self, n_ch):
         pot = np.zeros(n_ch) if self.pot_ohms is None else np.asarray(self.pot_ohms, float)
         return 1 + (47e3 + np.clip(pot, 0, 100e3)) / 1e3
@@ -163,7 +190,7 @@ class BoardV2:
     """INA333 single-supply board."""
     electrodes: Electrodes = None
     pot_ohms: np.ndarray = None
-    ina_gain: float = 1 + 100e3 / 11e3
+    ina_gain: float = 1 + 100e3 / (5.49e3 + 5.49e3)   # R_G = R21 + R22
     cmrr_ina_db: float = 100.0      # INA333 datasheet minimum, G >= 10
     z_cm: float = 1 / (2 * np.pi * 60 * 3e-12)   # 100G || 3 pF at 60 Hz
     rld_db: float = 20.0            # common-mode reduction from the right-leg drive
@@ -182,6 +209,13 @@ class BoardV2:
         mismatch = abs(e.z_pos - e.z_neg) / self.z_cm
         return (10 ** (-self.cmrr_ina_db / 20) + mismatch) * 10 ** (-self.rld_db / 20)
 
+    def cm_coupling(self, mismatch, board_sign):
+        """Signed per-channel version of cm_to_diff: board_sign[i] is the sign of that
+        INA333's own CMRR error, mismatch[i] the channel's signed (Z+ - Z-)/Z_nominal."""
+        dz = self.electrodes.z_nominal * np.asarray(mismatch, float)
+        return (np.asarray(board_sign, float) * 10 ** (-self.cmrr_ina_db / 20) + dz / self.z_cm) \
+            * 10 ** (-self.rld_db / 20)
+
     def out_gain(self, n_ch):
         pot = np.zeros(n_ch) if self.pot_ohms is None else np.asarray(self.pot_ohms, float)
         return 1 + (10e3 + np.clip(pot, 0, 100e3)) / 1e3
@@ -198,8 +232,11 @@ class BoardV2:
     def pre_adc(self, x, fs):
         return self._clip(self.out_gain(x.shape[1]) * self.filtered(x, fs))
 
-    def __call__(self, x, fs, rng):
-        return adc(VREF + self.pre_adc(x, fs), rng) - VREF   # firmware removes mid-scale
+    def __call__(self, x, fs, rng, adc_fs=None, anti_alias=False):
+        v = self.pre_adc(x, fs)
+        if adc_fs and adc_fs != fs:      # the firmware samples at 1 kHz, not at fs
+            v = sample_at(v, fs, adc_fs, anti_alias)
+        return adc(VREF + v, rng) - VREF   # firmware removes mid-scale
 
 
 def calibrate_pots(board, recordings, fs, target_v, max_pot=100e3):
@@ -216,11 +253,13 @@ def calibrate_pots(board, recordings, fs, target_v, max_pot=100e3):
     return board.pot_ohms
 
 
-def hum(n, fs, v_cm, cm_to_diff, rng, f=60.0):
-    """Mains pickup that reaches the differential input, per channel, random phase."""
+def hum(n, fs, v_cm, coupling, rng, f=60.0):
+    """Mains pickup that reaches the differential inputs: one 60 Hz waveform on the body,
+    random phase, scaled per channel by that channel's signed coupling (cm_coupling), so
+    channels differ in level and some are inverted. A scalar coupling hits every channel alike."""
     t = np.arange(n) / fs
     phase = rng.uniform(0, 2 * np.pi, 1)
-    return (v_cm * cm_to_diff * np.sin(2 * np.pi * f * t + phase))[:, None]
+    return v_cm * np.sin(2 * np.pi * f * t + phase)[:, None] * np.atleast_1d(coupling)[None, :]
 
 
 def reference_chain(x, fs):

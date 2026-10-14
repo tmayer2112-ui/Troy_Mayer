@@ -62,6 +62,32 @@ def test_v2_is_centred_and_linear_for_small_signals():
     assert abs(y.mean()) < 5e-3
 
 
+def test_per_channel_hum_coupling_has_the_nominal_size_and_follows_the_mismatch_sign():
+    # At the default 25 % mismatch, with the board's own error in the same direction, the
+    # signed per-channel coupling is the worst-case cm_to_diff; flipping the electrode
+    # imbalance inverts it, so the hum on that channel is inverted too.
+    v1, v2 = B.BoardV1(), B.BoardV2()
+    assert abs(v1.cm_coupling([0.25], [-1])[0]) == pytest.approx(v1.cm_to_diff, rel=1e-9)
+    assert v2.cm_coupling([0.25], [1])[0] == pytest.approx(v2.cm_to_diff, rel=1e-9)
+    c = v1.cm_coupling([0.25, -0.25], [-1, 1])
+    assert c[0] == pytest.approx(-c[1])
+    h = B.hum(1000, FS, 0.1, c, np.random.default_rng(0))
+    assert h.shape == (1000, 2)
+    assert np.allclose(h[:, 0], -h[:, 1])
+
+
+def test_sample_at_folds_content_above_the_new_nyquist():
+    # 700 Hz sampled at 1 kHz reappears at 300 Hz unless an anti-alias filter removes it.
+    t = np.arange(4 * FS) / FS
+    x = (np.sin(2 * np.pi * 100 * t) + np.sin(2 * np.pi * 700 * t))[:, None]
+    for anti_alias, at_300 in ((False, 1.0), (True, 0.0)):
+        y = B.sample_at(x, FS, 1000, anti_alias)[:, 0]
+        assert len(y) == 4000
+        amp = 2 * np.abs(np.fft.rfft(y)) / len(y)       # 0.25 Hz bins: both tones sit on a bin
+        assert amp[400] == pytest.approx(1.0, abs=0.05)
+        assert amp[1200] == pytest.approx(at_300, abs=0.05)
+
+
 def test_hudgins_counts_zero_crossings():
     t = np.arange(800) / FS
     x = np.sin(2 * np.pi * 100 * t)[:, None].repeat(4, 1)

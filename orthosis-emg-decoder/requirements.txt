@@ -5,3 +5,4 @@ numba>=0.59
 torch>=2.2
 matplotlib>=3.8
 pytest>=8
+pypdf>=4   # optional: lets check_claims.py read the resume PDF

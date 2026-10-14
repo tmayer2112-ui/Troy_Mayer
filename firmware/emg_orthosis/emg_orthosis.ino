@@ -28,8 +28,8 @@
  *   - The DPDT kill switch is the primary interlock: it pulls EN_ISO to MOT_GND
  *     in hardware. The firmware reads its second pole, but never relies on it.
  *   - If the ctrl task stops, the task watchdog resets the chip within 200 ms.
- *     A reset releases every pin, and the board's pull-downs (R67, R68 on the
- *     PWM lines, R69 on MOT_EN, R70 on EN_ISO) turn the driver off.
+ *     A reset releases every pin, and the board's pull-downs (R2, R3 on the
+ *     PWM lines, R6 on MOT_EN, R5 on EN_ISO) turn the driver off.
  *   - Bench-test with the motor unloaded and off the body first. Every time.
  * ============================================================================= */
 

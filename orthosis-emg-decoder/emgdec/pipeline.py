@@ -25,10 +25,20 @@ def _rng(day, cls, salt):
     return np.random.default_rng(zlib.crc32(f"{day}-{cls}-{salt}".encode()))
 
 
-def run_chain(recs, name, v_cm=0.0, salt="", **chain_kw):
-    """Returns ({(day, cls): processed signal}, info). Signals are trimmed of TRIM_S."""
+def run_chain(recs, name, v_cm=0.0, salt="", adc_fs=None, anti_alias=False, **chain_kw):
+    """Returns ({(day, cls): processed signal}, info). Signals are trimmed of TRIM_S.
+
+    `adc_fs` samples the v2 board's output at another rate (the firmware uses 1 kHz);
+    `anti_alias` puts a sharp FIR low-pass at adc_fs/2 in front of it. See board.sample_at.
+    """
     chain = make_chain(name, **chain_kw)
-    trim = int(TRIM_S * FS)
+    if adc_fs and not isinstance(chain, B.BoardV2):
+        raise ValueError("adc_fs is only modelled for the v2 board")
+    fs_out = adc_fs or FS
+    trim = int(TRIM_S * fs_out)
+    adc_kw = dict(adc_fs=adc_fs, anti_alias=anti_alias) if adc_fs else {}
+    # The sign of each channel's own CMRR error is fixed by its parts: one draw per board.
+    board_sign = _rng(0, 0, "cmrr-sign" + salt).choice([-1.0, 1.0], 4)
 
     def inputs(day, cls):
         x = recs[(day, cls)].astype(np.float64) * UV
@@ -36,7 +46,11 @@ def run_chain(recs, name, v_cm=0.0, salt="", **chain_kw):
             # Hum level is a property of the day (room, cables, skin), not of the
             # gesture: draw it per day, or it becomes a per-class fingerprint.
             level = v_cm * _rng(day, 0, "hum-level" + salt).uniform(0.5, 1.5)
-            x = x + B.hum(len(x), FS, level, chain.cm_to_diff, _rng(day, cls, "hum-phase" + salt))
+            # So is each channel's electrode imbalance: electrodes go on fresh every day, so
+            # (Z+ - Z-)/Z is redrawn per day and channel, any sign, |.| averaging the default.
+            m = chain.electrodes.mismatch * _rng(day, 0, "hum-mismatch" + salt).uniform(-2.0, 2.0, 4)
+            x = x + B.hum(len(x), FS, level, chain.cm_coupling(m, board_sign),
+                          _rng(day, cls, "hum-phase" + salt))
         return x
 
     info = {"chain": name, "v_cm": v_cm}
@@ -56,7 +70,7 @@ def run_chain(recs, name, v_cm=0.0, salt="", **chain_kw):
     out, clipped = {}, []
     for (d, c) in recs:
         x = inputs(d, c)
-        y = chain(x, FS, _rng(d, c, "adc" + salt))
+        y = chain(x, FS, _rng(d, c, "adc" + salt), **adc_kw)
         if isinstance(chain, B.BoardV1):
             pre = chain.pre_rectifier(x, FS)
             clipped.append(np.mean((pre >= chain.v_high - 1e-9) | (pre <= chain.v_low + 1e-9)))
@@ -82,18 +96,20 @@ class Table:
     W: np.ndarray = None  # raw windows (n, WIN, 4), only when asked for
 
 
-def build_table(sig, keep_windows=False):
+def build_table(sig, keep_windows=False, fs=FS):
+    """Window length and step are fixed in seconds, so at fs = 2048 they are WIN and STEP."""
+    win, step = round(WIN * fs / FS), round(STEP * fs / FS)
     thr = dead_band([x for (d, _), x in sig.items() if d in CAL_DAYS])
     parts = {k: [] for k in ("X", "y", "day", "t0", "t1", "dur", "W")}
     for (d, c), x in sorted(sig.items()):
-        w, starts = windows(x)
+        w, starts = windows(x, win, step)
         parts["X"].append(hudgins(w, thr).astype(np.float32))
         n = len(starts)
         parts["y"].append(np.full(n, c))
         parts["day"].append(np.full(n, d))
-        parts["t0"].append(starts / FS)
-        parts["t1"].append((starts + WIN) / FS)
-        parts["dur"].append(np.full(n, len(x) / FS))
+        parts["t0"].append(starts / fs)
+        parts["t1"].append((starts + win) / fs)
+        parts["dur"].append(np.full(n, len(x) / fs))
         if keep_windows:
             parts["W"].append(np.array(w, dtype=np.float32))
     cat = {k: np.concatenate(v) for k, v in parts.items() if v}

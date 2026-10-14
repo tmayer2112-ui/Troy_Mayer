@@ -49,7 +49,7 @@ def main():
              "One subject: these are single-subject numbers.", ""]
 
     lines += ["## Headline: v1 vs v2, same recordings", "",
-              "| Signal chain | Random split (leaky) | Within-day | Cross-day LDA | Cross-day CNN (3 seeds) | Cross-day LDA, 100 mV hum |",
+              "| Signal chain | Random split (leaky) | Within-day (last 40 %) | Cross-day LDA | Cross-day CNN (3 seeds) | Cross-day LDA, 100 mV hum |",
               "|---|---|---|---|---|---|"]
     for name in LABEL:
         m0 = M[f"{name}@0.0"]
@@ -61,35 +61,54 @@ def main():
             f"| {LABEL[name]} | {100 * m0['random_split']['bal_acc']:.1f} | {pct(m0['within_day']['per_day'])} "
             f"| {pct(m0['cross_day']['per_day'])} | {cnn_cell} "
             f"| {pct(hum['cross_day']['per_day']) if hum else 'n/a'} |")
-    lines += ["", "CNN column: mean over seeds of the per-day mean, ± SD over seeds.", ""]
+    lines += ["", "CNN column: mean over seeds of the per-day mean, ± SD over seeds. The columns score "
+              "different windows (within-day: last 40 % of all 115 days; cross-day: every window of the 57 "
+              "test days), so don't compare them across; the next table does that like for like.", ""]
+
+    lines += ["## Within-day vs cross-day on identical windows", "",
+              "Days 61-121 only. Within-day trains on the first 60 % of each recording and tests on the last "
+              "40 %; the cross-day model (days 1-60) is scored on those same last-40 % windows, and also on "
+              "the first 60 % and on everything.", "",
+              "| Signal chain | Within-day, last 40 % | Cross-day, last 40 % | Cross-day, first 60 % | Cross-day, all |",
+              "|---|---|---|---|---|"]
+    for name in LABEL:
+        m0 = M[f"{name}@0.0"]
+        cd = m0["cross_day"]
+        lines.append(f"| {LABEL[name]} | {pct(m0['within_day']['test_days'])} | {pct(cd['late_40pct'])} "
+                     f"| {pct(cd['early_60pct'])} | {pct(cd['per_day'])} |")
+    lines += ["", "Every model does worse on the last 40 % of a hold. On the same windows, calibrating on the "
+              "day beats a 60-day-old model, as it should.", ""]
 
     if cnn:
         ctl = json.loads((R / "lda_control.json").read_text()) if (R / "lda_control.json").exists() else {}
         lines += ["## CNN vs LDA on identical training windows", "",
                   "Both trained on days 1-50 (every 4th window), validated on days 51-60, tested on days 61-121.", "",
-                  "| Chain | LDA val | LDA test | CNN val | CNN test | CNN + gain aug, test | CNN + polarity aug, test |",
-                  "|---|---|---|---|---|---|---|"]
+                  "| Chain | LDA val | LDA test | CNN val, best epoch | CNN val, last epoch | CNN test "
+                  "| CNN + gain aug, test | CNN + polarity aug, test |",
+                  "|---|---|---|---|---|---|---|---|"]
         for name in ("reference", "v2", "v1_envelope", "v1_raw"):
             if name not in cnn:
                 continue
             c, l = cnn[name], ctl.get(name)
             val = np.mean([max(r["val_history"]) for r in c["runs"]])
+            last = np.mean([r["val_history"][-1] for r in c["runs"]])
             augs = [cnn.get(f"{name}+{a}") for a in ("gain", "flip")]
             aug = " | ".join(f"{100 * a['test_mean_over_seeds']:.1f} ± {100 * a['test_sd_over_seeds']:.1f}"
                              if a else "-" for a in augs)
             lv = f"{100 * l['val_days_51_60']:.1f}" if l else "-"
             lt = pct(l["test_per_day"]) if l else "-"
-            lines.append(f"| {LABEL[name]} | {lv} | {lt} | {100 * val:.1f} "
+            lines.append(f"| {LABEL[name]} | {lv} | {lt} | {100 * val:.1f} | {100 * last:.1f} "
                          f"| {100 * c['test_mean_over_seeds']:.1f} ± {100 * c['test_sd_over_seeds']:.1f} | {aug} |")
-        lines += ["", "CNN: mean over 3 seeds; LDA and CNN test columns are mean over test days.", ""]
+        lines += ["", "CNN: mean over 3 seeds; LDA and CNN test columns are mean over test days. "
+                  "\"Best epoch\" is the score that picks the epoch, so it is optimistic by construction; "
+                  "\"last epoch\" (no selection) is the one to compare with the single-fit LDA.", ""]
 
     v2 = M["v2@0.0"]
     lines += ["## Same test windows, different training data (v2, LDA)", "",
               "All three score the last 40 % of each of days 61-121.", "",
               f"- 60-day-old model (days 1-60, no recalibration): {pct(v2['recalibration']['old+fresh']['0.0'])}",
               f"- 2 s per class from the same day, nothing else: {pct(v2['recalibration']['fresh']['2.0'])}",
-              f"- First 60 % of the same day (~3 s per class): {pct(v2['within_day']['per_day'])} "
-              f"(all {len(DAYS)} days, not only test days)", ""]
+              f"- First 60 % of the same day (~3 s per class): {pct(v2['within_day']['test_days'])}", ""]
 
     lines += ["## What the boards did to the signal", "",
               "| Chain | Pot setting (Ω, ch1-4) | Total gain (ch1-4) | CMRR incl. electrodes (dB) | Samples clipped | Samples above SS14 drop |",
@@ -137,6 +156,14 @@ def main():
                 s = M[f"{b}@{v}"]["cross_day"]["per_day"] if z == 20e3 else S[f"{b}@{v}@{z}"]["cross_day"]
                 cells.append(pct(s))
         lines.append(f"| {'0 (buffered)' if z == 0 else f'{z / 1e3:g} kΩ'} | " + " | ".join(cells) + " |")
+
+    sr = json.loads((R / "sample_rate.json").read_text()) if (R / "sample_rate.json").exists() else {}
+    if sr:
+        lines += ["", "## ADC sample rate (v2, LDA)", "",
+                  "Everything above runs at the dataset's 2048 Hz; the firmware samples at 1 kHz "
+                  "(`scripts/sample_rate.py`).", "",
+                  "| ADC | Cross-day | Within-day |", "|---|---|---|"]
+        lines += [f"| {k} | {pct(v['cross_day'])} | {pct(v['within_day'])} |" for k, v in sr.items()]
 
     lines += ["", "## Accuracy vs days since training (LDA trained on 5 consecutive days)", "",
               "| Days elapsed | " + " | ".join(LABEL[n] for n in ("reference", "v2")) + " |", "|---|---|---|"]

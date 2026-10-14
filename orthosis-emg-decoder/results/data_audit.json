@@ -13,7 +13,240 @@
    112
   ]
  ],
- "skewness_sign_segments_ch1234": [
+ "duplicate_days_match_data_py": true,
+ "days_kept": 115,
+ "train_days": 58,
+ "test_days": 57,
+ "polarity": {
+  "method": "per-class skewness profile regressed on the mean profile of days 26-50; '+' same polarity, '-' reversed, '?' |beta| < 0.4",
+  "segments_ch1234": [
+   {
+    "first_day": 1,
+    "last_day": 25,
+    "pattern": "----"
+   },
+   {
+    "first_day": 26,
+    "last_day": 67,
+    "pattern": "++++"
+   },
+   {
+    "first_day": 69,
+    "last_day": 105,
+    "pattern": "--++"
+   },
+   {
+    "first_day": 106,
+    "last_day": 115,
+    "pattern": "+-+-"
+   },
+   {
+    "first_day": 116,
+    "last_day": 121,
+    "pattern": "--+-"
+   }
+  ],
+  "patterns_in_training_days_1_60": [
+   "++++",
+   "----"
+  ],
+  "test_days_with_unseen_pattern": [
+   69,
+   70,
+   71,
+   72,
+   73,
+   74,
+   75,
+   76,
+   77,
+   78,
+   79,
+   80,
+   81,
+   82,
+   83,
+   84,
+   85,
+   86,
+   87,
+   88,
+   89,
+   90,
+   91,
+   92,
+   93,
+   94,
+   95,
+   96,
+   97,
+   98,
+   99,
+   100,
+   101,
+   102,
+   103,
+   104,
+   105,
+   106,
+   107,
+   108,
+   109,
+   111,
+   113,
+   114,
+   115,
+   116,
+   117,
+   118,
+   119,
+   120,
+   121
+  ],
+  "abs_beta_quantiles_5_50_95": [
+   0.554,
+   0.988,
+   1.313
+  ],
+  "low_confidence_calls": [
+   {
+    "day": 1,
+    "channel": 1,
+    "beta": -0.374,
+    "segment_sign": "-"
+   },
+   {
+    "day": 1,
+    "channel": 4,
+    "beta": -0.104,
+    "segment_sign": "-"
+   },
+   {
+    "day": 4,
+    "channel": 4,
+    "beta": -0.339,
+    "segment_sign": "-"
+   },
+   {
+    "day": 29,
+    "channel": 1,
+    "beta": 0.292,
+    "segment_sign": "+"
+   },
+   {
+    "day": 51,
+    "channel": 1,
+    "beta": 0.283,
+    "segment_sign": "+"
+   },
+   {
+    "day": 54,
+    "channel": 1,
+    "beta": 0.371,
+    "segment_sign": "+"
+   },
+   {
+    "day": 77,
+    "channel": 4,
+    "beta": 0.332,
+    "segment_sign": "+"
+   },
+   {
+    "day": 83,
+    "channel": 1,
+    "beta": -0.349,
+    "segment_sign": "-"
+   },
+   {
+    "day": 91,
+    "channel": 4,
+    "beta": 0.372,
+    "segment_sign": "+"
+   }
+  ],
+  "low_confidence_calls_against_their_segment": 0,
+  "rms_at_changes": [
+   {
+    "after_day": 25,
+    "first_day": 26,
+    "flipped_channels": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "rms_ratio_flipped": [
+     0.986,
+     0.898,
+     0.916,
+     0.936
+    ],
+    "rms_ratio_all_channels": [
+     0.986,
+     0.898,
+     0.916,
+     0.936
+    ]
+   },
+   {
+    "after_day": 67,
+    "first_day": 69,
+    "flipped_channels": [
+     1,
+     2
+    ],
+    "rms_ratio_flipped": [
+     0.92,
+     0.987
+    ],
+    "rms_ratio_all_channels": [
+     0.92,
+     0.987,
+     1.043,
+     0.986
+    ]
+   },
+   {
+    "after_day": 105,
+    "first_day": 106,
+    "flipped_channels": [
+     1,
+     4
+    ],
+    "rms_ratio_flipped": [
+     1.108,
+     1.176
+    ],
+    "rms_ratio_all_channels": [
+     1.108,
+     1.07,
+     1.117,
+     1.176
+    ]
+   },
+   {
+    "after_day": 115,
+    "first_day": 116,
+    "flipped_channels": [
+     1
+    ],
+    "rms_ratio_flipped": [
+     1.037
+    ],
+    "rms_ratio_all_channels": [
+     1.037,
+     0.967,
+     1.054,
+     0.856
+    ]
+   }
+  ],
+  "rms_ratio_elsewhere_p5_p95": [
+   0.943,
+   1.106
+  ]
+ },
+ "mean_skew_sign_segments_ch1234": [
   {
    "first_day": 1,
    "last_day": 1,
@@ -54,64 +287,5 @@
    "last_day": 121,
    "pattern": "--++"
   }
- ],
- "patterns_in_training_days_1_60": [
-  "+++-",
-  "+--+",
-  "-++-",
-  "---+"
- ],
- "test_days_with_unseen_pattern": [
-  69,
-  70,
-  71,
-  72,
-  73,
-  74,
-  75,
-  76,
-  77,
-  78,
-  79,
-  80,
-  81,
-  82,
-  83,
-  84,
-  85,
-  86,
-  87,
-  88,
-  89,
-  90,
-  91,
-  92,
-  93,
-  94,
-  95,
-  96,
-  97,
-  98,
-  99,
-  100,
-  101,
-  102,
-  103,
-  104,
-  105,
-  106,
-  107,
-  108,
-  109,
-  111,
-  113,
-  114,
-  115,
-  116,
-  117,
-  118,
-  119,
-  120,
-  121
  ]
 }

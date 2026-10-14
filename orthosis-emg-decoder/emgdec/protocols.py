@@ -40,26 +40,40 @@ def random_split(T, seed=0):
 
 
 def within_day(T):
-    """Calibrate every day: train on the first 60 % of that day, test on the rest."""
+    """Calibrate every day: train on the first 60 % of that day, test on the rest.
+
+    `test_days` restricts the mean to days 61-121, the days cross_day scores, so the two
+    can be compared on identical windows (cross_day's `late_40pct`).
+    """
+    days = np.unique(T.day)
     accs = []
-    for d in np.unique(T.day):
+    for d in days:
         m = T.day == d
         tr, te = m & _early(T), m & _late(T)
         accs.append(lda_score(T.X[tr], T.y[tr], T.X[te], T.y[te])[0])
-    return {"per_day": _stats(accs)}
+    accs = np.array(accs)
+    return {"per_day": _stats(accs), "test_days": _stats(accs[np.isin(days, TEST_DAYS)])}
 
 
 def cross_day(T, classes=None, X=None):
-    """Train once on days 1-60, test on each of days 61-121 without recalibrating."""
+    """Train once on days 1-60, test on each of days 61-121 without recalibrating.
+
+    Also scored separately on the first 60 % and the last 40 % of each recording: the
+    late windows are exactly the ones within_day tests on, and they are harder.
+    """
     X = T.X if X is None else X
     keep = np.ones(len(T.y), bool) if classes is None else np.isin(T.y, classes)
     tr = keep & np.isin(T.day, TRAIN_DAYS)
     model = lda().fit(X[tr], T.y[tr])
-    per_day = []
+    per_day, early, late = [], [], []
     for d in TEST_DAYS:
         te = keep & (T.day == d)
-        per_day.append(balanced_accuracy_score(T.y[te], model.predict(X[te])))
-    return {"per_day": _stats(per_day), "series": [round(float(a), 4) for a in per_day]}
+        pred = model.predict(X[te])
+        per_day.append(balanced_accuracy_score(T.y[te], pred))
+        for acc, part in ((early, _early(T)[te]), (late, _late(T)[te])):
+            acc.append(balanced_accuracy_score(T.y[te][part], pred[part]))
+    return {"per_day": _stats(per_day), "series": [round(float(a), 4) for a in per_day],
+            "early_60pct": _stats(early), "late_40pct": _stats(late)}
 
 
 GAP_BINS = [(1, 1), (2, 5), (6, 10), (11, 20), (21, 40), (41, 80), (81, 120)]

@@ -42,7 +42,7 @@ def _predict(model, X, bs=2048):
     return np.concatenate(out)
 
 
-def train_cnn(Xtr, ytr, Xva, yva, n_cls, seed, epochs=15, bs=256, gain_aug=None, flip_aug=False,
+def train_cnn(Xtr, ytr, Xva, yva, n_cls, seed, epochs=8, bs=256, gain_aug=None, flip_aug=False,
               log=print):
     """Windows are (n, time, ch) float32, already scaled. Keeps the best-validation epoch.
 
