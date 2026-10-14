@@ -100,13 +100,12 @@ def _quantize(x, lsb, full_scale):
     return np.clip(np.round(x / lsb) * lsb, -full_scale, full_scale - lsb)
 
 
-def synthesize_imu(acc_true, gyro_true, spec: ImuSpec, rng: np.random.Generator):
-    """Ideal specific force / angular rate (body frame, N x 3) -> quantized BMI088 samples.
+def imu_noise(n, spec: ImuSpec, rng: np.random.Generator):
+    """Sensor errors for n samples: (bias_acc, bias_gyro, white_acc, white_gyro), each (n, 3).
 
-    Returns (acc_meas, gyro_meas, bias_acc, bias_gyro); the biases are the true
-    time-varying biases, kept as ground truth for bias-estimation plots.
+    Independent of the motion, so a closed-loop run can draw them up front and add them
+    sample by sample. Draw order is fixed so synthesize_imu reproduces earlier datasets exactly.
     """
-    n = acc_true.shape[0]
     dt = spec.dt
     ba0 = rng.normal(0.0, spec.acc_turn_on_bias, 3)
     bg0 = rng.normal(0.0, spec.gyro_turn_on_bias, 3)
@@ -118,8 +117,24 @@ def synthesize_imu(acc_true, gyro_true, spec: ImuSpec, rng: np.random.Generator)
         bg = bg + (spec.gyro_tempco * dT)[:, None] * rng.choice([-1.0, 1.0], 3)[None, :]
     wa = rng.normal(0.0, spec.acc_noise_density * np.sqrt(spec.rate_hz), (n, 3))
     wg = rng.normal(0.0, spec.gyro_noise_density * np.sqrt(spec.rate_hz), (n, 3))
+    return ba, bg, wa, wg
+
+
+def measure_imu(acc_true, gyro_true, ba, bg, wa, wg, spec: ImuSpec):
+    """Add bias + white noise and quantize (works on one sample or on N x 3 arrays)."""
     acc = _quantize(acc_true + ba + wa, spec.acc_lsb, spec.acc_range_g * G0)
     gyr = _quantize(gyro_true + bg + wg, spec.gyro_lsb, spec.gyro_range_dps * DEG)
+    return acc, gyr
+
+
+def synthesize_imu(acc_true, gyro_true, spec: ImuSpec, rng: np.random.Generator):
+    """Ideal specific force / angular rate (body frame, N x 3) -> quantized BMI088 samples.
+
+    Returns (acc_meas, gyro_meas, bias_acc, bias_gyro); the biases are the true
+    time-varying biases, kept as ground truth for bias-estimation plots.
+    """
+    ba, bg, wa, wg = imu_noise(acc_true.shape[0], spec, rng)
+    acc, gyr = measure_imu(acc_true, gyro_true, ba, bg, wa, wg, spec)
     return acc, gyr, ba, bg
 
 

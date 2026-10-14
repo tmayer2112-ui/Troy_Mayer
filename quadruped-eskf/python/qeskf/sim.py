@@ -24,8 +24,14 @@ def _mean_stance_foot_z(d, foot_sites):
     return 0.5 * (z[0] + z[1])
 
 
-def load_model(floor_friction=None):
+def load_model(floor_friction=None, torque=False):
+    """torque=True turns Menagerie's position servos into torque motors (ctrl = joint torque, same limits),
+    for controllers that command torque directly (qp_balance.py)."""
     m = mujoco.MjModel.from_xml_path(str(MODEL_DIR / "scene.xml"))
+    if torque:
+        m.actuator_gainprm[:, 0] = 1.0
+        m.actuator_biasprm[:, :] = 0.0
+        m.actuator_ctrlrange[:] = m.actuator_forcerange
     if floor_friction is not None:
         # Foot geoms have priority=1, so their friction wins; scale those.
         for n in K.LEGS:

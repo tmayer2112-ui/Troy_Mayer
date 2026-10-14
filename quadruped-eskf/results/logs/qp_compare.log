@@ -1,0 +1,53 @@
+scripted trot vs QP force balance, in simulation, 60 s walks, seeds [0, 1, 2, 3, 4]
+mean (min-max over seeds that did not fall); scripted numbers from results/closed_loop.json
+
+[headline]
+  controller fed truth
+    falls                                                scripted 0/5                qp 0/5
+    velocity tracking RMSE vs command (m/s)              scripted 0.169 (0.169-0.169) qp 0.091 (0.091-0.091)
+    yaw-rate tracking RMSE (rad/s)                       scripted 0.403 (0.403-0.403) qp 0.196 (0.196-0.196)
+    mean lean on the first straight segment (deg)        scripted 1.15 (1.15-1.15)   qp 2.69 (2.69-2.69)
+    estimate tilt error, same segment (deg)              scripted 2.34 (0.99-3.80)   qp 1.65 (0.63-3.96)
+    true roll RMS (deg)                                  scripted 0.87 (0.87-0.87)   qp 0.97 (0.97-0.97)
+    true pitch RMS (deg)                                 scripted 1.05 (1.05-1.05)   qp 2.37 (2.37-2.37)
+    height error RMS (mm)                                scripted 4.03 (4.03-4.03)   qp 2.00 (2.00-2.00)
+    estimator velocity RMSE (m/s)                        scripted 0.0124 (0.0105-0.0158) qp 0.0164 (0.0158-0.0171)
+  controller fed estimate
+    falls                                                scripted 0/5                qp 1/5
+    velocity tracking RMSE vs command (m/s)              scripted 0.173 (0.171-0.178) qp 0.086 (0.086-0.087)
+    yaw-rate tracking RMSE (rad/s)                       scripted 0.406 (0.403-0.416) qp 0.199 (0.198-0.199)
+    mean lean on the first straight segment (deg)        scripted 4.13 (3.32-6.35)   qp 2.97 (2.73-3.14)
+    estimate tilt error, same segment (deg)              scripted 6.77 (5.57-10.03)  qp 0.64 (0.51-0.82)
+    true roll RMS (deg)                                  scripted 1.84 (1.59-2.61)   qp 1.13 (1.12-1.15)
+    true pitch RMS (deg)                                 scripted 1.11 (1.05-1.16)   qp 2.42 (2.38-2.46)
+    height error RMS (mm)                                scripted 4.90 (4.41-6.64)   qp 2.18 (2.15-2.20)
+    estimator velocity RMSE (m/s)                        scripted 0.0250 (0.0197-0.0427) qp 0.0184 (0.0183-0.0188)
+
+[turn_first]
+  controller fed truth
+    falls                                                scripted 0/5                qp 0/5
+    velocity tracking RMSE vs command (m/s)              scripted 0.169 (0.169-0.169) qp 0.092 (0.092-0.092)
+    yaw-rate tracking RMSE (rad/s)                       scripted 0.411 (0.411-0.411) qp 0.198 (0.198-0.198)
+    mean lean on the first straight segment (deg)        scripted 1.15 (1.15-1.15)   qp 2.74 (2.74-2.74)
+    estimate tilt error, same segment (deg)              scripted 0.04 (0.01-0.07)   qp 0.10 (0.04-0.17)
+    true roll RMS (deg)                                  scripted 0.89 (0.89-0.89)   qp 0.94 (0.94-0.94)
+    true pitch RMS (deg)                                 scripted 1.08 (1.08-1.08)   qp 2.45 (2.45-2.45)
+    height error RMS (mm)                                scripted 4.05 (4.05-4.05)   qp 1.88 (1.88-1.88)
+    estimator velocity RMSE (m/s)                        scripted 0.0090 (0.0086-0.0098) qp 0.0176 (0.0172-0.0178)
+  controller fed estimate
+    falls                                                scripted 0/5                qp 0/5
+    velocity tracking RMSE vs command (m/s)              scripted 0.167 (0.167-0.167) qp 0.087 (0.087-0.088)
+    yaw-rate tracking RMSE (rad/s)                       scripted 0.409 (0.409-0.410) qp 0.201 (0.201-0.201)
+    mean lean on the first straight segment (deg)        scripted 1.16 (1.15-1.17)   qp 2.81 (2.77-2.84)
+    estimate tilt error, same segment (deg)              scripted 0.03 (0.01-0.06)   qp 0.27 (0.15-0.37)
+    true roll RMS (deg)                                  scripted 0.91 (0.91-0.91)   qp 1.07 (1.07-1.08)
+    true pitch RMS (deg)                                 scripted 1.10 (1.09-1.11)   qp 2.48 (2.45-2.49)
+    height error RMS (mm)                                scripted 4.04 (4.04-4.04)   qp 2.05 (2.04-2.06)
+    estimator velocity RMSE (m/s)                        scripted 0.0088 (0.0084-0.0096) qp 0.0185 (0.0180-0.0188)
+
+[push] scripted fed truth   : survives 11.88 N·s, falls at 12.03 N·s (lateral, 0.1 s)
+[push] scripted fed estimate: survives 11.88 N·s, falls at 12.03 N·s (lateral, 0.1 s)
+[push] qp       fed truth   : survives 8.91 N·s, falls at 9.06 N·s (lateral, 0.1 s)
+[push] qp       fed estimate: survives 8.91 N·s, falls at 9.06 N·s (lateral, 0.1 s)
+
+wall time 278 s
