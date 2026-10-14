@@ -17,10 +17,11 @@ what's next. The bugs found along the way are in [`DEBUG_LOG.md`](DEBUG_LOG.md).
 | Cross-day LDA, **v2 board**, 11 classes, mean over 57 test days | **87.3 %** (± 5.3) | `make lda` | [`lda.json`](results/lda.json) → `main/v2@0.0/cross_day`, [figure](results/figures/cross_day.png) |
 | Same, no board (clean digital 20–450 Hz band-pass) | 87.9 % (± 5.1) | `make lda` | `lda.json` → `main/reference@0.0` |
 | Same, v1 with C9/R15 fitted / left empty | 30.8 % / 22.3 % | `make lda` | `lda.json` → `main/v1_envelope@0.0`, `main/v1_raw@0.0` |
-| v2 with 100 mV of 60 Hz on the body / with 1 V | 87.1 % / 84.1 % | `make lda` | `lda.json` → `main/v2@0.1`, `sweeps/v2@1.0@20000.0` |
+| v2 with 100 mV of 60 Hz on the body / with 1 V | 87.2 % / 82.8 % | `make lda` | `lda.json` → `main/v2@0.1`, `sweeps/v2@1.0@20000.0` |
+| Within-day vs cross-day scored on identical windows (v2, last 40 % of each test-day recording) | 80.8 % vs 77.5 % | `make lda` | `lda.json` → `main/v2@0.0/within_day/test_days`, `.../cross_day/late_40pct` |
 | Shuffled-window split, v2 (leaky; don't quote) | 91.3 % | `make lda` | `lda.json` → `main/v2@0.0/random_split` |
 | CNN on raw windows, v2: plain / + gain aug / + polarity aug (3 seeds) | 68.2 / 60.6 / **86.3 %** | `make cnn` | [`cnn.json`](results/cnn.json), [figure](results/figures/cnn_vs_lda.png) |
-| LDA trained on exactly the CNN's windows | 86.8 % | `make cnn` | [`lda_control.json`](results/lda_control.json) |
+| LDA trained on exactly the CNN's windows | 86.9 % | `make cnn` | [`lda_control.json`](results/lda_control.json) |
 | v2 sampled at the firmware's 1 kHz instead of 2048 Hz | 86.9 % | `make rate` | [`sample_rate.json`](results/sample_rate.json) |
 | Filter −3 dB corners, passband gain | 23.0 Hz and 473.9 Hz, × 2.41 | `make board` | [`board.json`](results/board.json), [figure](results/figures/filter_response.png) |
 | Digital emulation vs analog circuit, below 400 Hz | within 0.38 dB | `make board` | `board.json` → `max_digital_vs_analog_error_db_below_400hz` |
@@ -28,7 +29,7 @@ what's next. The bugs found along the way are in [`DEBUG_LOG.md`](DEBUG_LOG.md).
 | v2 effective CMRR, right-leg drive included | 116.1 dB | `make board` | `board.json` → `v2` |
 | Usable days after dropping byte-identical copies | 115 (58 train, 57 test) | `make audit` | [`data_audit.json`](results/data_audit.json) |
 | Test days whose electrode-polarity pattern never occurs in training | 51 of 57 (every day from 69 on) | `make audit` | `data_audit.json` → `polarity`, [figure](results/figures/polarity.png) |
-| Full LDA run (every protocol, both sweeps) | 250 s on 4 cores; `lda.json` reproduced byte-for-byte | `make lda` | — |
+| Full LDA run (every protocol, both sweeps) | 255 s on 4 cores; `lda.json` reproduced byte-for-byte | `make lda` | — |
 
 Every random draw is seeded from (day, class, purpose), so everything here is deterministic. `make claims`
 compares every number the résumé and portfolio page state about this project against these files and exits
@@ -41,7 +42,7 @@ days ≤ 60, test on each day > 60, never recalibrated. Single subject throughou
 
 ## Build and run
 
-`lda.json` was reproduced byte-for-byte on 2026-10-05 with Python 3.11, numpy 2.4.6, scipy 1.17.1,
+`lda.json` was reproduced byte-for-byte on 2026-10-14 with Python 3.11, numpy 2.4.6, scipy 1.17.1,
 scikit-learn 1.9.1, numba 0.68.0 and matplotlib 3.11.2. The torch version behind `cnn.json` wasn't recorded.
 
 ```bash
@@ -282,9 +283,13 @@ electrode DC offsets of up to about ±150 mV inside the ±1.6 V swing before C19
 * **ADC.** Gaussian noise sized for 10 effective bits (σ = 0.87 mV), clipped to 0–3.1 V, rounded to 12-bit
   codes (LSB 0.76 mV). The v2 output is offset by VREF before the ADC and has it removed after, as the
   firmware does.
-* **Mains hum.** 60 Hz, scaled by each board's common-mode-to-differential ratio. Its level is drawn per
-  *day* (× 0.5–1.5) and its phase per recording, and the same waveform goes on all four channels. Drawn per
-  recording, hum level becomes a class fingerprint (DEBUG_LOG #1).
+* **Mains hum.** One 60 Hz common-mode voltage on the body, reaching each channel through that channel's own
+  signed coupling (`cm_coupling`). Its level is drawn per *day* (× 0.5–1.5) and its phase per recording.
+  Each channel's electrode imbalance (Z+ − Z−)/Z is redrawn per day, uniform on ±50 % so its size averages
+  the 25 % default, so channels see different amounts of hum and some see it inverted. The sign of each
+  channel's own CMRR error (resistor matching for v1, the INA333 for v2) is drawn once per board. Drawn per
+  recording, hum level becomes a class fingerprint (DEBUG_LOG #1); put on every channel identically, it
+  flattered v1 (DEBUG_LOG #11).
 * **0.5 s trim.** The first 0.5 s of every recording is dropped. The HPF settles in ~50 ms (its pole time
   constant is 2Q/ω0 = 9.8 ms), but anything the v1 peak detector catches at start-up decays with τ = 180 ms;
   after 0.5 s, e^(−0.5/0.18) = 6 % is left.
@@ -370,41 +375,55 @@ Ordered from most flattering to most honest. v2 numbers:
 | Protocol | Train | Test | v2 LDA |
 |---|---|---|---|
 | Random split | 75 % of windows from days ≤ 60, shuffled | the other 25 %. Overlapping neighbours leak, so **don't quote this one**. | 91.3 % |
-| Within-day | first 60 % of each recording | last 40 % of the same recording, after a 0.25 s gap | 81.3 % |
-| Cross-day | days ≤ 60 | each of days 61–121, no recalibration | 87.3 % |
+| Within-day | first 60 % of each recording | last 40 % of the same recording, after a 0.25 s gap | 81.3 % (all days), 80.8 % (test days) |
+| Cross-day | days ≤ 60 | each of days 61–121, no recalibration | 87.3 % (all windows), 77.5 % (last 40 %) |
 | Days elapsed | 5 consecutive days | every later day, binned by days since training | 89.9 → 81.0 % |
 | Recalibration | days ≤ 60 plus the first k s per class of the test day, or those k s alone | last 40 % of that test day | see E5 |
 | Reference normalisation | cross-day, with each day's amplitude features divided by that day's class-0 recording | classes 1–10 | see E5 |
 
 * **The random split leaks.** Windows overlap by 75 %, so nearly every test window has neighbours in the
   training set that share most of its samples. It overstates v2 by 4 points.
-* **Within-day comes out *below* cross-day.** It trains on ~3 s per class from one day instead of 58 days,
-  and it tests only on the last 40 % of each hold, which is harder on its own: the same cross-day model
-  scores 87.3 % on all test windows but 77.5 % on late windows only. Fatigue or a fading effort level
-  would fit, but neither is tested.
+* **Compare within-day and cross-day only on the same windows.** Within-day tests only the last 40 % of each
+  hold, and that part is harder for every model: the cross-day model scores 92.4 % on the first 60 % of the
+  test days' recordings, 77.5 % on the last 40 %, and 87.3 % overall. Scored on identical windows (last
+  40 %, days 61–121), calibrating on the day beats the 60-day-old model, **80.8 % vs 77.5 %**, as it should.
+  Quoting 81.3 % against 87.3 % compares different windows (DEBUG_LOG #9).
+* **Why the last 40 % is harder.** Against the first 60 % of the same recording, its RMS is lower (median
+  × 0.92, lower in 74 % of recordings) and its mean frequency is lower (median × 0.94, lower in 94 %).
+  A falling mean frequency is the usual sign of muscle fatigue, and the falling amplitude suggests the
+  effort fades too. The recordings aren't trimmed for this: it is the same signal a user would produce.
 * The 0.25 s within-day gap is longer than a window, so no training window shares a sample with a test window.
 
 ## Results
 
 All numbers are balanced accuracy, mean ± SD over test days ([`summary.md`](results/summary.md) has every table):
 
-| Signal chain | Random split (leaky) | Within-day | Cross-day LDA | Cross-day CNN (3 seeds) | Cross-day LDA, 100 mV hum |
-|---|---|---|---|---|---|
-| No board (digital 20–450 Hz) | 91.5 | 81.9 ± 3.7 | 87.9 ± 5.1 | 68.5 ± 1.2 | n/a |
-| v2 (INA333) | 91.3 | 81.3 ± 3.6 | **87.3 ± 5.3** | 68.2 ± 1.3 | 87.1 ± 5.4 |
-| v1, C9/R15 fitted (envelope) | 31.1 | 31.2 ± 4.9 | 30.8 ± 4.0 | 28.8 ± 0.9 | 13.8 ± 4.9 |
-| v1, C9/R15 empty (rectified) | 25.0 | 20.8 ± 3.8 | 22.3 ± 2.4 | 23.2 ± 0.2 | 12.7 ± 4.4 |
+| Signal chain | Random split (leaky) | Cross-day LDA | Cross-day CNN (3 seeds) | Cross-day LDA, 100 mV hum |
+|---|---|---|---|---|
+| No board (digital 20–450 Hz) | 91.5 | 87.9 ± 5.1 | 68.5 ± 1.2 | n/a |
+| v2 (INA333) | 91.3 | **87.3 ± 5.3** | 68.2 ± 1.3 | 87.2 ± 5.4 |
+| v1, C9/R15 fitted (envelope) | 31.1 | 30.8 ± 4.0 | 28.8 ± 0.9 | 9.3 ± 1.2 |
+| v1, C9/R15 empty (rectified) | 25.0 | 22.3 ± 2.4 | 23.2 ± 0.2 | 11.6 ± 3.8 |
 
 **v2 passes through essentially everything a decoder needs:** 0.6 points below the no-board reference.
+
+**Within-day vs cross-day, on identical windows** (last 40 % of each recording, days 61–121):
+
+| Signal chain | Within-day | Cross-day, last 40 % | Cross-day, first 60 % | Cross-day, all windows |
+|---|---|---|---|---|
+| No board | 81.5 ± 3.9 | 78.2 ± 5.3 | 93.0 ± 5.3 | 87.9 ± 5.1 |
+| v2 | 80.8 ± 4.2 | 77.5 ± 5.7 | 92.4 ± 5.6 | 87.3 ± 5.3 |
+| v1 envelope | 30.8 ± 5.3 | 29.1 ± 5.2 | 32.3 ± 4.2 | 30.8 ± 4.0 |
+| v1 rectified | 20.2 ± 3.2 | 19.8 ± 3.0 | 24.0 ± 2.8 | 22.3 ± 2.4 |
 
 **Accuracy decays with time since training.** LDA trained on 5 consecutive days, v2:
 
 | Days since training | 1 | 2–5 | 6–10 | 11–20 | 21–40 | 41–80 | 81–120 |
 |---|---|---|---|---|---|---|---|
-| Balanced accuracy | 89.9 | 90.0 | 89.0 | 88.1 | 85.4 | 82.0 | 81.0 |
+| Balanced accuracy | 89.9 | 90.0 | 89.0 | 88.1 | 85.5 | 82.0 | 81.0 |
 
-**Most common v2 confusions:** key grip → no motion (18.8 % of key-grip windows), supination → pronation
-(16.0 %), pronation → key grip (10.4 %), hand closed → hand open (10.2 %).
+**Most common v2 confusions:** key grip → no motion (18.9 % of key-grip windows), supination → pronation
+(16.0 %), pronation → key grip (10.3 %), hand closed → hand open (10.2 %).
 
 ## Breaking it on purpose
 
@@ -414,16 +433,22 @@ All numbers are balanced accuracy, mean ± SD over test days ([`summary.md`](res
 
 | Common-mode | 0 | 3 mV | 10 mV | 30 mV | 100 mV | 300 mV | 1 V |
 |---|---|---|---|---|---|---|---|
-| v2 | 87.3 | 87.4 | 87.3 | 87.3 | 87.1 | 86.1 | 84.1 |
-| v1 envelope | 30.8 | 33.0 | 36.6 | 23.3 | 13.8 | 9.1 | 9.6 |
-| v1 rectified | 22.3 | 28.5 | 40.5 | 21.6 | 12.7 | 9.1 | 9.2 |
+| v2 | 87.3 | 87.4 | 87.3 | 87.3 | 87.2 | 86.0 | 82.8 |
+| v1 envelope | 30.8 | 28.2 | 20.7 | 10.2 | 9.3 | 9.4 | 9.0 |
+| v1 rectified | 22.3 | 27.2 | 28.7 | 16.9 | 11.6 | 9.3 | 9.3 |
 
-* **v2:** 100 mV costs 0.2 points and 1 V costs 3.
-* **v1 gets better with a little hum, then collapses.** At 10 mV, v1's 23 dB CMRR lets 0.74 mV of 60 Hz into
-  the differential path. Times the 878 total gain, that is 0.65 V peak at the rectifier, more than the 0.4 V
-  diode drop. The hum works as a dither pedestal: on each crest, the EMG riding on top crosses the diode and
-  reaches the ADC. From 30 mV up, calibration sees the hum on days 1–5 and turns the gain down, and the hum
-  swamps the EMG. At 100 mV the pots go to zero and 13.5 % of samples clip.
+* **v2:** 100 mV costs 0.1 points and 1 V costs 4.6.
+* **v1: a little hum lifts the EMG over the diode, but it doesn't help.** At 10 mV, with the default 25 %
+  imbalance, v1's 23 dB CMRR lets 0.74 mV of 60 Hz into the differential path. Times the 878 total gain,
+  that is 0.65 V peak at the rectifier, more than the 0.4 V diode drop. The hum acts as a dither pedestal:
+  on each crest the EMG riding on top crosses the diode, and the share of samples that reach the ADC goes
+  from 0.22 % to 20.3 %. But the hum's size and sign change with each channel's imbalance, which changes
+  every day, so what gets through doesn't look the same from one day to the next. The envelope build loses
+  accuracy (30.8 → 20.7 %); the rectified one gains a little (22.3 → 28.7 %). From 30 mV up, calibration sees
+  the hum on days 1–5 and turns the gain down, and the hum swamps the EMG. At 100 mV the pots go to zero and
+  17.8 % of samples clip.
+* An earlier version put the identical hum on all four channels. That made the dither consistent across
+  days and showed v1 *gaining* up to 18 points at 10 mV (DEBUG_LOG #11).
 
 ![hum sweep](results/figures/hum_sweep.png)
 
@@ -431,9 +456,9 @@ All numbers are balanced accuracy, mean ± SD over test days ([`summary.md`](res
 
 | Electrode impedance | 0 (buffered) | 5 kΩ | 10 kΩ | 20 kΩ | 50 kΩ |
 |---|---|---|---|---|---|
-| v2, no hum / 100 mV | 87.3 / 87.3 | 87.3 / 87.2 | 87.3 / 87.2 | 87.3 / 87.1 | 87.3 / 86.9 |
-| v1 envelope, no hum / 100 mV | 59.5 / 60.0 | 53.7 / 14.0 | 39.5 / 13.1 | 30.8 / 13.8 | 11.7 / 13.8 |
-| v1 rectified, no hum / 100 mV | 71.4 / 69.1 | 52.0 / 17.2 | 39.7 / 13.6 | 22.3 / 12.7 | 9.9 / 12.3 |
+| v2, no hum / 100 mV | 87.3 / 87.3 | 87.3 / 87.2 | 87.3 / 87.2 | 87.3 / 87.2 | 87.3 / 86.7 |
+| v1 envelope, no hum / 100 mV | 59.5 / 59.8 | 53.7 / 10.0 | 39.5 / 9.8 | 30.8 / 9.3 | 11.7 / 9.0 |
+| v1 rectified, no hum / 100 mV | 71.4 / 68.7 | 52.0 / 17.3 | 39.7 / 14.1 | 22.3 / 11.6 | 9.9 / 9.2 |
 
 v2 doesn't care. v1 loses 6–19 points by 5 kΩ and keeps falling, and with 100 mV of hum on top it is near
 chance as soon as the inputs are unbuffered.
@@ -442,10 +467,10 @@ chance as soon as the inputs are unbuffered.
 
 The plain CNN validated at 92.5 % on days 51–60 but scored 68.2 % on the test days. Three explanations, tested in order:
 
-1. **Less training data than LDA.** LDA trained on the *identical* windows scores 86.8 %. Falsified.
+1. **Less training data than LDA.** LDA trained on the *identical* windows scores 86.9 %. Falsified.
 2. **Gradual drift in electrode gain.** Per-day accuracy shows a cliff, not a slope. Gain augmentation, the
    textbook fix, made it *worse*, and normalising each day by a reference recording moved LDA on v2 and on
-   the no-board reference by at most 0.3 points. Falsified: this subject's day-to-day change wasn't gain.
+   the no-board reference by at most 0.4 points. Falsified: this subject's day-to-day change wasn't gain.
 3. **Lead polarity.** The cliff lands on day 69, the first day with an unseen polarity pattern:
 
 | v2 board | Days 61–67 (pattern seen in training) | Days 69–121 (pattern never seen) |
@@ -489,11 +514,11 @@ All rows score the last 40 % of each test day:
 | Same-day data per class | 0 | 0.25 s | 0.5 s | 1 s | 2 s |
 |---|---|---|---|---|---|
 | Days 1–60 plus that data | 77.5 | 77.5 | 77.5 | 77.5 | 77.6 |
-| That data alone | — | 48.5 | 64.9 | 71.7 | 77.5 |
+| That data alone | — | 49.8 | 65.0 | 71.7 | 77.5 |
 
 2 s per class of same-day data alone matches 58 days of older data. Pooling them doesn't help, because ~37
 fresh windows per class are swamped by thousands of old ones. Weighted or adaptive recalibration is the next
-step. Normalising each day's amplitude features by its class-0 recording changes v2 from 87.9 to 87.6 %
+step. Normalising each day's amplitude features by its class-0 recording changes v2 from 88.0 to 87.6 %
 (classes 1–10): there was no day-level gain shift to remove.
 
 ## How the numbers were chosen
@@ -506,9 +531,11 @@ step. Normalising each day's amplitude features by its class-0 recording changes
   architecture and optimiser settings are fixed in `models.py`; the repo doesn't record how they were chosen.
 * **Polarity test:** the reference stretch (days 26–50) and |β| < 0.4 were chosen when the audit was rewritten
   on 2026-10-05. No decoder number depends on them.
-* **Provenance:** `lda.json` and `sample_rate.json` were regenerated on 2026-10-05 (`lda.json` byte-identical
-  to the original). `cnn.json` and `lda_control.json` are from the original run; torch wasn't available when
-  the rest was re-run.
+* **Hum model:** the per-channel electrode imbalance (uniform on ±50 %, so its size averages the old fixed
+  25 %) was chosen on 2026-10-14, and was never tuned against an accuracy. Only the hum results depend on it.
+* **Provenance:** `lda.json`, `lda_control.json`, `sample_rate.json` and `board.json` were regenerated on
+  2026-10-14, after the hum and gain fixes, and `lda.json` reproduces byte-for-byte. `cnn.json` is from the
+  original run: torch wasn't available for the re-runs, so it predates the 0.16 % INA333 gain correction.
 
 ## Assumptions, and where this is valid
 
@@ -523,7 +550,8 @@ step. Normalising each day's amplitude features by its class-0 recording changes
   inputs are unbuffered is not an assumption: it is on the schematic.
 * **Other analog assumptions:** INA333 CMRR 100 dB (datasheet minimum), right-leg drive worth 20 dB, 3 pF
   common-mode input capacitance. A linear ESP32-S3 ADC (the real one needs `esp_adc_cal`). Op-amp offsets
-  and noise ignored. The same hum on every channel.
+  and noise ignored; on the real board the offsets matter (Hardware notes). Electrode imbalance uniform on ±50 % per channel and day, a guess with no measurement
+  behind it; the impedance sweep (E2) shows how much v1 depends on electrode values.
 * **Sustained contractions only.** No transitions, no motion artefact, no real-time loop, no latency.
 
 ## Limitations (honestly)
@@ -537,13 +565,19 @@ None of these numbers will transfer to the orthosis until v2 has recorded someon
 
 ## Hardware notes
 
-Things this work turned up that only a board change can address:
+The full v2 schematic review is [`../orthosis_v2_schematic_review.md`](../orthosis_v2_schematic_review.md).
+Two of its items should be fixed before fabrication, and both are effects this emulation doesn't model:
 
-* **The right-leg drive senses channel 1 only.** On the main sheet only the first channel's CM tap reaches
-  the RLD; channels 2–4 leave theirs unconnected. If channel 1's electrodes come off, the RLD loses its input.
-  A common fix: feed all four CM taps to U3B's inverting input through four 40.2k resistors in place of R10.
-  True common-mode then sees 200k / (40.2k / 4) = −19.9, the same loop gain, and losing one pair degrades the
-  RLD instead of disabling it. Check it on the KiCad sheet before changing anything.
+* **Op-amp offsets can rail a channel.** U6A, U6B and U6C are DC-coupled, and R31 returns U6C's gain leg to
+  VREF, so a worst-case MCP6004 offset reaches about 2.5 V at full gain. A 47–100 µF capacitor in series
+  with R31 fixes it; 4.7–10 µF would move the 23 Hz band edge.
+* **Open electrode inputs float.** Nothing guarantees the INA333 rails when a lead comes off, which is what
+  the firmware's lead-off fault assumes. 10 MΩ pulls to opposite rails would guarantee it.
+
+Also from the review: the right-leg drive senses channel 1 only, and VREF has 47 Ω of output impedance
+shared by every channel. Three other flagged "bugs" (USB labels, C22, R7) are wired correctly; the review
+shows why. Two more notes from this work:
+
 * **R33/C24 is not an anti-alias filter at 1 kHz.** Its 4.8 kHz pole is far above Nyquist; it isolates the
   op-amp from the ADC's sampling capacitor. E4 shows the decoder doesn't need more anti-aliasing. If a
   future feature does, the low-pass corner is the thing to move.

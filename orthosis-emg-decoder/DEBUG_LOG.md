@@ -5,7 +5,7 @@ command that brings the failure back.
 
 Entries 1–4 were reconstructed on 2026-10-05 from the README and the committed results. Their numbers are the
 committed ones; where a step wasn't written down at the time, the entry says so. Entries 5–8 were recorded on
-2026-10-05. Append new ones as they happen.
+2026-10-05, and 9–12 on 2026-10-14 after an external review. Append new ones as they happen.
 
 `repro N` below means `PYTHONPATH=. python3 scripts/debug_repro.py N` (entry 1 needs `make data`).
 
@@ -44,10 +44,10 @@ double-weighted, and the days-elapsed curve scored a model on its own training d
 **Symptom:** Trained on days 1–50, the CNN picked its epoch at 92.5 % on days 51–60, then scored 68.2 % on
 days 61–121. LDA scored 87.3 % on the same board output.
 **Hypothesis 1:** It gets less data than LDA (every 4th window, days 1–50 only).
-**Test:** LDA trained on exactly the CNN's windows (`lda_control.py`): 86.8 %. **Falsified.**
+**Test:** LDA trained on exactly the CNN's windows (`lda_control.py`): 86.9 %. **Falsified.**
 **Hypothesis 2:** Slow drift in electrode gain, the textbook cause.
 **Test:** Per-day accuracy shows a cliff, not a slope. Gain augmentation made it worse (entry 4).
-Normalising each day by a reference recording moved LDA by at most 0.3 points. **Falsified.**
+Normalising each day by a reference recording moved v2's LDA by at most 0.4 points. **Falsified.**
 **Actual cause:** Electrode lead reversals. A channel's skewness flips sign while its RMS barely moves, and
 from day 69 on every test day has a polarity pattern absent from training. Hudgins features are even
 functions of the signal, so LDA can't see a reversal. The CNN's first convolution is linear, so it sees one.
@@ -118,3 +118,49 @@ The `hum()` docstring said "per channel" for one waveform shared by all four cha
 **Fix:** Default set to 8, the times measured, a last-epoch CNN validation column added (92.2 % vs 92.5 %
 best-epoch for v2, so the conclusion stands), the docstring corrected. `make claims` now checks every
 published number against `results/`.
+
+### 9. Within-day (81.3 %) scored below cross-day (87.3 %), though calibrating on the day should help
+**Symptom:** The headline table put a same-day model 6 points below a 60-day-old one. Raised in an external
+review on 2026-10-14.
+**Hypothesis:** The two columns score different windows. Within-day tests only the last 40 % of each
+recording; cross-day tests every window.
+**Test:** The same cross-day model (v2) scored on the 57 test days: 92.4 % on the first 60 % of each
+recording, 77.5 % on the last 40 %, 87.3 % on everything. Against the first 60 %, the last 40 % has lower RMS
+(median × 0.92) and lower mean frequency (median × 0.94, lower in 94 % of recordings).
+**Actual cause:** A table artefact. The late part of each hold is harder for every model, and only the
+within-day column was scored on it.
+**Fix:** `cross_day` also reports its accuracy on the first 60 % and last 40 % of each recording, and
+`within_day` reports its test-day mean. `summary.md` and the README compare them on identical windows: on
+v2, 80.8 % (within-day) vs 77.5 % (cross-day), so calibrating on the day does beat the old model. The
+headline's within-day column is labelled with the windows it scores.
+**Repro:** `make lda report` → "Within-day vs cross-day on identical windows" in `summary.md`.
+
+### 10. A section titled "same test windows" mixed day sets
+**Symptom:** `summary.md` said "All three score the last 40 % of each of days 61-121", then quoted
+within-day over all 115 days. Raised in the same review.
+**Fix:** That bullet now uses the test-day mean (80.8 %, not 81.3 %).
+
+### 11. Identical hum on every channel made v1 look better with hum than without
+**Symptom:** v1 gained up to 18 points of cross-day accuracy at 10 mV of 60 Hz common-mode (rectified 22.3
+→ 40.5 %). The review asked whether each channel shouldn't see its own share of the hum.
+**Hypothesis:** The hum works as dither, lifting the EMG over the SS14's 0.4 V drop. The share of samples
+above the diode went from 0.22 % to 23.9 %. But the model put the *same* waveform on all four channels at a
+fixed size every day, so the dither was the same every day, which a real board wouldn't give.
+**Test:** `hum()` now takes a signed coupling per channel (`cm_coupling`). Each channel's electrode imbalance
+is redrawn per day (uniform on ±50 %, averaging the old 25 %), and the sign of each channel's own CMRR error
+is drawn once per board.
+**Result:** The dither still happens (20.3 % of samples above the diode at 10 mV), but it no longer helps
+across days. v1 envelope at 10 mV: 36.6 → 20.7 % (below its no-hum 30.8 %). Rectified: 40.5 → 28.7 %. At
+100 mV: 13.8 → 9.3 % and 12.7 → 11.6 %. v2 barely moves: 87.1 → 87.2 % at 100 mV, and 84.1 → 82.8 % at 1 V.
+No-hum results are unchanged.
+**Fix:** The per-channel model is the default; `tests/` checks its size against `cm_to_diff` and its sign.
+**Repro:** `make lda report` → the hum sweep table.
+
+### 12. The emulated INA333 gain didn't match the schematic, and a firmware comment named the wrong parts
+**Symptom:** `board.py` set R_G = 11 kΩ (G = 10.091). The schematic has R21 + R22 = 2 × 5.49 kΩ = 10.98 kΩ
+(G = 10.107). Separately, `emg_orthosis.ino` credited the driver pull-downs to R67–R70, which are channel-4
+parts on page 5 of the PDF.
+**Fix:** `ina_gain = 1 + 100e3 / (5.49e3 + 5.49e3)`. Calibration re-trims the pots, so no no-hum number
+changed beyond 0.1 point (the LDA control: 86.8 → 86.9 %). The firmware comment now names R2 and R3 (PWM), R6
+(MOT_EN) and R5 (EN_ISO), checked against page 1. `cnn.json` predates the gain fix (0.16 % on the INA333)
+and wasn't re-run, because torch wasn't available here.

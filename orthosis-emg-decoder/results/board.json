@@ -53,11 +53,11 @@
     }
   ],
   "v2": {
-    "ina_gain": 10.091,
+    "ina_gain": 10.107,
     "effective_cmrr_db_incl_rld": 116.1,
     "gain_range": [
       269.0,
-      2710.0
+      2715.0
     ]
   }
 }

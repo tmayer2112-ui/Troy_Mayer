@@ -146,6 +146,16 @@ class BoardV1:
         gd, gc = diff_amp_gains(self.electrodes.z_pos, self.electrodes.z_neg)
         return abs(gc) / gd + 10 ** (-self.cmrr_resistors_db / 20)
 
+    def cm_coupling(self, mismatch, board_sign):
+        """Signed common-mode -> differential gain per channel, referred to the input.
+
+        mismatch[i] is channel i's (Z+ - Z-)/Z_nominal, signed; board_sign[i] (+-1) is
+        the sign of that channel's resistor-matching error, fixed by its parts.
+        """
+        z, m = self.electrodes.z_nominal, np.asarray(mismatch, float)
+        gd, gc = diff_amp_gains(z * (1 + m / 2), z * (1 - m / 2))
+        return gc / gd + np.asarray(board_sign, float) * 10 ** (-self.cmrr_resistors_db / 20)
+
     def out_gain(self, n_ch):
         pot = np.zeros(n_ch) if self.pot_ohms is None else np.asarray(self.pot_ohms, float)
         return 1 + (47e3 + np.clip(pot, 0, 100e3)) / 1e3
@@ -180,7 +190,7 @@ class BoardV2:
     """INA333 single-supply board."""
     electrodes: Electrodes = None
     pot_ohms: np.ndarray = None
-    ina_gain: float = 1 + 100e3 / 11e3
+    ina_gain: float = 1 + 100e3 / (5.49e3 + 5.49e3)   # R_G = R21 + R22
     cmrr_ina_db: float = 100.0      # INA333 datasheet minimum, G >= 10
     z_cm: float = 1 / (2 * np.pi * 60 * 3e-12)   # 100G || 3 pF at 60 Hz
     rld_db: float = 20.0            # common-mode reduction from the right-leg drive
@@ -198,6 +208,13 @@ class BoardV2:
         e = self.electrodes
         mismatch = abs(e.z_pos - e.z_neg) / self.z_cm
         return (10 ** (-self.cmrr_ina_db / 20) + mismatch) * 10 ** (-self.rld_db / 20)
+
+    def cm_coupling(self, mismatch, board_sign):
+        """Signed per-channel version of cm_to_diff: board_sign[i] is the sign of that
+        INA333's own CMRR error, mismatch[i] the channel's signed (Z+ - Z-)/Z_nominal."""
+        dz = self.electrodes.z_nominal * np.asarray(mismatch, float)
+        return (np.asarray(board_sign, float) * 10 ** (-self.cmrr_ina_db / 20) + dz / self.z_cm) \
+            * 10 ** (-self.rld_db / 20)
 
     def out_gain(self, n_ch):
         pot = np.zeros(n_ch) if self.pot_ohms is None else np.asarray(self.pot_ohms, float)
@@ -236,13 +253,13 @@ def calibrate_pots(board, recordings, fs, target_v, max_pot=100e3):
     return board.pot_ohms
 
 
-def hum(n, fs, v_cm, cm_to_diff, rng, f=60.0):
-    """Mains pickup that reaches the differential input: one waveform, random phase,
-    added identically to every channel (all channels share one Electrodes model, so
-    they share cm_to_diff too)."""
+def hum(n, fs, v_cm, coupling, rng, f=60.0):
+    """Mains pickup that reaches the differential inputs: one 60 Hz waveform on the body,
+    random phase, scaled per channel by that channel's signed coupling (cm_coupling), so
+    channels differ in level and some are inverted. A scalar coupling hits every channel alike."""
     t = np.arange(n) / fs
     phase = rng.uniform(0, 2 * np.pi, 1)
-    return (v_cm * cm_to_diff * np.sin(2 * np.pi * f * t + phase))[:, None]
+    return v_cm * np.sin(2 * np.pi * f * t + phase)[:, None] * np.atleast_1d(coupling)[None, :]
 
 
 def reference_chain(x, fs):

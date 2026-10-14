@@ -37,6 +37,8 @@ def run_chain(recs, name, v_cm=0.0, salt="", adc_fs=None, anti_alias=False, **ch
     fs_out = adc_fs or FS
     trim = int(TRIM_S * fs_out)
     adc_kw = dict(adc_fs=adc_fs, anti_alias=anti_alias) if adc_fs else {}
+    # The sign of each channel's own CMRR error is fixed by its parts: one draw per board.
+    board_sign = _rng(0, 0, "cmrr-sign" + salt).choice([-1.0, 1.0], 4)
 
     def inputs(day, cls):
         x = recs[(day, cls)].astype(np.float64) * UV
@@ -44,7 +46,11 @@ def run_chain(recs, name, v_cm=0.0, salt="", adc_fs=None, anti_alias=False, **ch
             # Hum level is a property of the day (room, cables, skin), not of the
             # gesture: draw it per day, or it becomes a per-class fingerprint.
             level = v_cm * _rng(day, 0, "hum-level" + salt).uniform(0.5, 1.5)
-            x = x + B.hum(len(x), FS, level, chain.cm_to_diff, _rng(day, cls, "hum-phase" + salt))
+            # So is each channel's electrode imbalance: electrodes go on fresh every day, so
+            # (Z+ - Z-)/Z is redrawn per day and channel, any sign, |.| averaging the default.
+            m = chain.electrodes.mismatch * _rng(day, 0, "hum-mismatch" + salt).uniform(-2.0, 2.0, 4)
+            x = x + B.hum(len(x), FS, level, chain.cm_coupling(m, board_sign),
+                          _rng(day, cls, "hum-phase" + salt))
         return x
 
     info = {"chain": name, "v_cm": v_cm}

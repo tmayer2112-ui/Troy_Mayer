@@ -49,7 +49,7 @@ def main():
              "One subject: these are single-subject numbers.", ""]
 
     lines += ["## Headline: v1 vs v2, same recordings", "",
-              "| Signal chain | Random split (leaky) | Within-day | Cross-day LDA | Cross-day CNN (3 seeds) | Cross-day LDA, 100 mV hum |",
+              "| Signal chain | Random split (leaky) | Within-day (last 40 %) | Cross-day LDA | Cross-day CNN (3 seeds) | Cross-day LDA, 100 mV hum |",
               "|---|---|---|---|---|---|"]
     for name in LABEL:
         m0 = M[f"{name}@0.0"]
@@ -61,7 +61,23 @@ def main():
             f"| {LABEL[name]} | {100 * m0['random_split']['bal_acc']:.1f} | {pct(m0['within_day']['per_day'])} "
             f"| {pct(m0['cross_day']['per_day'])} | {cnn_cell} "
             f"| {pct(hum['cross_day']['per_day']) if hum else 'n/a'} |")
-    lines += ["", "CNN column: mean over seeds of the per-day mean, ± SD over seeds.", ""]
+    lines += ["", "CNN column: mean over seeds of the per-day mean, ± SD over seeds. The columns score "
+              "different windows (within-day: last 40 % of all 115 days; cross-day: every window of the 57 "
+              "test days), so don't compare them across; the next table does that like for like.", ""]
+
+    lines += ["## Within-day vs cross-day on identical windows", "",
+              "Days 61-121 only. Within-day trains on the first 60 % of each recording and tests on the last "
+              "40 %; the cross-day model (days 1-60) is scored on those same last-40 % windows, and also on "
+              "the first 60 % and on everything.", "",
+              "| Signal chain | Within-day, last 40 % | Cross-day, last 40 % | Cross-day, first 60 % | Cross-day, all |",
+              "|---|---|---|---|---|"]
+    for name in LABEL:
+        m0 = M[f"{name}@0.0"]
+        cd = m0["cross_day"]
+        lines.append(f"| {LABEL[name]} | {pct(m0['within_day']['test_days'])} | {pct(cd['late_40pct'])} "
+                     f"| {pct(cd['early_60pct'])} | {pct(cd['per_day'])} |")
+    lines += ["", "Every model does worse on the last 40 % of a hold. On the same windows, calibrating on the "
+              "day beats a 60-day-old model, as it should.", ""]
 
     if cnn:
         ctl = json.loads((R / "lda_control.json").read_text()) if (R / "lda_control.json").exists() else {}
@@ -92,8 +108,7 @@ def main():
               "All three score the last 40 % of each of days 61-121.", "",
               f"- 60-day-old model (days 1-60, no recalibration): {pct(v2['recalibration']['old+fresh']['0.0'])}",
               f"- 2 s per class from the same day, nothing else: {pct(v2['recalibration']['fresh']['2.0'])}",
-              f"- First 60 % of the same day (~3 s per class): {pct(v2['within_day']['per_day'])} "
-              f"(all {len(DAYS)} days, not only test days)", ""]
+              f"- First 60 % of the same day (~3 s per class): {pct(v2['within_day']['test_days'])}", ""]
 
     lines += ["## What the boards did to the signal", "",
               "| Chain | Pot setting (Ω, ch1-4) | Total gain (ch1-4) | CMRR incl. electrodes (dB) | Samples clipped | Samples above SS14 drop |",
