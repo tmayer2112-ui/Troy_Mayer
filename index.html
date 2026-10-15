@@ -807,7 +807,7 @@ footer{padding:36px 0 44px;text-align:center}
           <ul>
             <li>A C++17 core with no hardware dependencies, run by a <strong>1 kHz FreeRTOS task</strong> on an ESP32-S3. The same file compiles into a simulator of the motor, transmission, and forearm.</li>
             <li>PI velocity loop on the motor encoder, IMC-tuned, with plant-inversion feed-forward and anti-windup, holding speed error to <strong>0.8%</strong> while lifting the forearm.</li>
-            <li>A Bayesian EMG amplitude estimator plus a 20 ms onset confirm. The joint moves <strong>43 ms</strong> after the muscle does (was 103 ms) and stops <strong>32 ms</strong> after it relaxes (was 89 ms), with zero false starts from motion artefacts.</li>
+            <li>A Bayesian EMG amplitude estimator with a 20 ms onset confirm, plus a faster control tier that unlocks once the firmware has measured the motor. Together, the joint moves <strong>43 ms</strong> after the muscle does (was 103 ms) and stops <strong>32 ms</strong> after it relaxes (was 89 ms), with zero false starts from motion artefacts.</li>
             <li>Ten runtime fault monitors (runaway, stall, electrode lead-off, tracking error, over-travel, and more) latch the motor off. A hardware watchdog and a kill switch act independently of the code.</li>
             <li>26 GoogleTest unit, closed-loop, and real-EMG latency tests, plus an ESP32-S3 build, run in CI.</li>
           </ul>
