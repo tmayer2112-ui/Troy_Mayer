@@ -14,31 +14,6 @@ using orth::State;
 
 namespace {
 
-struct StepStats { double rise_s, overshoot, ss_err, ss_ripple; };
-
-// Command `dps` from standstill and measure the joint's true speed.
-StepStats stepResponse(Harness& h, double dps, double seconds = 0.6) {
-  h.log.clear();
-  h.record = true;
-  h.ctl.setSpeedOverride(true, static_cast<float>(dps));
-  h.run(seconds);
-  h.record = false;
-  double t10 = -1, t90 = -1, peak = 0, sum = 0, sum2 = 0;
-  int n = 0;
-  const double t0 = h.log.front().t;
-  for (const Sample& s : h.log) {
-    const double v = s.vel * (dps > 0 ? 1 : -1);
-    const double target = std::fabs(dps);
-    if (t10 < 0 && v >= 0.1 * target) t10 = s.t;
-    if (t90 < 0 && v >= 0.9 * target) t90 = s.t;
-    peak = std::max(peak, v);
-    if (s.t - t0 > seconds - 0.2) { sum += v; sum2 += v * v; ++n; }
-  }
-  const double mean = sum / n;
-  return {t90 - t10, (peak - std::fabs(dps)) / std::fabs(dps), std::fabs(dps) - mean,
-          std::sqrt(std::max(0.0, sum2 / n - mean * mean))};
-}
-
 Harness armedAt(double start_deg, Config cfg = Config{}, PlantParams pp = PlantParams{}) {
   cfg.joint_max_deg = 60.0f;   // room to run in these tests
   Harness h(cfg, pp);
@@ -142,7 +117,7 @@ TEST(ClosedLoop, RobustToModelError) {
 
 TEST(ClosedLoop, FastTierIsRobustOnceTheMotorIsIdentified) {
   // Same 36 variants, but each one is identified with 'j' first (limb out),
-  // which unlocks the fast tier: 600 deg/s^2 ramp, lambda 30 ms.
+  // which unlocks the fast tier: 500 deg/s^2 ramp, lambda 30 ms.
   int cases = 0;
   double worst_os = 0, worst_rise = 0;
   for (double jmul : {0.3, 1.0, 3.0})

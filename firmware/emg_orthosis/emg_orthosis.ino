@@ -6,7 +6,8 @@
  * Core   : Arduino-ESP32 3.x (ESP-IDF 5). Tools -> USB CDC On Boot: Enabled,
  *          because the board's USB-C goes to the S3's native USB on IO19/IO20.
  * Board  : openeremg v2 - 4 ch INA333 front end, ISO7763 barrier, DPDT kill
- * Motor  : goBILDA 5203 Yellow Jacket 5.2:1 with 28 CPR quadrature encoder
+ * Motor  : goBILDA Yellow Jacket 5.2:1 (5202 on the built arm; 5203 rates the
+ *          same) with a 28 counts/rev quadrature encoder on the motor shaft
  * Driver : BTS7960 (RPWM / LPWM / EN), on the far side of the isolator
  *
  * This file is only the hardware layer. Every decision - EMG processing,
@@ -76,6 +77,7 @@ static orth::Config makeConfig() {
   orth::Config c;
   // c.pulley_dia_mm = 47.0f;      // VERIFY: notebook uses 47 early, 65 late
   // c.gear_ratio = 5.2f;          // VERIFY with 'm'
+  // c.belt_ratio = 1.0f;          // VERIFY: count the belt pulley teeth
   // c.encoder_sign = -1;          // if 'j' says the sign is reversed
   // c.dps_per_duty = ...;         // from 'j'
   // c.friction_duty = ...;        // from 'j'
@@ -233,7 +235,8 @@ static void printHelp() {
       "  d  disarm / clear a fault\n"
       "  j  identify the motor (limb OUT, joint mid-range): open-loop steps, prints K, friction,\n"
       "     tau and whether the encoder sign is right, and loads them into the loop\n"
-      "  m  gear-ratio check: mark here, hand-turn the gearbox output N revs, then '?'\n"
+      "  m  transmission check: mark here, then hand-turn the gearbox output N revs\n"
+      "     (gear ratio) or the elbow through a measured angle (whole chain), then '?'\n"
       "  s  toggle 50 Hz CSV telemetry\n"
       "  ?  status      h  this help"));
 }
@@ -254,6 +257,8 @@ static void printStatus() {
   Serial.printf("counts since 'm': %ld = %.3f motor revs = %.4f gearbox-output revs at %.2f:1\n",
                 static_cast<long>(since), since / c.counts_per_motor_rev,
                 since / (c.counts_per_motor_rev * c.gear_ratio), c.gear_ratio);
+  Serial.printf("                  = %+.2f joint deg at %.5f deg/count (compare with a protractor)\n",
+                c.encoder_sign * since * c.degPerCount(), c.degPerCount());
   Serial.printf("loop model  K %.1f deg/s/duty  friction %.3f  tau %.1f ms  -> Kp %.5f  Ki %.4f  (%s tier)\n",
                 t.k, t.friction, 1e3f * t.tau, t.kp, t.ki,
                 t.fast_tier ? "fast: identified" : "conservative: run 'j' to unlock fast");
@@ -282,7 +287,9 @@ static void handleSerial() {
       case 'm':
         ratioMark = telemetry().raw_count;
         Serial.println(F("\n>> marked. Hand-turn the gearbox OUTPUT exactly N revs (5 or 10), then '?'.\n"
-                         "   gear ratio = counts / 28 / N"));
+                         "   gear ratio = counts / 28 / N\n"
+                         "   Or move the elbow through a protractor-measured angle: '?' prints the angle\n"
+                         "   the firmware thinks it moved, which checks gear x belt x screw x pulley."));
         break;
       case 's': streaming = !streaming;
         if (streaming) Serial.println(F("t_ms,state,env_flex,env_ext,act_flex,act_ext,cmd,ref,vel,pos,duty"));
@@ -334,8 +341,8 @@ void setup() {
 
   const orth::Config& c = ctl.config();
   Serial.println(F("\nOpenEREMG v2 - EMG orthosis control"));
-  Serial.printf("transmission %.1f:1, %.1f mm screw, %.0f mm pulley = %.5f deg/count\n", c.gear_ratio,
-                c.screw_pitch_mm, c.pulley_dia_mm, c.degPerCount());
+  Serial.printf("transmission %.2f:1 gearbox, %.2f:1 belt, %.1f mm screw, %.0f mm pulley = %.5f deg/count\n",
+                c.gear_ratio, c.belt_ratio, c.screw_pitch_mm, c.pulley_dia_mm, c.degPerCount());
   Serial.printf("limits %.0f..%.0f deg, %.0f deg/s max | envelope %s, %lu ms onset confirm\n",
                 c.joint_min_deg, c.joint_max_deg, c.joint_max_dps,
                 c.envelope == orth::Config::Envelope::Bayes ? "Bayesian" : "two-pole",

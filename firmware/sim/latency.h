@@ -40,12 +40,13 @@ inline std::vector<std::vector<int16_t>> loadContractions(const std::string& pat
   return out;
 }
 
-struct Latency { double t_move, t_50, t_stop, jitter; bool ok; };
+struct Latency { double t_move, t_50, t_stop, jitter; bool ok; double t_cmd; };
 
-inline Latency runLatencyTrial(const orth::Config& base, const std::vector<int16_t>& raw, unsigned seed) {
+inline Latency runLatencyTrial(const orth::Config& base, const std::vector<int16_t>& raw, unsigned seed,
+                               const PlantParams& pp = PlantParams{}) {
   orth::Config cfg = base;
   cfg.joint_max_deg = 60.0f;
-  Harness h(cfg, PlantParams{});
+  Harness h(cfg, pp);
   // contraction RMS, about its mean
   double mean = 0, rms = 0;
   for (int16_t v : raw) mean += v;
@@ -59,7 +60,7 @@ inline Latency runLatencyTrial(const orth::Config& base, const std::vector<int16
   handMove(h, 10.0);
   h.run(0.3);
   h.run(0.01, orth::Request::Arm);
-  if (h.ctl.state() != orth::State::Armed) return {0, 0, 0, 0, false};
+  if (h.ctl.state() != orth::State::Armed) return {0, 0, 0, 0, false, 0};
 
   const double t0 = h.t(), on = 0.5, dur = 1.5, ramp = 0.05;
   std::mt19937 g(seed);
@@ -77,7 +78,7 @@ inline Latency runLatencyTrial(const orth::Config& base, const std::vector<int16
   h.log.clear();
   h.record = true;
   h.run(on + dur + 1.0);
-  if (h.ctl.state() != orth::State::Armed) return {0, 0, 0, 0, false};
+  if (h.ctl.state() != orth::State::Armed) return {0, 0, 0, 0, false, 0};
 
   double steady = 0, steady2 = 0;
   int n = 0;
@@ -85,18 +86,23 @@ inline Latency runLatencyTrial(const orth::Config& base, const std::vector<int16
     if (s.t - t0 >= on + 0.8 && s.t - t0 < on + dur) { steady += s.vel; steady2 += s.vel * s.vel; ++n; }
   steady /= n;
   const double jitter = std::sqrt(std::max(0.0, steady2 / n - steady * steady));
-  double t_move = -1, t_50 = -1, t_stop = 0;
+  double t_move = -1, t_50 = -1, t_stop = 0, t_cmd = -1;
   for (const Sample& s : h.log) {
     const double r = s.t - t0 - on;
     if (r < 0) continue;
+    if (t_cmd < 0 && s.cmd > 0.0) t_cmd = r;   // the controller first asks for motion
     if (t_move < 0 && s.vel > 2.0) t_move = r;
     if (t_50 < 0 && s.vel >= 0.5 * steady) t_50 = r;
     if (r > dur && std::fabs(s.vel) > 1.0) t_stop = r - dur;   // last moment still moving
   }
-  return {t_move, t_50, t_stop, jitter, t_move >= 0 && t_50 >= 0};
+  return {t_move, t_50, t_stop, jitter, t_move >= 0 && t_50 >= 0, t_cmd};
 }
 
-struct LatencySummary { double move_med, move_p90, half_med, half_p90, stop_med, stop_p90, jitter_med; int n; };
+struct LatencySummary {
+  double move_med, move_p90, half_med, half_p90, stop_med, stop_p90, jitter_med;
+  int n;
+  double cmd_med, spinup_med;   // onset -> speed command; speed command -> joint moving
+};
 
 inline double pct(std::vector<double> v, double p) {
   std::sort(v.begin(), v.end());
@@ -105,20 +111,23 @@ inline double pct(std::vector<double> v, double p) {
   return i + 1 < v.size() ? v[i] + (idx - i) * (v[i + 1] - v[i]) : v.back();
 }
 
-inline LatencySummary summarize(const orth::Config& cfg, const std::vector<std::vector<int16_t>>& trials) {
-  std::vector<double> mv, hf, st, jt;
+inline LatencySummary summarize(const orth::Config& cfg, const std::vector<std::vector<int16_t>>& trials,
+                                const PlantParams& pp = PlantParams{}) {
+  std::vector<double> mv, hf, st, jt, cm, su;
   unsigned seed = 1;
   for (const auto& tr : trials) {
-    const Latency l = runLatencyTrial(cfg, tr, seed++);
+    const Latency l = runLatencyTrial(cfg, tr, seed++, pp);
     if (!l.ok) continue;
     mv.push_back(1e3 * l.t_move);
     hf.push_back(1e3 * l.t_50);
     st.push_back(1e3 * l.t_stop);
     jt.push_back(l.jitter);
+    cm.push_back(1e3 * l.t_cmd);
+    su.push_back(1e3 * (l.t_move - l.t_cmd));
   }
-  if (mv.empty()) return {0, 0, 0, 0, 0, 0, 0, 0};
+  if (mv.empty()) return {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   return {pct(mv, 0.5), pct(mv, 0.9), pct(hf, 0.5), pct(hf, 0.9), pct(st, 0.5), pct(st, 0.9), pct(jt, 0.5),
-          static_cast<int>(mv.size())};
+          static_cast<int>(mv.size()), pct(cm, 0.5), pct(su, 0.5)};
 }
 
 }  // namespace sim

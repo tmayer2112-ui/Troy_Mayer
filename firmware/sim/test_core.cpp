@@ -235,9 +235,13 @@ TEST(VelocityPI, AntiWindupStopsIntegratingIntoSaturation) {
 
 TEST(Config, TransmissionArithmetic) {
   Config c;
-  // 4 mm per screw rev over a 47 mm pulley = 9.75 joint deg per output rev,
-  // over 28 * 5.2 counts = 0.0670 deg per count.
+  // 4 mm per screw rev over a 47 mm pulley = 9.75 joint deg per screw rev,
+  // over 28 * 5.2 counts (1:1 belt) = 0.0670 deg per count.
   EXPECT_NEAR(c.degPerCount(), 0.06698, 1e-4);
+  // A belt that turns the screw once per two gearbox turns halves it.
+  Config belted;
+  belted.belt_ratio = 2.0f;
+  EXPECT_NEAR(belted.degPerCount(), c.degPerCount() / 2.0f, 1e-7);
   EXPECT_NEAR(c.kp(), 0.020 / (187.0 * 0.050), 1e-6);
   EXPECT_NEAR(c.ki(), 1.0 / (187.0 * 0.050), 1e-6);
 }

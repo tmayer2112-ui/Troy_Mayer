@@ -35,13 +35,15 @@ namespace orth {
 constexpr float kPi = 3.14159265358979f;
 
 // =============================================================================
-// Configuration. Defaults match the v2 board, a goBILDA 5203 5.2:1 motor, a
-// 4 mm screw and a 47 mm pulley. Items marked VERIFY need a bench measurement;
-// the 'j' identify command measures the motor ones for you.
+// Configuration. Defaults match the v2 board, a goBILDA Yellow Jacket 5.2:1
+// motor (a 5202 on the built arm; the 5203 has the same 12 V ratings), a 1:1
+// belt, a 4 mm ball screw and a 47 mm pulley. Items marked VERIFY need a bench
+// measurement; the 'j' identify command measures the motor ones for you.
 // =============================================================================
 struct Config {
   // --- transmission: motor shaft -> joint ----------------------------------
-  float gear_ratio = 5.2f;              // VERIFY with 'm'
+  float gear_ratio = 5.2f;              // VERIFY with 'm'. goBILDA's exact ratio is 1 + 46/11 = 5.18
+  float belt_ratio = 1.0f;              // VERIFY: screw-pulley teeth / gearbox-pulley teeth
   float screw_pitch_mm = 4.0f;          // cable travel per screw revolution
   float pulley_dia_mm = 47.0f;          // VERIFY: notebook uses 47 early, 65 late
   float counts_per_motor_rev = 28.0f;   // 7 PPR x 4 (quadrature)
@@ -72,18 +74,21 @@ struct Config {
   // error is a position error, so the loop holds the joint where it stopped.
   //
   // Two tiers. Fast response leans on the feed-forward, and feed-forward is only
-  // as good as the motor model. With datasheet numbers, a fast ramp overshoots
-  // up to ~45 % when friction or supply voltage differ from the model; no loop
-  // tuning fixes a wrong model. So the loop starts conservative and the fast
-  // tier (ramp 500 deg/s^2, lambda 30 ms) unlocks only once 'j' has measured
-  // this motor, or model_identified is set with measured values pasted in.
-  // Across 36 perturbed motors, each identified first, the fast tier's worst
-  // step overshoot is ~20 % (600 deg/s^2 reached 27 %). 30 ms is the floor for
-  // lambda: at 20 ms the stop starts to ring (latency_sweep).
+  // as good as the motor model. With datasheet numbers, the fast tier
+  // overshoots up to ~38 % when inertia, friction or supply voltage differ from
+  // the model; no loop tuning fixes a wrong model. So the loop starts
+  // conservative and the fast tier (ramp 500 deg/s^2, lambda 30 ms) unlocks
+  // only once 'j' has measured this motor, or model_identified is set with
+  // measured values pasted in. Across 36 perturbed motors, each identified
+  // first, the fast tier's worst step overshoot is ~20 %; lambda 20 ms raises
+  // it to ~27 % and a 1000 deg/s^2 ramp to ~34 % (`make latency`).
   float lambda_s = 0.050f;
   float lambda_fast_s = 0.030f;
   bool model_identified = false;
   bool closed_loop = true;              // false = feed-forward only (used for comparison)
+  // Ablation switches for `make latency`. Leave both on.
+  bool ff_accel = true;                 // feed-forward includes tau * d(ref)/dt
+  bool ramp_antiwindup = true;          // the integrator may not charge while the setpoint ramps
 
   // --- EMG ------------------------------------------------------------------
   float fs_hz = 1000.0f;                // sample and control rate
@@ -93,7 +98,7 @@ struct Config {
   // onset and still averages hard during a steady one. On 200 real forearm
   // contractions through the v2 board model (firmware/analysis/latency_study.py)
   // it halved onset-to-half-command time against the 4 Hz two-pole filter
-  // (97 -> 49 ms median), cut the stop lag from 73 to 15 ms (p90), and had
+  // (97 -> 48 ms median), cut the stop lag from 73 to 13 ms (p90), and had
   // slightly LESS jitter. A jump model reacts to single spikes, so an onset
   // must hold for confirm_ms: with 20 ms, zero false starts at one motion
   // artefact per second; with none, 62 a minute.
@@ -138,8 +143,8 @@ struct Config {
   // derived ------------------------------------------------------------------
   float degPerCount() const {
     const float mm_per_joint_deg = kPi * pulley_dia_mm / 360.0f;
-    const float joint_deg_per_output_rev = screw_pitch_mm / mm_per_joint_deg;
-    return joint_deg_per_output_rev / (counts_per_motor_rev * gear_ratio);
+    const float joint_deg_per_screw_rev = screw_pitch_mm / mm_per_joint_deg;
+    return joint_deg_per_screw_rev / (counts_per_motor_rev * gear_ratio * belt_ratio);
   }
   float lambda() const { return model_identified ? lambda_fast_s : lambda_s; }
   float accel() const { return model_identified ? joint_accel_fast_dps2 : joint_accel_dps2; }
@@ -427,12 +432,12 @@ class VelocityPI {
     const float e = ref_dps - meas_dps;
     const float dref = (ref_dps - prev_ref_) / dt;
     prev_ref_ = ref_dps;
-    float ff = (ref_dps + c.plant_tau_s * dref) / c.dps_per_duty;
+    float ff = (ref_dps + (c.ff_accel ? c.plant_tau_s * dref : 0.0f)) / c.dps_per_duty;
     if (std::fabs(ref_dps) > 0.5f) ff += std::copysign(c.friction_duty, ref_dps);
     const float unsat = ff + c.kp() * e + integ_;
     const float out = std::clamp(unsat, -c.duty_max, c.duty_max);
     const bool pushing_further = (unsat != out) && ((e > 0.0f) == (unsat > 0.0f));
-    const bool charging = ramping && (e > 0.0f) == (ref_dps > 0.0f);
+    const bool charging = c.ramp_antiwindup && ramping && (e > 0.0f) == (ref_dps > 0.0f);
     if (!pushing_further && !charging) integ_ += c.ki() * e * dt;
     integ_ = std::clamp(integ_, -c.duty_max, c.duty_max);
     last_ = out;

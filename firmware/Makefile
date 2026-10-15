@@ -15,8 +15,8 @@ test: build
 	cd $(BUILD) && ctest --output-on-failure
 	$(BUILD)/sketch_syntax_check > /dev/null && echo "sketch compiles and setup() runs"
 
-latency: build         ## end-to-end latency sweep with real EMG (sim/data/real_contractions.bin)
-	$(BUILD)/latency_sweep sim/data/real_contractions.bin
+latency: build         ## latency sweep, robustness, ablation and sensitivity checks with real EMG (~1 min)
+	$(BUILD)/latency_sweep sim/data/real_contractions.bin | tee results/latency_sweep.txt
 
 results: build
 	mkdir -p results/figures

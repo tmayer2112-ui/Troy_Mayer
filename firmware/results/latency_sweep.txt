@@ -1,0 +1,41 @@
+1. Latency on 24 real contractions (ms; the shipped fast tier is accel 500, lambda 30)
+   before: two-pole 4 Hz, accel 150, lambda 50  move  103 (p90  170)  half-speed  139 (p90  211)  stop   89 (p90  116)  jitter 2.43 deg/s  n=24
+   shipped, median split: speed command after 36.5 ms (20 of them the onset confirm), joint past 2 deg/s 7.0 ms later
+   bayes, accel 150, lambda 50 ms               move   97 (p90  179)  half-speed  150 (p90  264)  stop  100 (p90  108)  jitter 0.96 deg/s  n=24
+   bayes, accel 150, lambda 30 ms               move   72 (p90  128)  half-speed  111 (p90  194)  stop   97 (p90  104)  jitter 0.97 deg/s  n=24
+   bayes, accel 150, lambda 20 ms               move   59 (p90   87)  half-speed   96 (p90  188)  stop   95 (p90  105)  jitter 0.98 deg/s  n=24
+   bayes, accel 300, lambda 50 ms               move   61 (p90  165)  half-speed   91 (p90  220)  stop   50 (p90   56)  jitter 0.98 deg/s  n=24
+   bayes, accel 300, lambda 30 ms               move   50 (p90   83)  half-speed   79 (p90  186)  stop   47 (p90   53)  jitter 0.99 deg/s  n=24
+   bayes, accel 300, lambda 20 ms               move   45 (p90   78)  half-speed   62 (p90  183)  stop   47 (p90   51)  jitter 1.01 deg/s  n=24
+   bayes, accel 500, lambda 50 ms               move   47 (p90  164)  half-speed   82 (p90  217)  stop   33 (p90   36)  jitter 0.99 deg/s  n=24
+   bayes, accel 500, lambda 30 ms               move   43 (p90   82)  half-speed   67 (p90  186)  stop   32 (p90   36)  jitter 0.99 deg/s  n=24
+   bayes, accel 500, lambda 20 ms               move   41 (p90   77)  half-speed   52 (p90  182)  stop   31 (p90   35)  jitter 1.01 deg/s  n=24
+   bayes, accel 1000, lambda 50 ms              move   41 (p90  164)  half-speed   76 (p90  216)  stop   29 (p90   33)  jitter 0.99 deg/s  n=24
+   bayes, accel 1000, lambda 30 ms              move   39 (p90   81)  half-speed   58 (p90  186)  stop   31 (p90   36)  jitter 0.99 deg/s  n=24
+   bayes, accel 1000, lambda 20 ms              move   39 (p90   77)  half-speed   49 (p90  182)  stop   34 (p90   37)  jitter 1.01 deg/s  n=24
+
+2. Worst overshoot of a 0 -> 20 deg/s step across the 36 perturbed motors
+   conservative tier, datasheet model                    16.0 %
+   fast tier forced on with the datasheet model          37.9 %
+   fast tier after 'j': accel 500, lambda 30 (shipped)   19.8 %
+   fast tier after 'j': accel 500, lambda 20             27.1 %
+   fast tier after 'j': accel 1000, lambda 30            34.2 %
+
+3. Ablation: 0 -> 20 deg/s step; nominal motor, then the worst of the 36
+   accel feed-forward on  ramp anti-windup on   nominal: conservative  -0.7 % (rise 147 ms), fast   4.5 % (rise  29 ms)  worst: conservative  16.0 %, fast  19.8 %
+   accel feed-forward on  ramp anti-windup off  nominal: conservative   8.9 % (rise  74 ms), fast  18.2 % (rise  26 ms)  worst: conservative  20.8 %, fast  33.6 %
+   accel feed-forward off ramp anti-windup on   nominal: conservative  -0.7 % (rise 119 ms), fast  -0.4 % (rise  33 ms)  worst: conservative  19.3 %, fast   7.1 %
+   accel feed-forward off ramp anti-windup off  nominal: conservative  14.3 % (rise  66 ms), fast  18.4 % (rise  23 ms)  worst: conservative  27.9 %, fast  33.1 %
+
+4. Holding at 20 deg, then pushing the forearm down for 3 s
+   conservative tier, 2 N m: sags 0.00 deg
+   conservative tier, 4 N m: sags 0.74 deg
+   fast         tier, 2 N m: sags 0.35 deg
+   fast         tier, 4 N m: sags 0.51 deg
+
+5. Latency medians on slightly different plants (the firmware's config is unchanged)
+   nominal                                      before  103 (p90  170)  now   43 (p90   82)
+   gearbox 5.18:1 (goBILDA's exact 1 + 46/11)   before  109 (p90  175)  now   45 (p90  126)
+   pulley diameter +0.5 %                       before  102 (p90  169)  now   45 (p90  126)
+   rotor inertia +5 %                           before  104 (p90  170)  now   43 (p90   82)
+   supply 12.1 V                                before  102 (p90  168)  now   43 (p90   82)
