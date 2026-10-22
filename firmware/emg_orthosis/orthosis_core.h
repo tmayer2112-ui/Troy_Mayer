@@ -256,7 +256,8 @@ class VelocityEstimator {
 //            around more by single large samples)
 //   output:  the posterior mean of log-amplitude (continuous; the most probable
 //            bin would step in 12 % increments and gave slightly more jitter)
-// Cost: 2 x kBins exp() per sample, ~50 us per channel on an ESP32-S3.
+// Cost: kBins + 1 exp() per sample per channel. Estimated at ~50 us per channel
+// on an ESP32-S3; not yet timed on the chip.
 class BayesEnvelope {
  public:
   static constexpr int kBins = 64;

@@ -142,7 +142,7 @@ TEST(Envelope, BayesTracksAStepFastAndHoldsSteady) {
          rest, t50, mean, cv);
   EXPECT_LT(rest, 10.0f);
   EXPECT_LE(t50, 10);                     // the two-pole filter at 4 Hz takes 67 ms
-  EXPECT_NEAR(mean, 200.0, 30.0);         // the MAP level is the RMS, to within a bin or two
+  EXPECT_NEAR(mean, 200.0, 30.0);         // near the RMS; a Laplacian model reads Gaussian noise ~13 % high
   EXPECT_LT(cv, 0.10);
 }
 
