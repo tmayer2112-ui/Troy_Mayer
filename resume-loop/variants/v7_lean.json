@@ -53,7 +53,7 @@
     ],
     [
      "Robotics",
-     "state estimation (Kalman filtering), feedback control, QP force control, rigid-body kinematics, MuJoCo, Eigen, FreeRTOS"
+     "state estimation (Kalman filtering), PI and feed-forward control, QP force control, rigid-body kinematics, MuJoCo, Eigen, FreeRTOS"
     ],
     [
      "Tools",

@@ -7,8 +7,8 @@ Purdue University, West Lafayette, IN                                           
 B.S. Mechanical Engineering and B.S. Applied Statistics, Minor in Economics                                     GPA: 3.32/4.00
 SKILLS
  • Languages: C++, Python, MATLAB, SQL
- • Robotics: state estimation (Kalman filtering), feedback control, QP force control, rigid-body kinematics, MuJoCo, Eigen,
-   FreeRTOS
+ • Robotics: state estimation (Kalman filtering), PI and feed-forward control, QP force control, rigid-body kinematics,
+   MuJoCo, Eigen, FreeRTOS
  • Tools: Linux, Git, CMake, GoogleTest, GitHub Actions CI, Flask, pandas, PyTorch, KiCad, LabVIEW, CATIA, Creo
 ROBOTICS EXPERIENCE AND PROJECTS
 Boston Dynamics                                                                                                Jul 2026 – Present
