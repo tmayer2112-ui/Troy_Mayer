@@ -1,0 +1,54 @@
+                                                      Troy Mayer
+                           Mountainside, NJ 07092 | 908-873-9490 | tmayer2112@gmail.com | U.S. Citizen
+               linkedin.com/in/troyarkin | github.com/tmayer2112-ui/Troy_Mayer | tmayer2112-ui.github.io/Troy_Mayer
+                               Open to Summer 2027 internships in robot software and controls
+EDUCATION
+Purdue University, West Lafayette, IN                                                                         Expected May 2028
+B.S. Mechanical Engineering and B.S. Applied Statistics, Minor in Economics                                      GPA: 3.32/4.00
+SKILLS
+ • Languages: C++, Python, MATLAB, SQL
+ • Robotics: state estimation (Kalman filtering), feedback control, QP force control, rigid-body kinematics, MuJoCo, Eigen,
+   FreeRTOS
+ • Tools: Linux, Git, CMake, GoogleTest, GitHub Actions CI, Flask, pandas, PyTorch, KiCad, LabVIEW, CATIA, Creo
+ROBOTICS EXPERIENCE AND PROJECTS
+Boston Dynamics                                                                                                  Jul 2026 – Present
+Sensors and Perception Co-Op (Atlas)                                                                                 Waltham, MA
+ • Mapping Atlas impacts onto the robot mesh with floating-base forward kinematics from joint encoders, and estimating
+   impact energy from operational-space effective mass and a fitted impact velocity.
+ • Designed a delta-v impact-severity metric that stays accurate when sensors miss an impact’s peak, and characterized its
+   filtering and noise floor with synthetic and null-control tests.
+ • Building an impact forensics pipeline and dashboard (Python, Flask, SQLite) over ~28k impacts from Atlas test logs, used
+   by engineers during testing.
+Legged Robot State Estimation and Control, personal project, code                                             Aug 2026 – Oct 2026
+ • Built a contact-aided error-state Kalman filter in C++ for a simulated Unitree Go1, fusing IMU and leg kinematics to
+   0.013 m/s velocity error, against 1.38 m/s for the IMU alone.
+ • Verified it with GoogleTest (finite-difference Jacobian checks, parity with a Python reference) and an observability
+   analysis of what the sensors can and can’t see.
+ • Stress-tested it against foot slip and contact latency, found that tilt is only weakly observable on straight walks, and fixed
+   the tilt and latency failures.
+ • Closed the loop in Python simulation, with the walking controller running on the estimate without a fall; also added an
+   MIT Cheetah 3-style QP balance controller.
+Purdue ASME Biomechanics, Active Orthosis                                                                    Apr 2024 – May 2026
+Electronics Team Lead                                                                                           West Lafayette, IN
+ • Designed a 1 kHz PI motor velocity controller in C++ for an ESP32-S3, tuned from a motor model with feed-forward
+   and anti-windup, and verified it in co-simulation with a model of the motor and forearm.
+ • Wrote the FreeRTOS firmware around it, with fault monitors, a hardware watchdog, and a kill switch, tested in CI with
+   GoogleTest.
+ • Cut EMG-to-motion latency from 103 to 43 ms in simulation on real recorded EMG by reworking the signal processing
+   and loop tuning.
+ • Led the 5-engineer electronics team and redesigned the EMG board schematic in KiCad, raising cross-day gesture
+   decoding from 31% to 87% in emulation.
+Asteroid Hopping Robot, independent research with Purdue University and UC3M (Madrid)                           Oct 2026 – Present
+ • Building a three-legged hopping robot and a landing test rig, and designing its push-off, landing, and mid-air attitude
+   control with MuJoCo simulation.
+ADDITIONAL EXPERIENCE
+Caterpillar (via Purdue Data Mine), Machine Learning Researcher                                     Jan 2026 – May 2026
+ • Built LSTM and XGBoost forecasts of daily paint consumption with Monte Carlo confidence intervals, contributing to a
+   4.7% reduction in material usage.
+Chortos Lab, Purdue, Undergraduate Researcher                                                      Aug 2025 – May 2026
+ • Wrote a Python computer-vision tracker and LabVIEW/MATLAB data acquisition to measure gel samples, and used them
+   to formulate gels with over 50% more force output.
+Emerson, Discrete Automation (ASCO), Mechanical and Manufacturing Engineer Intern                   Jun 2025 – Aug 2025
+ • Designed and CNC-machined a spring canister for an industrial rotary valve in Creo with GD&T drawings, and ran UL
+   429 validation testing on solenoid valves.
+
