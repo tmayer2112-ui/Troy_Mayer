@@ -1,0 +1,58 @@
+                                                      Troy Mayer
+                            Mountainside, NJ 07092 | 908-873-9490 | tmayer2112@gmail.com | US Citizen
+                         linkedin.com/in/troyarkin | Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer
+EDUCATION
+Purdue University, School of Mechanical Engineering and School of Science                                     West Lafayette, IN
+B.S. Mechanical Engineering; B.S. Applied Statistics; Minor in Economics                                              May 2028
+GPA 3.32/4 | Clubs: Club Swimming, House Band
+PROFESSIONAL EXPERIENCE
+Boston Dynamics                                                                                                    Waltham, MA
+Sensors and Perception Co-Op, Atlas                                                                            Jul 2026 – Present
+ • Computing limb position and velocity at impact with floating-base forward kinematics (quaternions, Rodrigues' rotations,
+   rigid-body velocity composition) from joint encoders, and mapping impacts onto the robot's mesh.
+ • Estimating impact energy from Khatib's operational-space effective mass and an OLS velocity fit, and building a physics-
+   based MuJoCo impact simulation.
+ • Built an impact forensics pipeline and Flask/Plotly dashboard on a Linux VM covering ~28k impact events from ~900
+   robot test logs, with ETL from a time-series telemetry store into SQLite, a 3D impact-location heatmap, and per-event
+   waveform inspection used by engineers during testing.
+ • Modeling hardware thermal behavior in Python (Pandas, SciPy), fitting heating curves by multi-start least squares to
+   predict steady-state temperatures across hundreds of units without full-length tests.
+Caterpillar (via Purdue Data Mine)                                                                            West Lafayette, IN
+Machine Learning Researcher                                                                                Jan 2026 – May 2026
+ • Built LSTM and XGBoost models forecasting next-day primer, topcoat, and solvent consumption from five years of paint-
+   line data, with Monte Carlo confidence intervals on each forecast, achieving a 4.7% reduction in material usage.
+ • Built Python pipelines consolidating five years of noisy legacy data into one daily series, contributing to a 3.3% reduction
+   in cycle time.
+Chortos Lab, Soft Adaptive Systems and Structures                                                             West Lafayette, IN
+Undergraduate Researcher                                                                                  Aug 2025 – May 2026
+ • Wrote a Python computer-vision tracker resolving cantilever displacement to 0.01 mm and built LabVIEW/MATLAB data
+   acquisition for 50,000+ point datasets, guiding gel formulations that increased force output by over 50%.
+PROJECTS
+Legged Robot State Estimation and Control | Personal Project                                                Aug 2026 – Oct 2026
+ • Built a contact-aided error-state EKF in C++/Eigen fusing a 1 kHz IMU with leg kinematics on a simulated Unitree Go1,
+   reaching 0.013 m/s velocity RMSE over a 60 s walk vs. 1.38 m/s IMU-only, at ~20 µs per update.
+ • Verified Jacobians against finite differences in GoogleTest, matched a Python reference to 1e-13, and showed analytically
+   and numerically that roll, pitch, and velocity stay bounded while position and yaw drift.
+ • Ran a trot controller on the estimate for 5 × 60 s walks with 0 falls, tracking within 0.004 m/s of the ground-truth-fed run;
+   added a 500 Hz QP force-balance controller that cut ground-truth velocity-tracking error from 0.169 to 0.091 m/s.
+Active Orthosis, Purdue ASME Biomechanics | Electronics Team Lead                                          Apr 2024 – May 2026
+ • Designed and implemented a 1 kHz PI velocity controller in C++ on an ESP32-S3, tuned from a first-order motor model
+   with feed-forward and anti-windup (0.8% speed error lifting the forearm in simulation), protected by 10 fault monitors, a
+   hardware watchdog, and a kill switch.
+ • Cut EMG-to-motion latency from 103 ms to 43 ms with a Bayesian EMG estimator, validated in closed-loop simulation
+   on real recorded EMG with 26 GoogleTest tests in CI.
+ • Led a 5-engineer team and redesigned the 4-channel EMG board in KiCad with an INA333 front end, right-leg drive, and
+   ISO7763 motor isolation, raising cross-day gesture decoding from 31% to 87% in emulation.
+Asteroid Hopping Robot | Independent Research, Purdue University & UC3M (Madrid)                              Oct 2026 – Present
+ • Designing push-off control optimized to hit a target launch speed, knee impedance control for landing, and reaction-wheel
+   control to reorient mid-air for a three-legged robot that changes leg shape between hops.
+ • Simulating hops in MuJoCo, comparing risk-limited rules that trade distance against the chance of escaping the asteroid or
+   tipping over, and building a pendulum rig to test landings.
+SKILLS
+ • Programming: C++17, Python, MATLAB, SQL | Languages: English, Turkish (fluent), Spanish (fluent)
+ • Robotics and controls: Kalman filtering (error-state EKF), sensor fusion, rigid-body kinematics, PI and feed-forward
+   control, QP force control, MuJoCo, Eigen, FreeRTOS, ESP32
+ • Software and data: Linux, Git, GitHub Actions CI, CMake, GoogleTest, Flask, Plotly, SQLite, Pandas, SciPy, PyTorch,
+   XGBoost, Snowflake
+ • Hardware and CAD: KiCad, LabVIEW, DAQ, CATIA, NX, Fusion 360, Creo, FEA
+

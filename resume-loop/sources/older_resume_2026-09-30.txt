@@ -1,0 +1,54 @@
+                                                   Troy Mayer
+   Mountainside, NJ 07092 | 908-873-9490 | tmayer2112@gmail.com | US Citizen | www.linkedin.com/in/troyarkin/
+EDUCATION
+Purdue University, School of Mechanical Engineering and School of Science                               West Lafayette, IN
+B.S. Mechanical Engineering; B.S. Applied Statistics; Minor in Economics                                        May 2028
+Clubs: Club Swimming, House Band                                                                               GPA:3.4/4
+PROFESSIONAL EXPERIENCE
+Boston Dynamics                                                                                                Waltham, MA
+Sensors and Perception Co-Op – Atlas                                                                      July 2026 – Present
+   • Built a forward-kinematics pipeline that computes where each limb is and how fast it's moving at impact, propagating
+       6-DOF floating-base poses through the joint chains with Rodrigues' rotations and rigid-body velocity composition.
+   • Designed a delta-v impact-severity metric that stays accurate when sensors miss the sharpest part of an impact,
+       validating the filtering against synthetic pulses of known size and measuring the metric's noise floor on quiet data.
+   • Built an impact forensics pipeline and Flask/Plotly dashboard on a Linux VM covering ~28k impact events from
+       ~900 robot test logs, with ETL from a time-series telemetry store into SQLite, a 3D impact-location heatmap, and
+       per-event waveform inspection used by engineers during testing.
+   • Modeled hardware thermal behavior in Python (Pandas, SciPy), using Savitzky-Golay filtering and multi-start least
+       squares to fit heating curves and predict steady-state temperatures across hundreds of units without running each test
+       to completion.
+Caterpillar (via Purdue Data Mine)                                                                      West Lafayette, IN
+Machine Learning Researcher                                                                      January 2026 – May 2026
+   • Built an LSTM model forecasting next-day primer, topcoat, and solvent consumption from five years of paint-line
+       data, with Monte Carlo confidence intervals on each forecast, achieving a 4.7% reduction in material usage.
+   • Built Python pipelines to ingest, clean, and consolidate five years of noisy legacy data into one daily series,
+       contributing to a 3.3% reduction in manufacturing cycle time.
+Chortos Lab – Soft Adaptive Systems and Structures                                                 West Lafayette, IN
+Undergraduate Researcher                                                                    August 2025 – May 2026
+   • Built data acquisition systems in LabVIEW and MATLAB, processing and normalizing datasets of 50,000+ points to
+       quantify sub-millimeter material behavior.
+   • Wrote a Python computer-vision tracker resolving cantilever displacement to 0.01 mm, guiding gel formulations that
+       increased force output by over 50%.
+PROJECTS
+Purdue ASME – Biomechanics                                                                              West Lafayette, IN
+Active Orthosis – Electronics Team Lead                                                               April 2024 – Present
+    • Designed and implemented a 1 kHz PI velocity controller in C++ on an ESP32-S3, tuned from a first-order motor
+        model with feed-forward and anti-windup, and protected by 10 fault monitors, a hardware watchdog, and a kill
+        switch.
+    • Cut EMG-to-motion latency from 103 to 43 ms using a Bayesian EMG estimator, validated in closed-loop simulation
+        on real EMG with 26 automated tests in CI.
+    • Led a 5-engineer team and redesigned the 4-channel EMG board in KiCad with an INA333 front end, right-leg drive,
+        and ISO7763 motor isolation, raising cross-day gesture decoding from 31% to 87% in emulation.
+Legged Robot State Estimation
+Personal Project                                                                                    August 2026 – Present
+    • Built a contact-aided error-state EKF in C++/Eigen fusing IMU and leg kinematics at 1 kHz, achieving 0.013 m/s
+        velocity RMSE over a 60-second walk vs. 1.38 m/s for IMU-only dead reckoning.
+    • Verified filter Jacobians against finite differences in GoogleTest, ran each 1 kHz update in ~20 µs, and showed roll,
+        pitch, and velocity stay bounded while position and yaw drift.
+    • Stress-tested contact latency and gated contact detection on gait timing, removing 6.6° of yaw drift.
+SKILLS & INTERESTS
+    • Tools: C++, Python, MATLAB, SQL, LabVIEW, CAD (NX, Fusion, Creo), FEA Analysis, KiCad, Snowflake, Git,
+        Linux, Eigen, MuJoCo
+    • Languages: English (Native), Turkish (Fluent), Spanish (Fluent - New Jersey Seal of Biliteracy).
+    • Hobbies: Lifting, Hiking, Guitar, Saxophone
+

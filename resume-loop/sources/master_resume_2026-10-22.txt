@@ -1,0 +1,56 @@
+                                                   Troy Mayer
+   Mountainside, NJ 07092 | 908-873-9490 | tmayer2112@gmail.com | US Citizen | www.linkedin.com/in/troyarkin/
+EDUCATION
+Purdue University, School of Mechanical Engineering and School of Science                               West Lafayette, IN
+B.S. Mechanical Engineering; B.S. Applied Statistics; Minor in Economics                                        May 2028
+Clubs: Club Swimming, House Band                                                                              GPA 3.32/4
+PROFESSIONAL EXPERIENCE
+Boston Dynamics                                                                                               Waltham, MA
+Sensors and Perception Co-Op – Atlas                                                                    July 2026 – Present
+   • Mapping impacts onto the robot's mesh with encoders and forward kinematics, estimating their energy from Khatib's
+       operational-space effective mass and an OLS velocity fit, and building a physics-based MuJoCo impact simulation.
+   • Building an impact forensics pipeline and Flask/Plotly dashboard on a Linux VM covering ~28k impact events from
+       ~900 robot test logs, with ETL from a time-series telemetry store into SQLite, a 3D impact-location heatmap, and
+       per-event waveform inspection used by engineers during testing.
+   • Modeling hardware thermal behavior in Python, using Savitzky-Golay filtering and multi-start least squares to fit
+       heating curves and predict steady-state temperatures across hundreds of units without full-length tests.
+   • Designing CATIA fixtures, mounts, and shear features, using pin-shear failure analysis to optimize geometry.
+Caterpillar (via Purdue Data Mine)                                                                      West Lafayette, IN
+Machine Learning Researcher                                                                      January 2026 – May 2026
+   • Built LSTM and XGBoost models forecasting next-day primer, topcoat, and solvent consumption from five years of
+       paint-line data, with Monte Carlo confidence intervals on each forecast, achieving a 4.7% reduction in material usage.
+   • Built Python pipelines to ingest, clean, and consolidate five years of noisy legacy data into one daily series,
+       contributing to a 3.3% reduction in manufacturing cycle time.
+Chortos Lab – Soft Adaptive Systems and Structures                                                 West Lafayette, IN
+Undergraduate Researcher                                                                    August 2025 – May 2026
+   • Built data acquisition systems in LabVIEW and MATLAB, processing and normalizing datasets of 50,000+ points to
+       quantify sub-millimeter material behavior.
+   • Wrote a Python computer-vision tracker resolving cantilever displacement to 0.01 mm, guiding gel formulations that
+       increased force output by over 50%.
+PROJECTS
+Purdue ASME – Biomechanics                                                                               West Lafayette, IN
+Active Orthosis – Electronics Team Lead                                                              April 2024 – May 2026
+    • Designed and implemented a 1 kHz PI velocity controller in C++ on an ESP32-S3, tuned from a first-order motor
+        model with feed-forward and anti-windup, and protected by 10 fault monitors, a hardware watchdog, and a kill
+        switch.
+    • Cut the delay from a muscle signal (EMG) to arm movement from 103 ms to 43 ms using a Bayesian signal
+        estimator, tested in simulation on real recorded EMG data.
+    • Led a 5-engineer team and redesigned the 4-channel EMG board in KiCad with an INA333 front end, right-leg drive,
+        and ISO7763 motor isolation, raising day-to-day gesture decoding from 31% to 87% in emulated tests.
+Asteroid Hopping Robot – Independent Research
+Purdue University & Universidad Carlos III de Madrid                                               October 2026 – Present
+    • Building a three-legged hopping robot that changes leg shape between hops, and a pendulum rig to test landings.
+    • Designing the leg motor control that pushes off for each hop and optimizing it to hit a target launch speed, plus knee
+        impedance control for landing and reaction-wheel control to reorient mid-air.
+    • Simulating it in MuJoCo to size each hop, comparing risk-limited rules that trade distance against the chance of
+        escaping the asteroid or tipping over.
+Legged Robot State Estimation and Control
+Personal Project                                                                             August 2026 – October 2026
+    • Built a Kalman filter in C++ that estimates a simulated four-legged robot's velocity from its IMU and the feet on the
+        ground (0.013 m/s error vs. 1.38 m/s IMU-only), plus walking and QP balance controllers that run on it.
+SKILLS & INTERESTS
+    • Tools: C++, Python, MATLAB, SQL, LabVIEW, CAD (CATIA, NX, Fusion, Creo), FEA Analysis, KiCad,
+        Snowflake, Git, Linux, Eigen, MuJoCo
+    • Languages: English (Native), Turkish (Fluent), Spanish (Fluent - New Jersey Seal of Biliteracy).
+    • Hobbies: Lifting, Hiking, Guitar, Saxophone
+

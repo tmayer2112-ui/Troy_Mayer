@@ -1,0 +1,124 @@
+{
+ "file_stem": "v4_identity",
+ "name": "Troy Mayer",
+ "contact": [
+  "Mountainside, NJ 07092",
+  "908-873-9490",
+  "tmayer2112@gmail.com",
+  "US Citizen"
+ ],
+ "links": [
+  "linkedin.com/in/troyarkin",
+  "Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer"
+ ],
+ "style": {
+  "margin_tb": 0.4,
+  "before_section": 4,
+  "after_entry": 1.5
+ },
+ "summary": "Robotics software and controls: robot kinematics, state estimation, and real-time control in C++, built with tests and simulation. Mechanical engineering plus applied statistics; currently on Atlas at Boston Dynamics.",
+ "sections": [
+  {
+   "title": "Education",
+   "entries": [
+    {
+     "org": "Purdue University, School of Mechanical Engineering and School of Science",
+     "loc": "West Lafayette, IN",
+     "role": "B.S. Mechanical Engineering; B.S. Applied Statistics; Minor in Economics",
+     "dates": "May 2028",
+     "lines": [
+      "GPA 3.32/4 | Clubs: Club Swimming, House Band"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Experience",
+   "entries": [
+    {
+     "org": "Boston Dynamics",
+     "loc": "Waltham, MA",
+     "role": "Sensors and Perception Co-Op, Atlas",
+     "dates": "Jul 2026 – Present",
+     "bullets": [
+      "Kinematics: computing limb position and velocity at impact with floating-base forward kinematics (quaternions, Rodrigues' rotations, rigid-body velocity composition) from joint encoders, and mapping impacts onto the robot's mesh.",
+      "Dynamics: estimating impact energy from Khatib's operational-space effective mass and an OLS velocity fit, and building a physics-based MuJoCo impact simulation.",
+      "Tooling: built an impact forensics pipeline and Flask/Plotly dashboard on a Linux VM covering ~28k impact events from ~900 robot test logs (ETL into SQLite, 3D impact heatmap, per-event waveforms), used by engineers during testing.",
+      "Statistics: modeling hardware thermal behavior in Python, fitting heating curves by multi-start least squares to predict steady-state temperatures across hundreds of units without full-length tests."
+     ]
+    },
+    {
+     "org": "Caterpillar (via Purdue Data Mine)",
+     "loc": "West Lafayette, IN",
+     "role": "Machine Learning Researcher",
+     "dates": "Jan 2026 – May 2026",
+     "bullets": [
+      "Built Python pipelines consolidating five years of legacy data and LSTM/XGBoost models forecasting next-day paint consumption with Monte Carlo confidence intervals, achieving a 4.7% reduction in material usage and contributing to a 3.3% cut in cycle time."
+     ]
+    },
+    {
+     "org": "Chortos Lab, Soft Adaptive Systems and Structures",
+     "loc": "West Lafayette, IN",
+     "role": "Undergraduate Researcher",
+     "dates": "Aug 2025 – May 2026",
+     "bullets": [
+      "Wrote a Python computer-vision tracker resolving displacement to 0.01 mm and built LabVIEW/MATLAB data acquisition for 50,000+ point datasets, guiding gel formulations that increased force output by over 50%."
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Robotics Projects",
+   "entries": [
+    {
+     "inline": true,
+     "org": "Legged Robot State Estimation and Control",
+     "role": "Personal Project",
+     "dates": "Aug 2026 – Oct 2026",
+     "bullets": [
+      "Built a contact-aided error-state EKF in C++/Eigen fusing a 1 kHz IMU with leg kinematics on a simulated Unitree Go1: 0.013 m/s velocity RMSE over a 60 s walk vs. 1.38 m/s IMU-only, at ~20 µs per update.",
+      "Proved it before trusting it: Jacobians checked against finite differences in GoogleTest, C++ matched to a Python reference within 1e-13, and an observability analysis showing why position and yaw drift while roll, pitch, and velocity stay bounded.",
+      "Closed the loop: walking and 500 Hz QP force-balance controllers run on the estimate with 0 falls in 5 × 60 s walks, after tracing a 4° lean to weak tilt observability and fixing it with a 4 s startup turn."
+     ]
+    },
+    {
+     "inline": true,
+     "org": "Active Orthosis, Purdue ASME Biomechanics",
+     "role": "Electronics Team Lead",
+     "dates": "Apr 2024 – May 2026",
+     "bullets": [
+      "Designed and implemented a 1 kHz PI velocity controller in C++ on an ESP32-S3, tuned from a first-order motor model with feed-forward and anti-windup, protected by 10 fault monitors, a hardware watchdog, and a kill switch.",
+      "Cut EMG-to-motion latency from 103 ms to 43 ms with a Bayesian EMG estimator, validated in closed-loop simulation on real recorded EMG with 26 GoogleTest tests in CI.",
+      "Led a 5-engineer team and redesigned the 4-channel EMG board in KiCad (INA333, right-leg drive, ISO7763 isolation), raising cross-day gesture decoding from 31% to 87% in emulation."
+     ]
+    },
+    {
+     "inline": true,
+     "org": "Asteroid Hopping Robot",
+     "role": "Independent Research, Purdue University & UC3M (Madrid)",
+     "dates": "Oct 2026 – Present",
+     "bullets": [
+      "Designing push-off control optimized to hit a target launch speed, knee impedance control for landing, and reaction-wheel control to reorient mid-air for a three-legged hopping robot, simulated in MuJoCo."
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Skills",
+   "rows": [
+    [
+     "Programming",
+     "C++17, Python, MATLAB, SQL | Languages: English, Turkish (fluent), Spanish (fluent)"
+    ],
+    [
+     "Robotics and controls",
+     "Kalman filtering (error-state EKF), sensor fusion, rigid-body kinematics, PI and feed-forward control, QP force control, MuJoCo, Eigen, FreeRTOS"
+    ],
+    [
+     "Software, data, hardware",
+     "Linux, Git, GitHub Actions CI, CMake, GoogleTest, Flask, Plotly, SQLite, Pandas, SciPy, PyTorch | KiCad, LabVIEW, CATIA, NX, Creo"
+    ]
+   ]
+  }
+ ]
+}
