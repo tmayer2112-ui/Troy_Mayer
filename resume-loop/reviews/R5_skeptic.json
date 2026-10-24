@@ -1,0 +1,144 @@
+{
+  "lens": "skeptic",
+  "verdict": "reject",
+  "flags": [
+    {
+      "severity": "reject",
+      "quote": "Embedded real-time control: designed and implemented a 1 kHz PI velocity controller in C++ on an ESP32-S3 (FreeRTOS), model-based tuned with feed-forward and anti-windup (0.8% speed error in simulation), with 10 fault monitors, a hardware watchdog, and a kill switch.",
+      "issue": "The lead-in 'Embedded real-time control' plus 'on an ESP32-S3' tells the reader this loop runs on a microcontroller. It has never run on any ESP32. The v2 board it targets is schematic-only, and the code has only executed inside a host-side simulator. 'In simulation' is attached only to the 0.8%, so the 1 kHz rate, the 10 fault monitors, the hardware watchdog and the kill switch all read as bench-proven. An Apptronik 'real-time controls' interviewer's first question ('worst-case loop time on the S3? what did the watchdog do at bring-up?') has no answer, and the portfolio linked in the header says outright 'not from the board'. The 0.8% also has no condition: it comes from one test, lifting the forearm at 15 deg/s, against 98% for feed-forward alone. Other simulation tests give different numbers.",
+      "source_check": "firmware/README.md: 'Status: designed and verified in simulation. It has not run on the board yet: the v2 PCB isn't fabricated.' CI only compiles the sketch for the ESP32-S3. index.html: 'every firmware and decoder number below comes from simulation or emulation driven by real recorded EMG, not from the board.' FACTS OR2/OR3/OR5/OR8, the truth guard, and the 'Never claim' list (hardware validation of the v2 board, firmware numbers measured on hardware). The master (U) does say 'implemented ... on an ESP32-S3', so the words are the master's own. The overclaim comes from the added 'Embedded real-time' label and from scoping the simulation qualifier to a single number.",
+      "fix": "Control firmware: designed and implemented a 1 kHz PI velocity controller in C++17 for an ESP32-S3 (FreeRTOS), tuned from a first-order motor model with feed-forward and anti-windup, with 10 fault monitors, a hardware watchdog and a kill switch; in closed-loop simulation, 0.8% speed error lifting the forearm vs. 98% with feed-forward alone. (Change 'on' to 'for', drop 'Embedded real-time', and make the simulation qualifier cover the whole bullet. It's about the same length, 3 lines.)"
+    },
+    {
+      "severity": "major",
+      "quote": "in ~20 µs per real-time update.",
+      "issue": "This puts the label 'real-time' on a simulated-robot project that has no target hardware. The 20 µs is the median of a benchmark on a cloud Xeon VM running a non-RT kernel. The worst case was 4.0 ms (4x the 1 ms budget), p99 was 60 µs, and 0.135% of deadlines were missed. 'What's your worst case?' is the question he won't want. The closed-loop walking runs also used the Python filter, not the C++ loop, so the 'real-time' filter isn't the one the controllers ran on. The word 'update.' also sits alone on a wasted line.",
+      "source_check": "quadruped-eskf/results/timing.json: compute p50 18.2 µs, p99 60.5 µs, max 4005 µs, deadline_miss_pct 0.135, note 'non-RT kernel (cloud VM)'. claims.json step_time: 'C++ step about 20 µs of the 1 ms budget (median)'. python/qeskf/closed_loop.py imports the Python Eskf. FACTS LR3.",
+      "fix": "'...IMU-only; C++ step ~20 µs median of the 1 ms budget.' Drop 'real-time'. This also removes the orphaned 'update.' line, which pays for the longer fixes below."
+    },
+    {
+      "severity": "major",
+      "quote": "real-time embedded (FreeRTOS, ESP32-S3)",
+      "issue": "This is a skill claim with no hardware behind it. Nothing on the page has run on an embedded target, in real time or otherwise. It's the third 'real-time' on the page (skills, the orthosis lead-in, the quadruped update), and all three are simulation or host runs. To a skeptic it reads as keyword-matching Apptronik's 'real-time C++' and 'troubleshooting hardware' asks.",
+      "source_check": "firmware/README.md status (not run on the board). timing.json (cloud VM, non-RT kernel). FACTS SK2 lists 'FreeRTOS, ESP32' without 'real-time embedded'. L02 listing: 'real-time C++ software modules', 'troubleshooting hardware'.",
+      "fix": "Software: C++17, Python, MATLAB, SQL, Linux, Git, CMake, GoogleTest, GitHub Actions CI, FreeRTOS, ESP32-S3"
+    },
+    {
+      "severity": "major",
+      "quote": "cut EMG-to-motion latency from 103 ms to 43 ms with a Bayesian EMG estimator, validated in closed-loop simulation on real recorded EMG with 26 GoogleTest tests in CI.",
+      "issue": "(1) It credits one component for the whole gain. The 43 ms configuration also adds a 20 ms onset confirm and switches to the fast tuning tier (500 deg/s^2 ramp, lambda 30 ms vs. 150 deg/s^2, lambda 50 ms), so 'with a Bayesian EMG estimator' over-attributes. (2) The 103 ms baseline is his own first firmware version, a 2-pole envelope, not an external benchmark. (3) It's a name-drop: the estimator is Sanger's published 2007 method, and 'a Bayesian EMG estimator' invites 'derive it' and 'is it yours?'. He needs the 64-level, Laplacian-likelihood details ready. (4) 'Validated ... with 26 GoogleTest tests' ties the whole suite to this claim, but only Latency.RealEmgOnsetToMotion pins latency. The other 25 cover the decoder, estimator, PI, closed loop and safety. The figures come from 24 contractions (p90 82 ms).",
+      "source_check": "firmware/README.md latency table: 'First version (2-pole 4 Hz, 150 deg/s^2, lambda 50 ms) 103 ms' vs. 'Now (Bayesian, 20 ms confirm, fast tier) 43 ms (p90 82)'; 'A Bayesian amplitude estimator (Sanger 2007)'; 'The test Latency.RealEmgOnsetToMotion pins these numbers in CI'. FACTS OR5, OR6 ('with a Bayesian EMG amplitude estimator and a 20 ms onset confirm ... Stop lag went from 89 ms to 32 ms').",
+      "fix": "Signal processing: cut EMG-to-motion latency from 103 ms to 43 ms (stop lag 89 to 32 ms) with a Bayesian EMG amplitude estimator and a 20 ms onset confirm, in closed-loop simulation driven by real recorded EMG; 26 GoogleTest unit, closed-loop and latency tests run in CI. Needs Troy: confirm whether the fast-tier retune is part of the 43 ms. If it is, add 'and a retuned loop'."
+    },
+    {
+      "severity": "major",
+      "quote": "redesigned the 4-channel EMG board in KiCad (INA333, right-leg drive, ISO7763 isolation), raising cross-day gesture decoding from 31% to 87% in emulation.",
+      "issue": "(1) Status: 'redesigned the board' reads as a built, working board. v2 is schematic-complete only, with no layout, no fabrication and no power-up. (2) Weak baseline: 31% is the emulated v1 front end, whose unbuffered inputs and diode peak detector pass almost nothing (only 0.22% of samples clear the diode). A skeptic hears 'fixed a broken board', and the 31-to-87 jump looks inflated. The defensible claim is the ceiling: 87.3% vs. 87.9% with no board at all. (3) Conditions are missing: 11 classes, 115 days of real EMG. (4) 'Raising decoding' credits a board with accuracy that no hardware has produced.",
+      "source_check": "FACTS OR8: 'The v2 schematic is complete. Layout and fabrication come next. v1 was fabricated.' OR9: '115 days ... 87.3% vs. an 87.9% ceiling with no board.' orthosis-emg-decoder/README.md, 'Why v1 fails': 'only 0.22 % of samples ever clear the diode'. Buffered, v1 reaches 59.5-71.4%.",
+      "fix": "Led a 5-engineer team; redesigned the 4-channel EMG board schematic in KiCad (INA333, right-leg drive, ISO7763 isolation); in emulation on 115 days of real EMG, cross-day 11-class decoding rose from 31% (v1) to 87%, within a point of the 87.9% no-board ceiling."
+    },
+    {
+      "severity": "major",
+      "quote": "with 0 falls in 5 × 60 s walks (QP after a 4 s startup turn); the QP controller cut ground-truth velocity-tracking error from 0.169 to 0.091 m/s.",
+      "issue": "(1) The baseline isn't named. 0.169 m/s is Troy's own scripted position-servo trot, which his README calls 'loose', yet 'cut ... from 0.169' reads as beating a real controller. (2) 'Ground-truth velocity-tracking error' is ambiguous. It means the controller was fed ground truth, but a reader can take it for the result on the estimate. (3) The parenthetical begs 'why a startup turn?'. The answer is the project's best engineering story (tilt is weakly observable on a straight walk, which caused a ~4 deg lean), and it was cut, so the turn now reads like a hack. Without the turn the QP fell in 1 of 5 runs. (4) The sample is 5 seeds of one flat-ground walk at 0.2-0.45 m/s.",
+      "source_check": "quadruped-eskf/README.md: 'scripted trot' is the walking controller; 'controller's own tracking error (0.17 m/s, mostly the loose scripted trot)'; QP falls '1 / 5 fed the estimate (seed 3, t = 7.0 s); 0 / 5 ... after a 4 s turn at startup'; Limitations: '0.2-0.45 m/s'. FACTS LR7, LR8, LR9 ('0.091 m/s vs. 0.169 m/s for the scripted trot (fed ground truth)').",
+      "fix": "Control: walking and 500 Hz QP force-balance controllers ran on the estimate with 0 falls in 5 × 60 s walks; found tilt only weakly observable on straight walks (~4° lean) and fixed it with a 4 s startup turn, which the QP needs. Fed ground truth, the QP tracked velocity to 0.091 m/s vs. 0.169 m/s for the scripted trot. (About +1 line, covered by the orphan line saved in flag 2.)"
+    },
+    {
+      "severity": "major",
+      "quote": "Developing rigid-body kinematics and dynamics for Atlas impacts: floating-base forward kinematics (quaternions, Rodrigues' rotations, velocity composition) from joint encoders maps impacts onto the robot mesh, and Khatib's operational-space effective mass estimates impact energy.",
+      "issue": "(1) Name-drop on proprietary work. A humanoid interviewer will say 'write Lambda = (J M^-1 J^T)^-1: whose mass matrix, which Jacobian, which contact point, and where does delta-v come from?' The answers touch Boston Dynamics internals he may not be allowed to discuss. (2) As written, the method is physically incomplete. Effective mass alone gives no energy; the master pairs it with an OLS velocity fit, and this version cut that. (3) Scope inflation: 'developing rigid-body kinematics and dynamics for Atlas' sounds like owning Atlas's dynamics model. The work is impact analysis: forward kinematics on encoder data plus an effective-mass estimate. (4) 'Rodrigues' rotations' isn't a term (it's Rodrigues' rotation formula), and stacking three rotation buzzwords reads as keyword padding.",
+      "source_check": "FACTS BD1 ('Maps impacts onto the robot's mesh using encoders and forward kinematics'), BD2 ('Estimates impact energy from Khatib's operational-space effective mass and an OLS velocity fit'), BD4 ('Rodrigues' rotation formula'; 'exact rigid-body velocity composition'). The master: 'Mapping impacts ... estimating their energy from Khatib's operational-space effective mass and an OLS velocity fit, and building a physics-based MuJoCo impact simulation.' FACTS: 'Keep it proprietary-safe: method only.'",
+      "fix": "Mapping impacts onto Atlas's mesh with floating-base forward kinematics from joint encoders (quaternions, Rodrigues' formula, rigid-body velocity composition), estimating impact energy from operational-space effective mass and an OLS velocity fit, and building a physics-based MuJoCo impact simulation. Keep 'Khatib's' only if Troy can derive Lambda on a whiteboard without BD specifics."
+    },
+    {
+      "severity": "major",
+      "quote": "achieving a 4.7% reduction in material usage; Python data pipelines contributed to a 3.3% cycle-time reduction.",
+      "issue": "Credit and causality are both unexplained. Data Mine corporate projects are team projects, and 'Built' with no team context invites 'was that you or the team?'. A next-day forecast can't cut material usage by itself; someone has to act on it. So was 4.7% measured after Caterpillar used the forecasts, or projected, and against what baseline? 'Pipelines contributed to a cycle-time reduction' invites 'how does a data pipeline cut cycle time?'. No forecast-accuracy metric is given either.",
+      "source_check": "FACTS CAT1-CAT3 (U): the numbers are the master's. index.html adds '4.7% reduction in material usage against existing practice' and 'Isolated process inefficiencies between the manual and robotic paint lines' (CAT4). No source gives team size, Troy's share, or whether the reductions were realized in production.",
+      "fix": "Needs Troy: (a) team size and his part (for example 'on an N-student team, owned the LSTM/XGBoost models'); (b) whether 4.7% and 3.3% were measured in production or projected, and against what. Until then, tighten truthfully: 'Built LSTM and XGBoost models forecasting next-day primer, topcoat and solvent consumption from five years of paint-line data, with Monte Carlo confidence intervals (4.7% reduction in material usage); built Python pipelines consolidating five years of legacy data into one daily series, contributing to a 3.3% cycle-time reduction.'"
+    },
+    {
+      "severity": "major",
+      "quote": "Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer",
+      "issue": "A skeptic follows the 'code' link to check the claims and finds no code. The Pages site serves only index.html, figures and an old résumé PDF, and it has zero links to the GitHub repo. A promise of code that can't be found reads as a bluff, which undercuts the most verifiable parts of the page (the tests, CI, parity, claims.json).",
+      "source_check": "docs/ contains index.html, images, docs/firmware/results/figures/emg_end_to_end.png and Troy_Mayer_Resume.pdf, with no source. grep finds 0 'github.com' links in index.html. FACTS H2: the code, tests and write-ups live in the public repo github.com/tmayer2112-ui/Troy_Mayer.",
+      "fix": "Portfolio: tmayer2112-ui.github.io/Troy_Mayer | Code: github.com/tmayer2112-ui/Troy_Mayer. (Once the repo is linked, the firmware README's 'has not run on the board yet' becomes one click away, which is another reason to fix flag 1.)"
+    },
+    {
+      "severity": "major",
+      "quote": "GPA 3.32/4",
+      "issue": "The page is correct, but the portfolio it links to contradicts it. The site's About section says 'GPA 3.4', and the site serves an older résumé PDF (also 3.4, with different bullets). It also shows the orthosis as 'Apr 2024 — Present' and the legged project as 'Aug 2026 — Present', where this page has May 2026 and Oct 2026. A reader who cross-checks sees two GPAs and two sets of dates, and a GPA mismatch is exactly what background checks flag.",
+      "source_check": "FACTS E3: GPA 3.32, confirmed by Troy ('S and R say 3.4, which is out of date'). index.html: 'May 2028 · GPA 3.4'; docs/Troy_Mayer_Resume.pdf is the 2026-09-30 version.",
+      "fix": "No change on the page. Needs Troy, before sending: update index.html to GPA 3.32, align the project dates, and replace docs/Troy_Mayer_Resume.pdf with this version."
+    },
+    {
+      "severity": "minor",
+      "quote": "reaching 0.013 m/s velocity RMSE vs. 1.38 m/s IMU-only",
+      "issue": "The baseline is a straw man and the conditions are missing. No one deploys IMU-only dead reckoning on a legged robot, so the 100x gap borrows impressiveness. 'RMSE over what?' is also unanswered: a 60 s walk, mean of 10 seeds. The repo's own Limitations call the number optimistic (the IMU noise comes from the same model the filter assumes, the kinematics are exact, the floor is flat, contact is simulated) and say it 'shouldn't be compared with numbers from hardware'.",
+      "source_check": "claims.json velocity_rmse: '0.013 m/s velocity RMSE over a 60-second walk (mean of 10 sensor-noise seeds)'; imu_only_rmse '1.38 m/s for IMU-only dead reckoning'. quadruped-eskf/README.md 'Limitations (honestly)'. FACTS LR2, LR6.",
+      "fix": "'reaching 0.013 m/s velocity RMSE over a 60 s walk (10-seed mean) vs. 1.38 m/s for IMU-only dead reckoning'. If there's room, surface LR6, 'about 2 cm/s of foot slip doubles the error'. Showing he knows where the filter breaks pre-empts the skeptic."
+    },
+    {
+      "severity": "minor",
+      "quote": "control algorithms (PI, feed-forward, anti-windup, impedance, QP force control)",
+      "issue": "Impedance control is listed beside implemented algorithms, but its only evidence is about three weeks of design work on the asteroid hopper (Oct 2026 – Present), with no results. 'Tell me about your impedance controller' gets 'I'm designing one.'",
+      "source_check": "FACTS AH2 ('Knee impedance control for landing') under 'All in progress. Use present tense, no results.' Earlier audit D flagged the same thing.",
+      "fix": "control algorithms (PI, feed-forward, anti-windup, QP force control). Keep impedance in the asteroid bullet only."
+    },
+    {
+      "severity": "minor",
+      "quote": "Motion control and optimization: designing optimized push-off control to hit a target launch speed",
+      "issue": "'Optimized' reads as finished, though the master says he is still optimizing it on a project that started this month. The 'Motion control and optimization' label also plants an optimization keyword (Zipline asks for trajectory optimization), which FACTS says has no project behind it. 'With MuJoCo simulation comparing risk-limited hop rules' can read as comparisons already done.",
+      "source_check": "Master/FACTS AH2: 'Designing the leg motor control that pushes off for each hop, optimizing it to hit a target launch speed'; AH3: 'Simulating it in MuJoCo ... comparing risk-limited rules'. FACTS 'Not in the master': 'motion planning / trajectory optimization as a project (there is none)'.",
+      "fix": "Controls (in progress): designing push-off control and optimizing it to hit a target launch speed, knee impedance control for landing and reaction-wheel attitude control; simulating hops in MuJoCo to compare risk-limited hop rules."
+    },
+    {
+      "severity": "minor",
+      "quote": "Built an impact data-analysis pipeline and Flask/Plotly dashboard on Linux",
+      "issue": "Past tense implies the pipeline is finished, but the most authoritative source (the 2026-10-22 master) deliberately says 'Building' for this ongoing co-op work. 'Is it done?' gets 'still building it.'",
+      "source_check": "Master: 'Building an impact forensics pipeline and Flask/Plotly dashboard on a Linux VM ... used by engineers during testing.' index.html says 'Built ... deployed', but U wins per FACTS.",
+      "fix": "Building an impact data-analysis pipeline and Flask/Plotly dashboard on a Linux VM covering ~28k impact events from ~900 robot test logs (...), used by engineers during testing."
+    },
+    {
+      "severity": "minor",
+      "quote": "Designed a delta-v impact-severity metric robust to sensor bandwidth limits, validating its filtering against synthetic pulses of known size and measuring its noise floor; building a physics-based MuJoCo impact simulation.",
+      "issue": "'Robust' has no number and no comparison with the peak-based metric it replaces. 'Validating' is stronger than the source's 'characterized' (there was no pass/fail spec). The noise floor has no value. The MuJoCo simulation is tacked on after a semicolon with a tense flip and no stated purpose, so 'what's the sim for, and is it working?' is left open.",
+      "source_check": "FACTS BD5 ('stays accurate when sensors miss the sharpest part of an impact'), BD6 ('Characterized the Butterworth anti-alias filtering against synthetic pulses of known amplitude. Quantified the metric's noise floor with a null-control experiment'), BD3.",
+      "fix": "Designed a delta-v impact-severity metric that stays accurate when sensors miss an impact's peak, characterizing its Butterworth anti-alias filtering against synthetic pulses of known amplitude and its noise floor with a null-control experiment. (Move the MuJoCo simulation into bullet 1, as the master does.) Needs Troy: a shareable number for 'accurate' (for example, error vs. a peak-based metric at the bandwidth limit), if BD allows it."
+    },
+    {
+      "severity": "minor",
+      "quote": "fitting heating curves by multi-start least squares to predict steady-state temperatures across hundreds of units without full-length tests.",
+      "issue": "It claims a prediction with no accuracy and no time saved. 'How close were the predictions, and how much test time did it save?' has no answer on the page. 'Hundreds of units' is vague. It's also the least controls-relevant bullet on a page that's short of room.",
+      "source_check": "FACTS BD9: '... predicting steady-state temperatures across hundreds of units without full-length tests, gated on residual RMSE.' No accuracy or time-saved figure appears in any source.",
+      "fix": "Add the quality gate, which is truthful: '... without full-length tests, gated on residual RMSE.' Needs Troy: prediction error and test time saved, if shareable. Otherwise this is the first bullet to cut for space."
+    },
+    {
+      "severity": "minor",
+      "quote": "Wrote a Python computer-vision tracker resolving displacement to 0.01 mm and built LabVIEW/MATLAB data acquisition for 50,000+ point datasets, guiding gel formulations that increased force output by over 50%.",
+      "issue": "Credit is ambiguous: 'guiding gel formulations' hides that Troy formulated the gels himself, so a reader may assume lab chemists earned the 50% and he only measured. '50,000+ point datasets' is a vanity number (seconds of DAQ data at kHz rates) that invites a smirk. '0.01 mm' has no condition (a 29.45 mm cantilever, against a micrometer scale in frame), so 'resolution or accuracy? validated how?' is open.",
+      "source_check": "FACTS CH1 (50,000+ points), CH2 ('cantilever displacement to 0.01 mm (on a 29.45 mm cantilever)'), CH3 ('Troy formulated and synthesized the ionic dielectric gel variants').",
+      "fix": "Formulated ionic dielectric gel variants that raised force output by over 50%, guided by a Python computer-vision tracker resolving cantilever displacement to 0.01 mm and LabVIEW/MATLAB data acquisition. (It's shorter, and dropping '50,000+' is truthful.)"
+    },
+    {
+      "severity": "minor",
+      "quote": "C++ matched to a Python reference within 1e-13",
+      "issue": "'Within 1e-13' is a strict bound that the data doesn't meet (position 1.35e-13 m, velocity 3.3e-13 m/s, attitude 1.2e-12 rad), and it has no units. Both implementations are Troy's own, so parity shows they're consistent, not that they're correct. That's fine because the finite-difference Jacobian tests cover correctness, but he should be ready to say so.",
+      "source_check": "quadruped-eskf/README.md: 'max |dp| 1.4e-13 m, |dv| 3.3e-13 m/s'. claims.json parity: 'to 1e-13', checked at max 1e-12. FACTS LR4.",
+      "fix": "C++ matched to a Python reference to ~1e-13"
+    },
+    {
+      "severity": "minor",
+      "quote": "Data, ML and hardware: PyTorch, XGBoost, LSTM, Pandas, SciPy, Flask, Plotly, SQLite, Snowflake | KiCad, LabVIEW, DAQ, CATIA, NX, Creo, FEA",
+      "issue": "This is keyword stuffing. PyTorch, Snowflake, CATIA, NX, Creo and FEA have no evidence anywhere on the page (the PyTorch CNN, the CATIA fixtures and Emerson were all cut), so 'where did you use NX?' gets no answer from the page. The 'Robotics and simulation' line repeats the BD bullet's phrases word for word ('rigid-body kinematics and dynamics, floating-base forward kinematics') and lists 'closed-loop simulation and validation', which isn't a skill.",
+      "source_check": "FACTS SK4/SK6 list these tools (U/S), so they're truthful. FACTS OR10 (PyTorch CNN polarity augmentation) and BD10 (CATIA fixtures) are the evidence, and neither is on the page.",
+      "fix": "Trim the skills to tools the bullets show, and cut the duplicate kinematics phrases and 'closed-loop simulation and validation'. That frees about one line for the fixes above. To keep PyTorch or CATIA, surface OR10 or BD10 in a bullet."
+    }
+  ],
+  "top3": [
+    "The orthosis bullet leads with 'Embedded real-time control ... on an ESP32-S3', and the skills list 'real-time embedded'. The firmware has never run on any hardware: the v2 board isn't fabricated, and every number comes from a host simulator, as the linked portfolio says. Retitle it 'Control firmware', write 'for an ESP32-S3', put 'in closed-loop simulation' over the whole bullet with the 0.8% vs. 98% feed-forward-only baseline, and drop 'real-time' from the skills.",
+    "Several numbers lack honest baselines and conditions. '~20 µs per real-time update' is a median on a non-RT cloud VM (worst case 4 ms). The QP's 0.169 to 0.091 m/s is measured against his own loose scripted trot, fed ground truth. 31% to 87% compares against a v1 front end that was effectively broken, so lead with 87.3% vs. the 87.9% no-board ceiling and say 'schematic'. 103 to 43 ms is credited to the Bayesian estimator alone, though the 20 ms onset confirm and the loop tuning also changed. Name each baseline, and restore the tilt-observability reason for the startup turn.",
+    "Credit, causality and name-drops invite questions he may not want. At Caterpillar, were the 4.7% and 3.3% team results, and were they measured or projected? (Needs Troy.) At Boston Dynamics, 'Khatib's operational-space effective mass estimates impact energy' drops the OLS velocity fit, which makes the method physically incomplete, and invites proprietary probing. 'Bayesian EMG estimator' is Sanger's published method. The header's 'code' link leads to no code, and the site still shows GPA 3.4. Point the header at github.com/tmayer2112-ui/Troy_Mayer and re-sync the site."
+  ]
+}
