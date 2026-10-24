@@ -1,0 +1,86 @@
+[
+ {
+  "version": "v1_keywords",
+  "letter": "D",
+  "truth": "n/a",
+  "interviews": 17,
+  "raw_interviews": 17,
+  "recruiter_advances": 10,
+  "hm_interviews": 7,
+  "screen_avg": 7.9,
+  "hm_avg": 7.3,
+  "avg_rank": 2.7
+ },
+ {
+  "version": "v4_identity",
+  "letter": "B",
+  "truth": "n/a",
+  "interviews": 17,
+  "raw_interviews": 17,
+  "recruiter_advances": 10,
+  "hm_interviews": 7,
+  "screen_avg": 8.1,
+  "hm_avg": 7.2,
+  "avg_rank": 2.8
+ },
+ {
+  "version": "v0_ideal",
+  "letter": "G",
+  "truth": "n/a",
+  "interviews": 17,
+  "raw_interviews": 17,
+  "recruiter_advances": 10,
+  "hm_interviews": 7,
+  "screen_avg": 7.1,
+  "hm_avg": 7.3,
+  "avg_rank": 3
+ },
+ {
+  "version": "v3_structure",
+  "letter": "A",
+  "truth": "n/a",
+  "interviews": 15,
+  "raw_interviews": 15,
+  "recruiter_advances": 10,
+  "hm_interviews": 5,
+  "screen_avg": 8.1,
+  "hm_avg": 7,
+  "avg_rank": 3
+ },
+ {
+  "version": "v5_gaps",
+  "letter": "E",
+  "truth": "n/a",
+  "interviews": 12,
+  "raw_interviews": 12,
+  "recruiter_advances": 7,
+  "hm_interviews": 5,
+  "screen_avg": 7.2,
+  "hm_avg": 6.9,
+  "avg_rank": 4
+ },
+ {
+  "version": "v2_impact",
+  "letter": "C",
+  "truth": "n/a",
+  "interviews": 9,
+  "raw_interviews": 9,
+  "recruiter_advances": 9,
+  "hm_interviews": 0,
+  "screen_avg": 6.6,
+  "hm_avg": 6,
+  "avg_rank": 5.5
+ },
+ {
+  "version": "original",
+  "letter": "F",
+  "truth": "n/a",
+  "interviews": 3,
+  "raw_interviews": 3,
+  "recruiter_advances": 3,
+  "hm_interviews": 0,
+  "screen_avg": 5.6,
+  "hm_avg": 4.4,
+  "avg_rank": 7
+ }
+]
