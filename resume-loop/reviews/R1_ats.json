@@ -1,0 +1,177 @@
+{
+  "lens": "ats",
+  "verdict": "borderline",
+  "keyword_hits": [
+    "C++ (L02, L03, L04, L05, L09, L10): bare token appears only in two project bullets; the skills line says only 'C++17'",
+    "C++17 (L10)",
+    "Python (L02, L03, L04, L08, L09, L10)",
+    "Linux (L02, L10)",
+    "MATLAB (L01)",
+    "Kalman filtering / EKF (L01)",
+    "state estimation / estimation (L02, L07)",
+    "control algorithms (L07, exact phrase, skills line only)",
+    "forward kinematics / kinematics (L03, L04, L07, L08)",
+    "rigid-body dynamics / dynamics (L02, L03, L04, L07)",
+    "motion control (L03): only as the run-in label of the in-progress Asteroid bullet",
+    "real-time (L02)",
+    "unit tests / GoogleTest (L02)",
+    "testing / validation (L04, L05, L06, L07)",
+    "MuJoCo (L02)",
+    "physics simulation / simulation (L01, L04, L05, L10)",
+    "PyTorch (L10): skills line only, no bullet",
+    "SQL / SQLite (L09)",
+    "Git (L09 version control)",
+    "computer vision (L09, L10 AV track)",
+    "perception (L06): job title only",
+    "data analysis / analysis tools (L05, L06)",
+    "metric validation (L05 'validate safety metrics' ~ delta-v impact-severity metric)",
+    "thermal (L04 'thermal analyses' ~ thermal behavior modeling)",
+    "FEA (L04 tag)",
+    "attitude control (L01, GNC-adjacent)",
+    "US Citizen (L01 U.S. Person; L07 US work authorization)",
+    "May 2028 graduation (L03 Dec 2027-Jun 2028 window; L04 May 2027-May 2028 window; L10 month/year required)",
+    "GPA 3.32 (L02, L07 3.0 floor)",
+    "prior technical internship / co-op (L09)",
+    "impedance control, QP force control, sensor fusion, IMU (adjacent to L02/L04 controls terms)"
+  ],
+  "keyword_misses": [
+    {"term": "control theory / classical control theory", "listings": ["L01", "L07"], "truthful_cover": "OR2, SK2 (PI + plant-inversion feed-forward + IMC tuning from a first-order motor model is classical control; write 'classical control theory' in skills)"},
+    {"term": "feedback control / model-based feedback control", "listings": ["L02"], "truthful_cover": "OR2, OR3 (closed-loop PI velocity controller; 0.8% closed loop vs 98% feed-forward alone)"},
+    {"term": "motor control", "listings": ["L04"], "truthful_cover": "OR2 (PI motor velocity controller tuned from a first-order motor model; the page drops the word 'motor')"},
+    {"term": "model-based design", "listings": ["L04"], "truthful_cover": "OR2 + OR5 (tuned from a first-order motor model; controller core compiled into a motor/transmission/forearm simulator)"},
+    {"term": "system model development, controller co-simulation, and validation", "listings": ["L04"], "truthful_cover": "OR5 (hardware-free controller core compiles into a simulator of the motor, transmission and forearm; 26 GoogleTest closed-loop tests in CI)"},
+    {"term": "multibody dynamics / physics-based multibody models of electro-mechanical systems", "listings": ["L04"], "truthful_cover": "BD4 (6-DOF floating-base poses propagated through joint chains) and OR5 (motor + transmission + forearm model); 'multibody' wording only, no new scope"},
+    {"term": "linear systems analysis", "listings": ["L04"], "truthful_cover": "LR5 (observability derived analytically, confirmed numerically: four unobservable directions)"},
+    {"term": "stability analysis", "listings": ["L04"], "truthful_cover": "none"},
+    {"term": "inverse kinematics / inverse dynamics", "listings": ["L07", "L04"], "truthful_cover": "none (needs Troy)"},
+    {"term": "position control / torque control", "listings": ["L04"], "truthful_cover": "none (velocity, impedance and QP force control only; needs Troy)"},
+    {"term": "stress / fatigue / vibration / statics analysis", "listings": ["L04"], "truthful_cover": "stress only: BD10 (pin-shear failure analysis of CATIA fixtures), EM2 (stress calculations); fatigue/vibration/statics none"},
+    {"term": "sim-to-real", "listings": ["L04"], "truthful_cover": "none"},
+    {"term": "humanoid / articulated robots", "listings": ["L02", "L04"], "truthful_cover": "BD header + BD4 (Atlas, joint chains, each limb); confirm with Troy that 'Atlas humanoid' wording is OK"},
+    {"term": "multithreaded software", "listings": ["L02"], "truthful_cover": "partial OR2 ('run by a 1 kHz FreeRTOS task'); 'multithreaded' itself needs Troy"},
+    {"term": "debugging / troubleshooting hardware", "listings": ["L02", "L07"], "truthful_cover": "debugging partial: LR8 (found weak tilt observability, fixed with startup turn), LR6 (failure experiments), OR10 (traced CNN accuracy loss to electrode polarity); hardware troubleshooting none"},
+    {"term": "linear algebra", "listings": ["L02"], "truthful_cover": "LR1 (Eigen); 'Eigen (linear algebra)' is a reword"},
+    {"term": "ROS / ROS 2", "listings": ["L02", "L08", "L10"], "truthful_cover": "none (FACTS: never claim; needs Troy)"},
+    {"term": "MoveIt", "listings": ["L02"], "truthful_cover": "none"},
+    {"term": "Simulink", "listings": ["L01"], "truthful_cover": "none (FACTS: never claim; needs Troy)"},
+    {"term": "GNC / guidance, navigation and control", "listings": ["L01"], "truthful_cover": "none (attitude control and state estimation are adjacent only)"},
+    {"term": "control laws / vehicle simulation models", "listings": ["L01"], "truthful_cover": "OR2 (PI control law) reword; vehicle models none"},
+    {"term": "trajectory generation / trajectory optimization", "listings": ["L03", "L05"], "truthful_cover": "none (FACTS: no motion-planning or trajectory-optimization project)"},
+    {"term": "motion planning / path planning / search / sampling", "listings": ["L05", "L06", "L08"], "truthful_cover": "none"},
+    {"term": "Rust", "listings": ["L05"], "truthful_cover": "none"},
+    {"term": "failure modes", "listings": ["L06"], "truthful_cover": "LR6 (foot slip doubles velocity error; 10 ms contact latency costs 6.6 deg yaw; gait-schedule gating removes it), OR4 (10 runtime fault monitors)"},
+    {"term": "validation experiments", "listings": ["L06"], "truthful_cover": "BD6 (synthetic-pulse filter characterization, null-control noise-floor experiment, bit-identical regression checks), LR6"},
+    {"term": "autonomy / autonomous systems", "listings": ["L01", "L06", "L07"], "truthful_cover": "none"},
+    {"term": "code reviews", "listings": ["L07"], "truthful_cover": "none"},
+    {"term": "calibration", "listings": ["L08"], "truthful_cover": "none"},
+    {"term": "navigation / localization", "listings": ["L08", "L10"], "truthful_cover": "partial LR2 ('IMU-only dead reckoning' baseline; the page says only 'IMU-only')"},
+    {"term": "system integration", "listings": ["L08"], "truthful_cover": "none"},
+    {"term": "data structures / algorithms / object-oriented design", "listings": ["L09", "L10"], "truthful_cover": "none (needs Troy)"},
+    {"term": "Java", "listings": ["L09"], "truthful_cover": "none"},
+    {"term": "AWS / cloud", "listings": ["L09", "L10"], "truthful_cover": "none (FACTS: never claim)"},
+    {"term": "NoSQL", "listings": ["L09"], "truthful_cover": "none"},
+    {"term": "version control (phrase)", "listings": ["L09"], "truthful_cover": "SK3 (Git); 'Git (version control)' reword"},
+    {"term": "open-source contributions", "listings": ["L09"], "truthful_cover": "partial H2 (public code repo github.com/tmayer2112-ui/Troy_Mayer); not 'contributions' to others' projects"},
+    {"term": "CUDA / OpenGL / TensorFlow / Keras / C", "listings": ["L10"], "truthful_cover": "none"},
+    {"term": "operating systems", "listings": ["L10"], "truthful_cover": "partial OR2 (FreeRTOS)"},
+    {"term": "SLAM / mapping / segmentation", "listings": ["L10"], "truthful_cover": "none"},
+    {"term": "flight data / flight testing", "listings": ["L05", "L06"], "truthful_cover": "none (BD7/BD8 robot test logs are the closest analogue and are already on the page)"}
+  ],
+  "flags": [
+    {
+      "severity": "major",
+      "quote": "linkedin.com/in/troyarkin | Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer",
+      "issue": "Two URLs share one line with a pipe and a prose label. The PDF has zero link annotations (0 /URI objects), so neither link is clickable in the Greenhouse, Lever or Workday PDF viewer. Neither has https://. Lever's and Greenhouse's link extraction fills a GitHub field from github.com URLs only, and a github.io portfolio isn't recognized, so the code evidence (the strongest software signal on the page) doesn't land in a links field. The label 'Portfolio and code:' gets glued into the extracted URL text.",
+      "fix": "Drop the label. Put three real hyperlinks with https:// targets on line 3: linkedin.com/in/troyarkin, github.com/tmayer2112-ui/Troy_Mayer, tmayer2112-ui.github.io/Troy_Mayer (H1, H2). It fits on the existing line at the current size."
+    },
+    {
+      "severity": "major",
+      "quote": "Purdue University, School of Mechanical Engineering and School of Science",
+      "issue": "The right-aligned tab text collapses into the same text line in extraction: 'Purdue University, School of Mechanical Engineering and School of Science West Lafayette, IN'. With a long, comma-laden school string, Workday and Lever either put the whole run into the School field ('...School of Science West Lafayette') or split at the first comma and push 'School of Mechanical Engineering...' into the degree or major field. The other right-tab headers survive because their left text is short.",
+      "fix": "Bold line: 'Purdue University' with right-aligned 'West Lafayette, IN'. Cutting the school names is allowed (E1)."
+    },
+    {
+      "severity": "major",
+      "quote": "B.S. Mechanical Engineering; B.S. Applied Statistics; Minor in Economics",
+      "issue": "Two degrees plus a minor sit on one line separated by semicolons, and the date reads only 'May 2028'. Parsers build one education record and keep the first degree. 'B.S. Applied Statistics; Minor in Economics May 2028' ends up as junk in the major field, or is dropped, which loses the statistics degree that backs the data and estimation story. A bare future date with no 'Expected' sometimes parses as conferred. NVIDIA (L10) explicitly screens for the anticipated graduation month and year.",
+      "fix": "'B.S. Mechanical Engineering and B.S. Applied Statistics, Minor in Economics' with right-aligned 'Expected May 2028' (E2). Same line count."
+    },
+    {
+      "severity": "minor",
+      "quote": "GPA 3.32/4 | Clubs: Club Swimming, House Band",
+      "issue": "The GPA field regex usually wants 'GPA: 3.32/4.00'. With the pipe and the clubs on the same line, Workday's GPA field can capture '3.32/4 | Clubs'. The clubs carry no keyword value for any of the 10 listings.",
+      "fix": "'GPA: 3.32/4.00' (E3). Cut the clubs (E4 is optional), which frees horizontal room on the line."
+    },
+    {
+      "severity": "major",
+      "quote": "C++17, Python, MATLAB",
+      "issue": "C++ is the most-required term (6 of 10 listings), but the skills section lists only 'C++17'. Exact-token skill extractors (Workday skills autofill, recruiter skill-tag filters) record 'C++17', not 'C++'. In the body the first occurrence is glued into 'C++/Eigen', which tokenizes as one string. The bare 'C++' survives only in two project bullets.",
+      "fix": "Skills: 'C++ (C++17)' (SK1), which hits both the L10 'C++' and 'C++17' terms. In the Legged bullet, write 'in C++ with Eigen' instead of 'C++/Eigen'."
+    },
+    {
+      "severity": "major",
+      "quote": "model-based tuned with feed-forward and anti-windup (0.8% speed error in simulation)",
+      "issue": "This bullet holds the truthful cover for most of L04's required terms but phrases it so that none of them match. The word 'motor' never appears ('motor control' miss). 'Model-based tuned' is non-standard, so it matches neither 'model-based design' nor 'model-based control'. The motor/transmission/forearm simulator that the controller compiles into (OR5) is missing, so 'system model development', 'controller co-simulation' and 'electro-mechanical system model' all miss.",
+      "fix": "Rewrite from OR2/OR3/OR5: 'Embedded real-time motor control: 1 kHz PI motor velocity controller in C++ on an ESP32-S3 (FreeRTOS task), tuned from a first-order motor model (IMC) with plant-inversion feed-forward and anti-windup; controller code co-simulated with a motor, transmission and forearm model (0.8% speed error in simulation); 10 fault monitors, hardware watchdog, kill switch.' Keep the 3-line budget by cutting 'designed and implemented'."
+    },
+    {
+      "severity": "major",
+      "quote": "control algorithms (PI, feed-forward, anti-windup, impedance, QP force control)",
+      "issue": "'Control theory' (L01 preferred; L07 'classical control theory', required) and 'feedback control' (L02) never appear. The parenthesized comma list also produces junk skill tags in comma-splitting extractors ('control algorithms (PI', 'QP force control)'). The same nesting happens in 'real-time embedded (FreeRTOS, ESP32-S3)'. 'Motion control' (L03) appears only as the run-in label of the in-progress Asteroid bullet.",
+      "fix": "Flatten the line and add the truthful terms (OR2, SK2): 'Controls and estimation: classical control theory, feedback control algorithms, PI control with IMC tuning, feed-forward, anti-windup, impedance control, QP force control, motion control, state estimation, Kalman filtering (error-state EKF), sensor fusion, observability analysis'. To hold two lines, drop 'model-based controller tuning' (now covered by the orthosis rewrite)."
+    },
+    {
+      "severity": "major",
+      "quote": "Active Orthosis, Purdue ASME Biomechanics | Electronics Team Lead",
+      "issue": "A two-year role with a title and a team-lead scope sits under ROBOTICS PROJECTS as a one-line pipe-joined header. Workday has no Projects bucket, so the entry is either dropped from the parsed work history or appended to the Chortos description. If it is parsed as a job, the pipe and comma make the split ambiguous (title 'Active Orthosis', employer 'Purdue ASME Biomechanics | Electronics Team Lead'). Either way 'Electronics Team Lead' never reaches a title field, and the parsed profile shows no leadership and no C++/embedded role.",
+      "fix": "Move it into EXPERIENCE in the same two-line format as the other roles: bold 'Purdue ASME Biomechanics, Active Orthosis' with right-aligned 'West Lafayette, IN'; italic 'Electronics Team Lead' with right-aligned 'Apr 2024 – May 2026' (OR header, OR1). Pay for the extra header line by cutting the 'State estimation: ' run-in label in the Legged bullet, which removes the orphan 'update.' line."
+    },
+    {
+      "severity": "major",
+      "quote": "Legged Robot State Estimation and Control | Personal Project",
+      "issue": "The pipe separator plus an italic 'Personal Project' in the title slot means Workday autofill creates a job at employer 'Personal Project' (or 'Independent Research, Purdue University & UC3M (Madrid)' for the Asteroid line). The ampersand and nested parentheses in 'Purdue University & UC3M (Madrid)' further confuse employer and location splitting.",
+      "fix": "No pipes in headers: 'Legged Robot State Estimation and Control (personal project)' and 'Asteroid Hopping Robot, independent research with Purdue University and Universidad Carlos III de Madrid', with dates right-aligned as now (LR and AH headers). If the long form wraps, use 'Purdue and UC3M'."
+    },
+    {
+      "severity": "minor",
+      "quote": "Snowflake | KiCad,",
+      "issue": "A pipe inside a comma list. Comma-splitting skill extractors emit 'Snowflake | KiCad' as one token, so both skills are lost. The label 'Data, ML and hardware:' itself contains a comma, which yields the tags 'Data' and 'ML and hardware: PyTorch'.",
+      "fix": "Split into two labels on the same two lines: 'Data and ML: PyTorch, XGBoost, LSTM, Pandas, SciPy, Flask, Plotly, SQLite, Snowflake. Hardware and CAD: KiCad, LabVIEW, DAQ, CATIA, NX, Creo, FEA' (SK3 to SK6)."
+    },
+    {
+      "severity": "minor",
+      "quote": "5 × 60 s walks",
+      "issue": "Non-ASCII symbols in the text layer: × (U+00D7), µ in '~20 µs per real-time' (U+00B5), and ~ in '~28k impact events from ~900 robot'. Legacy ingest paths (Taleo or iCIMS-derived normalizers, some Workday email-to-apply flows) map × and µ to '?' or drop them ('5 ? 60 s', '20 ?s'). A dropped tilde turns '~28k' into an exact-sounding '28k'.",
+      "fix": "'five 60 s walks' (LR7); 'in about 20 microseconds per update' (LR3); 'about 28k impact events from about 900 robot test logs' (BD7). Each fits its current line count once the 'State estimation: ' label is cut."
+    },
+    {
+      "severity": "minor",
+      "quote": "Sensors and Perception Co-Op, Atlas",
+      "issue": "The comma appends a product name to the title. Extraction reads 'Sensors and Perception Co-Op, Atlas Jul 2026 – Present', and title parsers can split at the comma and treat 'Atlas' as the employer, which collides with the many companies named Atlas.",
+      "fix": "'Sensors and Perception Co-Op (Atlas)' (BD header)."
+    },
+    {
+      "severity": "minor",
+      "quote": "validated in closed-",
+      "issue": "The hard hyphen in 'closed-loop' falls at the line break, so the text layer yields 'closed-' and 'loop' on separate lines and the keyword breaks in this bullet. It survives only once, in the skills line.",
+      "fix": "Cut the 'Signal processing: ' run-in label (inert for ATS). That shifts the line by 19 characters, so 'closed-loop' lands intact on line 1."
+    },
+    {
+      "severity": "minor",
+      "quote": "whole page",
+      "issue": "PDF metadata Author is 'python-docx' and Title is empty. The file is named winner.pdf. Some parsers (Textkernel/Sovren-based) fall back to metadata for the candidate name, and recruiters see the filename in Greenhouse and Lever.",
+      "fix": "Set the docx core properties to author 'Troy Mayer' and title 'Troy Mayer Resume' before export, and upload the file as Troy_Mayer_Resume.pdf."
+    },
+    {
+      "severity": "major",
+      "quote": "whole page",
+      "issue": "Several hard-gate terms have no truthful cover at all, so keyword-ranked searches will bury the page for those listings: ROS/ROS 2 (required in L08; tools in L02 and L10), inverse kinematics and dynamics (required in L07; L04), motion or path planning and trajectory generation (L05 and L08 core; L03 preferred; L06), Simulink (L01 preferred), data structures, algorithms and OOD (L09 basic qualification).",
+      "fix": "needs Troy: any real ROS/ROS 2, inverse-kinematics or inverse-dynamics, planning or trajectory, Simulink, or data-structures/algorithms experience (coursework counts only if Troy confirms it, since FACTS records none). Until then, don't claim them. Steer applications toward L01, L02, L04 and L07, where the truthful rewrites above close most of the gap."
+    }
+  ],
+  "top3": [
+    "Rewrite the orthosis controller bullet and the Controls skills line from OR2/OR3/OR5 so the page literally says 'motor control', 'tuned from a first-order motor model', 'controller co-simulated with a motor, transmission and forearm model', 'classical control theory' and 'feedback control'. This closes the L04 required terms (motor control, model-based design, controller co-simulation, system models) plus L01, L07 control theory and L02 feedback control, without a new fact.",
+    "Fix the fields a parser fills first: education as 'Purdue University' / 'B.S. Mechanical Engineering and B.S. Applied Statistics, Minor in Economics', 'Expected May 2028' / 'GPA: 3.32/4.00'; contact line 3 as three real https hyperlinks including github.com/tmayer2112-ui/Troy_Mayer; skills as 'C++ (C++17)', with no pipes or nested parentheses.",
+    "Make the robotics work parse as entries rather than orphaned text. Move the Active Orthosis 'Electronics Team Lead' role into EXPERIENCE with org, location, title and dates. Remove the '|' from the remaining project headers. Replace ×, µ and ~ with plain words. Pay for the added header line by cutting the 'State estimation: ' and 'Signal processing: ' run-in labels, which also kills the 'update.' orphan and the 'closed-' line break."
+  ]
+}
