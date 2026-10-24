@@ -1,0 +1,143 @@
+{
+ "file_stem": "Troy_Mayer_Resume",
+ "name": "Troy Mayer",
+ "contact": [
+  "Mountainside, NJ 07092",
+  "908-873-9490",
+  {
+   "text": "tmayer2112@gmail.com",
+   "url": "mailto:tmayer2112@gmail.com"
+  },
+  "US Citizen",
+  {
+   "text": "www.linkedin.com/in/troyarkin/",
+   "url": "https://www.linkedin.com/in/troyarkin/"
+  }
+ ],
+ "sections": [
+  {
+   "title": "Education",
+   "space_before": 6,
+   "entries": [
+    {
+     "org": "Purdue University, School of Mechanical Engineering and School of Science",
+     "org_right": "West Lafayette, IN",
+     "role": "B.S. Mechanical Engineering; B.S. Applied Statistics; Minor in Economics",
+     "role_right": "Expected May 2028",
+     "lines": [
+      [
+       "Clubs: Club Swimming, House Band",
+       "GPA 3.32/4"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Professional Experience",
+   "spacer": 6,
+   "entries": [
+    {
+     "org": "Boston Dynamics",
+     "org_right": "Waltham, MA",
+     "role": "Sensors and Perception Co-Op – Atlas",
+     "role_right": "July 2026 – Present",
+     "bullets": [
+      "Mapping impacts onto Atlas’s mesh with encoders and forward kinematics, estimating impact energy from Khatib’s operational-space effective mass and an OLS velocity fit; building a physics-based MuJoCo impact simulation.",
+      "Building an impact forensics pipeline and Flask/Plotly dashboard on a Linux VM over ~28k impact events from ~900 test logs: ETL into SQLite, a 3D impact heatmap, and per-event waveforms used by engineers during testing.",
+      "Modeling hardware thermal behavior in Python, using Savitzky-Golay filtering and multi-start least squares to predict steady-state temperatures across hundreds of units without full-length tests."
+     ]
+    },
+    {
+     "org": "Caterpillar (via Purdue Data Mine)",
+     "org_right": "West Lafayette, IN",
+     "role": "Machine Learning Researcher",
+     "role_right": "January 2026 – May 2026",
+     "bullets": [
+      "Built LSTM/XGBoost forecasts of daily paint use with Monte Carlo intervals, achieving a 4.7% material reduction."
+     ]
+    },
+    {
+     "org": "Chortos Lab – Soft Adaptive Systems and Structures",
+     "org_right": "West Lafayette, IN",
+     "role": "Undergraduate Researcher",
+     "role_right": "August 2025 – May 2026",
+     "bullets": [
+      "Wrote a Python computer-vision tracker and LabVIEW/MATLAB data acquisition to measure gel samples, and used them to formulate gels with over 50% more force output."
+     ]
+    },
+    {
+     "org": "Emerson – Discrete Automation (ASCO)",
+     "org_right": "Florham Park, NJ",
+     "role": "Mechanical and Manufacturing Engineer Intern",
+     "role_right": "June 2025 – August 2025",
+     "bullets": [
+      "Designed and CNC-machined a valve spring canister in Creo with GD&T drawings; ran UL 429 solenoid valve tests."
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Projects",
+   "spacer": 3,
+   "entries": [
+    {
+     "org": "Legged Robot State Estimation and Control",
+     "role": "Personal Project",
+     "role_link": {
+      "text": "github.com/tmayer2112-ui/Troy_Mayer",
+      "url": "https://github.com/tmayer2112-ui/Troy_Mayer"
+     },
+     "role_right": "August 2026 – October 2026",
+     "bullets": [
+      "Built a contact-aided error-state Kalman filter in C++ for a simulated Unitree Go1, fusing IMU and leg kinematics to 0.013 m/s velocity error, against 1.38 m/s for the IMU alone.",
+      "Verified it with GoogleTest (finite-difference Jacobian checks, parity with a Python reference) and an observability analysis of what the sensors can and can’t see.",
+      "Stress-tested it under foot slip and contact latency, and fixed the latency and weak-tilt-observability failures.",
+      "Closed the loop in Python simulation with no falls, and added an MIT Cheetah 3-style QP balance controller."
+     ]
+    },
+    {
+     "org": "Purdue ASME – Biomechanics",
+     "org_right": "West Lafayette, IN",
+     "role": "Active Orthosis – Electronics Team Lead",
+     "role_right": "April 2024 – May 2026",
+     "bullets": [
+      "Designed a 1 kHz PI motor velocity controller in C++ for an ESP32-S3, tuned from a motor model with feed-forward and anti-windup, and verified it in co-simulation with a model of the motor and forearm.",
+      "Wrote the FreeRTOS firmware with fault monitors, a watchdog, and a kill switch, tested with GoogleTest in CI.",
+      "Cut simulated EMG-to-motion latency from 103 to 43 ms on real EMG via new signal processing and loop tuning.",
+      "Led the 5-engineer electronics team and redesigned the EMG board schematic in KiCad, raising cross-day gesture decoding from 31% to 87% in emulation."
+     ]
+    },
+    {
+     "org": "Asteroid Hopping Robot – Independent Research",
+     "role": "Purdue University & Universidad Carlos III de Madrid",
+     "role_right": "October 2026 – Present",
+     "bullets": [
+      "Building a 3-legged hopping robot and landing rig; designing push-off, landing, and attitude control in MuJoCo."
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Skills & Interests",
+   "rows": [
+    [
+     "Tools",
+     "C++, Python, MATLAB, SQL, Linux, Git, CMake, GoogleTest, GitHub Actions CI, Eigen, MuJoCo, FreeRTOS, KiCad, LabVIEW, CAD (CATIA, NX, Fusion, Creo), FEA"
+    ],
+    [
+     "Methods",
+     "state estimation (Kalman filtering), PI and feed-forward control, QP force control, rigid-body kinematics"
+    ],
+    [
+     "Languages",
+     "English (Native), Turkish (Fluent), Spanish (Fluent - New Jersey Seal of Biliteracy)"
+    ],
+    [
+     "Hobbies",
+     "Lifting, Hiking, Guitar, Saxophone"
+    ]
+   ]
+  }
+ ]
+}

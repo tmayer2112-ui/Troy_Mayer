@@ -1,0 +1,52 @@
+                                                    Troy Mayer
+    Mountainside, NJ 07092 | 908-873-9490 | tmayer2112@gmail.com | US Citizen | www.linkedin.com/in/troyarkin/
+EDUCATION
+Purdue University, School of Mechanical Engineering and School of Science                               West Lafayette, IN
+B.S. Mechanical Engineering; B.S. Applied Statistics; Minor in Economics                                Expected May 2028
+Clubs: Club Swimming, House Band                                                                               GPA 3.32/4
+PROFESSIONAL EXPERIENCE
+Boston Dynamics                                                                                            Waltham, MA
+Sensors and Perception Co-Op – Atlas                                                                 July 2026 – Present
+   • Mapping impacts onto Atlas’s mesh with encoders and forward kinematics, estimating impact energy from Khatib’s
+       operational-space effective mass and an OLS velocity fit; building a physics-based MuJoCo impact simulation.
+   • Building an impact forensics pipeline and Flask/Plotly dashboard on a Linux VM over ~28k impact events from ~900
+       test logs: ETL into SQLite, a 3D impact heatmap, and per-event waveforms used by engineers during testing.
+   • Modeling hardware thermal behavior in Python, using Savitzky-Golay filtering and multi-start least squares to predict
+       steady-state temperatures across hundreds of units without full-length tests.
+Caterpillar (via Purdue Data Mine)                                                                 West Lafayette, IN
+Machine Learning Researcher                                                                 January 2026 – May 2026
+   • Built LSTM/XGBoost forecasts of daily paint use with Monte Carlo intervals, achieving a 4.7% material reduction.
+Chortos Lab – Soft Adaptive Systems and Structures                                           West Lafayette, IN
+Undergraduate Researcher                                                               August 2025 – May 2026
+   • Wrote a Python computer-vision tracker and LabVIEW/MATLAB data acquisition to measure gel samples, and used
+       them to formulate gels with over 50% more force output.
+Emerson – Discrete Automation (ASCO)                                                           Florham Park, NJ
+Mechanical and Manufacturing Engineer Intern                                            June 2025 – August 2025
+   • Designed and CNC-machined a valve spring canister in Creo with GD&T drawings; ran UL 429 solenoid valve tests.
+PROJECTS
+Legged Robot State Estimation and Control
+Personal Project – github.com/tmayer2112-ui/Troy_Mayer                                           August 2026 – October 2026
+    • Built a contact-aided error-state Kalman filter in C++ for a simulated Unitree Go1, fusing IMU and leg kinematics to
+        0.013 m/s velocity error, against 1.38 m/s for the IMU alone.
+    • Verified it with GoogleTest (finite-difference Jacobian checks, parity with a Python reference) and an observability
+        analysis of what the sensors can and can’t see.
+    • Stress-tested it under foot slip and contact latency, and fixed the latency and weak-tilt-observability failures.
+    • Closed the loop in Python simulation with no falls, and added an MIT Cheetah 3-style QP balance controller.
+Purdue ASME – Biomechanics                                                                                  West Lafayette, IN
+Active Orthosis – Electronics Team Lead                                                               April 2024 – May 2026
+    • Designed a 1 kHz PI motor velocity controller in C++ for an ESP32-S3, tuned from a motor model with feed-forward
+        and anti-windup, and verified it in co-simulation with a model of the motor and forearm.
+    • Wrote the FreeRTOS firmware with fault monitors, a watchdog, and a kill switch, tested with GoogleTest in CI.
+    • Cut simulated EMG-to-motion latency from 103 to 43 ms on real EMG via new signal processing and loop tuning.
+    • Led the 5-engineer electronics team and redesigned the EMG board schematic in KiCad, raising cross-day gesture
+        decoding from 31% to 87% in emulation.
+Asteroid Hopping Robot – Independent Research
+Purdue University & Universidad Carlos III de Madrid                                                  October 2026 – Present
+    • Building a 3-legged hopping robot and landing rig; designing push-off, landing, and attitude control in MuJoCo.
+SKILLS & INTERESTS
+   • Tools: C++, Python, MATLAB, SQL, Linux, Git, CMake, GoogleTest, GitHub Actions CI, Eigen, MuJoCo,
+     FreeRTOS, KiCad, LabVIEW, CAD (CATIA, NX, Fusion, Creo), FEA
+   • Methods: state estimation (Kalman filtering), PI and feed-forward control, QP force control, rigid-body kinematics
+   • Languages: English (Native), Turkish (Fluent), Spanish (Fluent - New Jersey Seal of Biliteracy)
+   • Hobbies: Lifting, Hiking, Guitar, Saxophone
+
