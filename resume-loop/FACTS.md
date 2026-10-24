@@ -15,7 +15,7 @@ Confirmed by Troy in this session: **GPA is 3.32** (S and R say 3.4, which is ou
 
 ## Header
 - H1 Troy Mayer · Mountainside, NJ 07092 · 908-873-9490 · tmayer2112@gmail.com · US Citizen · linkedin.com/in/troyarkin [U]
-- H2 Portfolio: tmayer2112-ui.github.io/Troy_Mayer. The repo github.com/tmayer2112-ui/Troy_Mayer is public with Pages enabled; the code, tests and write-ups for the orthosis firmware, EMG decoder and quadruped EKF live there. [repo]
+- H2 Portfolio site: tmayer2112-ui.github.io/Troy_Mayer. Pages serves only `docs/` (the site and figures), not the code. Code: github.com/tmayer2112-ui/Troy_Mayer is public and holds the code, tests and write-ups for the orthosis firmware, EMG decoder and quadruped EKF. Only the firmware tests run in CI (`.github/workflows/firmware.yml`). [repo]
 - H3 Open to Summer 2027 internships in robot software, controls and data. [S]
 
 ## Education
@@ -34,7 +34,7 @@ Confirmed by Troy in this session: **GPA is 3.32** (S and R say 3.4, which is ou
 - BD6 Characterized the Butterworth anti-alias filtering against synthetic pulses of known amplitude. Quantified the metric's noise floor with a null-control experiment on quiet data. Landed every change only after bit-identical regression checks across the full event table. [R, S]
 - BD7 Impact forensics pipeline and Flask/Plotly dashboard on a Linux VM, covering ~28k impact events from ~900 robot test logs. [U]
 - BD8 ETL from a time-series telemetry store into SQLite. 3D impact-location heatmap, normalized by per-facet solid angle so it reads as density. Per-event waveform inspection. Used by engineers during testing. [U, S]
-- BD9 Models hardware thermal behavior in Python (Pandas, SciPy): Savitzky-Golay filtering, heating-regime detection, multi-start least-squares fits of exponential heating curves, predicting steady-state temperatures across hundreds of units without full-length tests, gated on residual RMSE. [U, S, R]
+- BD9 Models hardware thermal behavior in Python (Pandas, SciPy): Savitzky-Golay filtering [U, R; the site dropped it on 2026-10-09, U re-added it on 10-22], heating-regime detection, multi-start least-squares fits of exponential heating curves, predicting steady-state temperatures across hundreds of units without full-length tests, gated on residual RMSE. [U, S, R]
 - BD10 Designs CATIA (3DEXPERIENCE) fixtures, mounts and shear features for standalone impact testing, plus protective hardware so sensitive parts survive repeated impacts. Uses pin-shear failure analysis to optimize the geometry. [U, S]
 - (Keep it proprietary-safe: method only, no BD data. Tense: the role is ongoing.)
 
@@ -79,7 +79,7 @@ Confirmed by Troy in this session: **GPA is 3.32** (S and R say 3.4, which is ou
 - LR1 Contact-aided error-state EKF in C++/Eigen (with a Python reference) for a simulated Unitree Go1 in MuJoCo. Fuses a BMI088-class IMU at 1 kHz with leg kinematics. Adds each planted foot to the state at touchdown and marginalizes it at liftoff. [U, C, S]
 - LR2 0.013 m/s velocity RMSE over a 60-second walk (mean of 10 sensor-noise seeds) vs. 1.38 m/s for IMU-only dead reckoning. [C]
 - LR3 1 kHz, one update per IMU sample. The C++ step takes about 20 µs of the 1 ms budget (median). [C]
-- LR4 Jacobians verified against finite differences in GoogleTest. The C++ filter matches the Python reference to 1e-13 on a recorded walk. [C, S]
+- LR4 Jacobians verified against finite differences in GoogleTest. The C++ filter matches the Python reference to 1e-13 on a recorded walk (say "to 1e-13", not "within"; the max attitude difference is 1.2e-12). These tests run locally (`make test`), not in CI. [C, S]
 - LR5 Observability: roll, pitch and velocity stay bounded while position and yaw drift (exactly four unobservable directions in every window tested). Derived analytically, confirmed numerically. [C, S]
 - LR6 Failure experiments: about 2 cm/s of foot slip doubles velocity error. With force-only contact detection, 10 ms of contact latency costs 6.6° of yaw over the walk; gating contact on the gait schedule removes the failure. A tutorial-style Q = 0.01·I loses attitude. [C, S]
 - LR7 Walking and QP balance controllers run on the estimate. Fed the estimate, the walking controller completes 5 × 60 s walks with 0 falls, with velocity tracking within 0.004 m/s of the ground-truth-fed run. [U, C]
