@@ -21,7 +21,17 @@ STYLE = {"font": "Times New Roman", "body": 10.5, "name": 17, "contact": 9.5, "h
          "before_section": 4.5}
 
 
+UNIT = re.compile(r"(\d) (ms|s|kHz|Hz|m/s|µs|mm|in-lb|J|engineers?|days|classes|walks|years)\b")
+
+
+def typeset(text):
+    """Curly apostrophes, and non-breaking spaces so a number never wraps away from its unit."""
+    text = re.sub(r"(\w)'(\w|\s)", r"\1’\2", text)
+    return UNIT.sub("\\1\u00a0\\2", text)
+
+
 def add_runs(p, text, size, bold=False, italic=False):
+    text = typeset(text)
     for i, part in enumerate(re.split(r"\*\*", text)):
         if not part:
             continue
@@ -116,6 +126,8 @@ def build(spec, out_dir):
     normal.element.rPr.rFonts.set(qn("w:eastAsia"), st["font"])
     normal.font.size = Pt(st["body"])
     num_id = bullet_numbering(doc)
+    doc.core_properties.author = spec["name"]  # some parsers read the name from metadata
+    doc.core_properties.title = f"{spec['name']} Resume"
 
     p = doc.add_paragraph(); tight(p); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     add_runs(p, spec["name"], st["name"], bold=True)
@@ -123,7 +135,7 @@ def build(spec, out_dir):
         p = doc.add_paragraph(); tight(p); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         add_items(p, items, st["contact"])
     if spec.get("summary"):
-        p = doc.add_paragraph(); tight(p, before=4); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p = doc.add_paragraph(); tight(p, before=spec.get("summary_before", 4)); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         add_runs(p, spec["summary"], st["body"], italic=spec.get("summary_italic", False))
 
     for s in spec["sections"]:
@@ -133,11 +145,12 @@ def build(spec, out_dir):
             if e.get("inline"):  # one line: **org** | *role*  <tab> dates
                 p = doc.add_paragraph(); tight(p, before=1); right_tab(p, text_w)
                 add_runs(p, e["org"], st["body"], bold=True)
+                sep = e.get("sep", " | ")
                 if e.get("role"):
-                    add_runs(p, " | ", st["body"])
+                    add_runs(p, sep, st["body"])
                     add_runs(p, e["role"], st["body"], italic=True)
                 if e.get("link"):  # {"text", "url"} shown after the role
-                    add_runs(p, " | ", st["body"])
+                    add_runs(p, sep, st["body"])
                     add_link(p, e["link"]["text"], e["link"]["url"], st["body"], italic=True)
                 add_runs(p, "\t" + e.get("dates", ""), st["body"])
             elif e.get("org"):

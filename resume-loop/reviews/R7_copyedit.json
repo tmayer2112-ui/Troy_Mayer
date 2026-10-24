@@ -1,0 +1,245 @@
+{
+ "lens": "copyedit",
+ "verdict": "borderline",
+ "flags": [
+  {
+   "severity": "major",
+   "quote": "floating-base forward kinematics (quaternions, Rodrigues' rotations, velocity composition) from joint encoders maps impacts onto the robot mesh, and Khatib's operational-space effective mass estimates impact energy.",
+   "issue": "Garden-path sentence in the first bullet of the top job. The subject is 13 words long, and 'from joint encoders maps' reads at first as a subject-verb agreement error ('encoders maps'). The bullet also switches from Troy as actor ('Developing') to two inanimate subjects after the colon, so it doesn't match the verb-led bullets around it. It's the first sentence a careful reader parses.",
+   "fix": "Put 'from joint encoders' next to its noun and split the clauses with a semicolon. This also absorbs the stray MuJoCo clause from bullet 2 (see next flag) at no line cost (tested: still 3 lines): 'Developing rigid-body kinematics, dynamics, and a physics-based MuJoCo simulation for Atlas impacts: floating-base forward kinematics from joint encoders (quaternions, Rodrigues' formula, velocity composition) maps impacts onto the robot mesh; Khatib's operational-space effective mass estimates impact energy.' (BD1-BD4)"
+  },
+  {
+   "severity": "major",
+   "quote": "validating its filtering against synthetic pulses of known size and measuring its noise floor; building a physics-based MuJoCo impact simulation.",
+   "issue": "Semicolon misuse and a tense switch inside one bullet. A semicolon should join two independent clauses, but '; building a ...' is a subjectless participial fragment. It also jumps from past ('Designed') to present progressive halfway through, so it reads like two notes pasted together. 'Known size' is also vaguer than the source's 'known amplitude'.",
+   "fix": "End the bullet at the noise floor and use parallel past-tense verbs: 'Designed a delta-v impact-severity metric robust to sensor bandwidth limits, validated its filtering against synthetic pulses of known amplitude, and measured its noise floor.' (tested: 2 lines, 513 of 517 pt). Move the MuJoCo simulation into bullet 1 as shown above (BD3, BD5, BD6)."
+  },
+  {
+   "severity": "major",
+   "quote": "model-based tuned with feed-forward and anti-windup (0.8% speed error in simulation), with 10 fault monitors",
+   "issue": "'model-based tuned' is ungrammatical: a compound adjective is being used as an adverb on a past participle. The sentence also repeats 'with ... with', and 'designed and implemented' is a wordy doublet.",
+   "fix": "'Embedded real-time control: implemented a 1 kHz PI velocity controller in C++ on an ESP32-S3 (FreeRTOS), tuned from a motor model with feed-forward and anti-windup (0.8% speed error in simulation), plus 10 fault monitors, a hardware watchdog, and a kill switch.' (OR2-OR4). Without the run-in label (next flag) this drops from 3 lines to 2 (tested). It breaks at the hard hyphen in 'feed-/forward', which is acceptable."
+  },
+  {
+   "severity": "major",
+   "quote": "State estimation: | Verification: | Control: | Embedded real-time control: | Signal processing: | Led a 5-engineer team; | Motion control and optimization:",
+   "issue": "Bullets aren't parallel. Six Projects bullets open with a run-in label, but the third orthosis bullet ('Led a 5-engineer team;') and every Experience bullet open with a verb. The labels are also set in roman, while the Skills labels are bold, so 'State estimation: built ...' reads as a broken sentence instead of a heading. The labels cost 60 to 140 pt per line, which is what pushes 'update.' into a widow and splits 'closed-/loop' at a line end.",
+   "fix": "Drop all six labels and open each bullet with a verb (Built / Checked / Ran / Implemented / Cut / Led / Designing). The tested label-free versions fit in 2, 2, 2, 2, 2, 2 and 2 lines, which saves 2 lines in Projects. If the labels must stay, put the orthosis bullet under one too and set every label in bold to match Skills."
+  },
+  {
+   "severity": "major",
+   "quote": "Verification: Jacobians checked against finite differences in GoogleTest unit tests, C++ matched to a Python reference within 1e-13, and observability analysis confirming position and yaw drift while roll, pitch, and velocity stay bounded.",
+   "issue": "Faulty parallelism inside the series: noun + past participle ('Jacobians checked'), noun + past participle ('C++ matched'), then noun + present participle ('analysis confirming'). It's also the only bullet with no actor. 'confirming position and yaw drift' is a garden path: the reader first takes 'position' as the object of 'confirming'.",
+   "fix": "'Checked Jacobians against finite differences in GoogleTest unit tests, matched the C++ filter to a Python reference within 1e-13, and confirmed by observability analysis that position and yaw drift while roll, pitch, and velocity stay bounded.' (LR4, LR5; tested: 2 lines without the label. If the label stays, use 'in GoogleTest' and 'showed', which also fits in 2.)"
+  },
+  {
+   "severity": "major",
+   "quote": "for 50,000+ point datasets",
+   "issue": "Missing compound-modifier hyphen makes it ambiguous: it reads as 'fifty thousand-plus datasets' rather than datasets of 50,000+ points. A skeptical reader may take it as an inflated claim.",
+   "fix": "'for datasets of 50,000+ points' (CH1; tested: still 2 lines)."
+  },
+  {
+   "severity": "major",
+   "quote": "achieving a 4.7% reduction in material usage; Python data pipelines contributed to a 3.3% cycle-time reduction.",
+   "issue": "The subject switches after the semicolon: Troy's implied 'I' becomes 'Python data pipelines', which leaves credit ambiguous and breaks parallelism. The bullet also spills 3 words ('3.3% cycle-time reduction.', 114 pt) onto a third line. 'machine learning models' repeats the job title and leaves an open compound, while the page elsewhere hyphenates ('computer-vision tracker'). 'five years' is spelled out, but every other count on the page is a numeral.",
+   "fix": "'Trained LSTM and XGBoost models to forecast next-day paint use from 5 years of data with Monte Carlo confidence intervals, reducing material usage 4.7%; built Python data pipelines that contributed to a 3.3% cycle-time reduction.' (CAT1-CAT3; tested: 2 lines, saves 1). It also removes the duplicate 'Built' opener."
+  },
+  {
+   "severity": "major",
+   "quote": "in ~20 µs per real-time\nupdate.",
+   "issue": "Widow: one word ('update.', 31 pt) takes a full line on a page with 0 pt to spare.",
+   "fix": "Cut 'real-time': 'in ~20 µs per update.' (LR3: one update per IMU sample), or drop the 'State estimation:' label. Either returns the bullet to 2 lines (tested). If the label stays, 'error-state EKF ... at ~20 µs per update' also fits in 2 and matches the Skills naming."
+  },
+  {
+   "severity": "major",
+   "quote": "whole page",
+   "issue": "Cramped page with weak hierarchy. Margins are 0.4 in top and bottom, under the usual 0.5 in, and the last baseline sits 2.3 pt above the bottom margin (text ends at 760.9 of 763.2 pt), so there's no slack at all. Entries are separated by only about 2.5 pt (1 pt before, 1.5 pt after), so 'Caterpillar', 'Chortos' and 'Active Orthosis' run into the bullets above them. Section headings are 11 pt against 10.5 pt bold entry names, so caps and the rule are the only cue between levels. The result reads as one 45-line wall.",
+   "fix": "Spend the lines recovered above (Legged bullet 1, Caterpillar, orthosis bullet 1: about 3 lines, 36 pt) on whitespace. Raise after_entry from 1.5 to about 3.5 pt and before_section from 4 to about 6 pt (+22 pt in total), or restore 0.5 in top and bottom margins (+14.4 pt). Optionally set section heads to 11.5 or 12 pt."
+  },
+  {
+   "severity": "major",
+   "quote": "linkedin.com/in/troyarkin | Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer",
+   "issue": "The PDF has no link annotations at all (pypdf: /Annots = None). The email, LinkedIn and the 'Portfolio and code' URL, the page's main proof of shipped code, can't be clicked and have to be retyped.",
+   "fix": "Add w:hyperlink runs in build_resume.py for the email (mailto:), LinkedIn and portfolio, so LibreOffice exports live links. The visible text stays the same."
+  },
+  {
+   "severity": "minor",
+   "quote": "Developing ... / Designed ... / Built ... / Modeling ...",
+   "issue": "Tense alternates bullet by bullet in the ongoing Boston Dynamics role (present, past, past, present), so the reader keeps re-tracking what's finished and what's in progress.",
+   "fix": "Group by tense: put the two present-tense bullets (Developing, Modeling) first, then the two finished deliverables (Designed, Built)."
+  },
+  {
+   "severity": "minor",
+   "quote": "Built an impact data-analysis pipeline and Flask/Plotly dashboard on Linux covering ~28k impact events from ~900 robot test logs (telemetry ETL into SQLite, 3D impact heatmap, per-event waveforms), used by engineers during testing.",
+   "issue": "Misplaced modifier: 'used by engineers during testing' follows the waveform list, so it seems to modify the waveforms rather than the dashboard. 'on Linux covering' is also a small garden path. 'impact' appears 3 times in this bullet and 8 times across the four BD bullets.",
+   "fix": "'Built a data-analysis pipeline and Flask/Plotly dashboard, used by engineers during testing, covering ~28k impact events from ~900 robot test logs on Linux (telemetry ETL into SQLite, 3D location heatmap, per-event waveforms).' (BD7, BD8; tested: 2 lines)."
+  },
+  {
+   "severity": "minor",
+   "quote": "Rodrigues' rotations",
+   "issue": "Wrong term. The method is Rodrigues' rotation formula (FACTS BD4), not 'Rodrigues' rotations'.",
+   "fix": "'Rodrigues' formula' (shorter and correct)."
+  },
+  {
+   "severity": "minor",
+   "quote": "Rodrigues' ... Khatib's",
+   "issue": "Typewriter apostrophes (U+0027) in a typeset serif page. The rest of the page uses proper typography (en dashes, ×, µ).",
+   "fix": "Use U+2019 (’) in both. ATS parsers handle it."
+  },
+  {
+   "severity": "minor",
+   "quote": "Data, ML and hardware",
+   "issue": "No serial comma, while the rest of the page uses it ('roll, pitch, and velocity', 'a hardware watchdog, and a kill switch', 'and reaction-wheel attitude control').",
+   "fix": "'Data, ML, and hardware'"
+  },
+  {
+   "severity": "minor",
+   "quote": "Snowflake | KiCad",
+   "issue": "A pipe used as a group divider in the middle of a comma list looks like a stray character. Pipes already do three other jobs on this page (contact separator, 'GPA | Clubs', and 'Project | Role').",
+   "fix": "Use a semicolon: '... SQLite, Snowflake; KiCad, LabVIEW, ...' (tested: still 2 lines)."
+  },
+  {
+   "severity": "minor",
+   "quote": "control algorithms (PI, feed-forward, anti-windup, impedance, QP force control), model-based controller tuning",
+   "issue": "'control' appears 4 times in one row (label, 'control algorithms', 'QP force control', 'controller tuning'). The parenthetical isn't parallel: 'anti-windup' isn't an algorithm, and 'impedance' is an adjective with no noun.",
+   "fix": "'Controls and estimation: PI, feed-forward, anti-windup, impedance, and QP force control; model-based controller tuning, state estimation, ...' (tested: 2 lines)."
+  },
+  {
+   "severity": "minor",
+   "quote": "MuJoCo physics simulation, Eigen, closed-loop simulation and validation",
+   "issue": "'simulation' appears 3 times in this row (label plus 2 items). Eigen is a C++ library filed under 'Robotics and simulation' rather than 'Software'.",
+   "fix": "Move Eigen to Software ('C++17, Eigen, Python, ...'). If you do, change 'GoogleTest unit testing' to 'GoogleTest' so 'real-time' doesn't break at the line end (tested: 2 lines)."
+  },
+  {
+   "severity": "minor",
+   "quote": "Pandas",
+   "issue": "The library's official name is lowercase. The other tools are styled exactly (PyTorch, SciPy, LabVIEW, KiCad, MuJoCo).",
+   "fix": "'pandas'"
+  },
+  {
+   "severity": "minor",
+   "quote": "Kalman filtering (error-state EKF)",
+   "issue": "Inconsistent naming. Skills says 'error-state EKF', but the project bullet calls the same thing an 'error-state Kalman filter'.",
+   "fix": "Use one name in both places. If the project label stays, use 'error-state EKF' in the bullet (LR1; fits in 2 lines with 'at ~20 µs per update')."
+  },
+  {
+   "severity": "minor",
+   "quote": "~28k impact events ... 50,000+ point datasets",
+   "issue": "Large numbers are formatted two ways on the same page ('28k' vs '50,000+'). 'over 50%' and '50,000+' also express 'more than' two ways.",
+   "fix": "Pick one style, e.g. '~28,000 impact events' (tested: still 2 lines) to match '50,000+'."
+  },
+  {
+   "severity": "minor",
+   "quote": "from 0.169 to 0.091 m/s",
+   "issue": "Unit style in ranges isn't consistent: 'from 103 ms to 43 ms' repeats the unit, but this range gives it only once.",
+   "fix": "'from 103 to 43 ms' (shorter) to match, or 'from 0.169 m/s to 0.091 m/s'. Both fit."
+  },
+  {
+   "severity": "minor",
+   "quote": "with 0 falls in 5 × 60 s walks (QP after a 4 s startup turn)",
+   "issue": "Numeral pileup (0, 5, ×, 60 s, 4 s) in one phrase. Style guides spell out one of two adjacent numbers. The parenthetical has no verb and reads like a note.",
+   "fix": "'with no falls in five 60 s walks (QP runs after a 4 s startup turn)' (LR7-LR9; tested: 2 lines)."
+  },
+  {
+   "severity": "minor",
+   "quote": "validated in closed-\nloop simulation",
+   "issue": "The key term 'closed-loop' breaks across lines at its hard hyphen. pdftotext gives 'closed-' / 'loop', which parsers may store as 'closed- loop'.",
+   "fix": "Reflow so it doesn't land at a line end. Dropping the 'Signal processing:' label does this (tested)."
+  },
+  {
+   "severity": "minor",
+   "quote": "with a Bayesian EMG estimator, validated in closed-loop simulation on real recorded EMG with 26 GoogleTest tests in CI.",
+   "issue": "'EMG' appears 3 times in one sentence, and 'EMG estimator' doesn't say what is estimated. '26 GoogleTest tests' stutters. GoogleTest is also named three ways on the page ('GoogleTest unit testing', 'GoogleTest unit tests', 'GoogleTest tests').",
+   "fix": "'Cut EMG-to-motion latency from 103 to 43 ms with a Bayesian amplitude estimator, validated in closed-loop simulation on real recorded EMG with 26 GoogleTest unit and closed-loop tests in CI.' (OR5, OR6; tested: 2 lines)."
+  },
+  {
+   "severity": "minor",
+   "quote": "raising cross-day gesture decoding from 31% to 87% in emulation.",
+   "issue": "'decoding' isn't a quantity that can go from 31% to 87%. The percentage is accuracy.",
+   "fix": "'raising cross-day gesture-decoding accuracy from 31% to 87% in emulation.' (OR9, OR10 use 'accuracy'; tested: 2 lines)."
+  },
+  {
+   "severity": "minor",
+   "quote": "Motion control and optimization: designing optimized push-off control to hit a target launch speed, knee impedance control for landing, and reaction-wheel attitude control, with MuJoCo simulation comparing risk-limited hop rules.",
+   "issue": "Redundant ('optimization ... optimized'). 'control' appears 4 times. 'with MuJoCo simulation comparing ...' dangles: no article, no verb, and it isn't parallel with 'designing'.",
+   "fix": "'Designing push-off control optimized to hit a target launch speed, knee impedance control for landing, and reaction-wheel attitude control; simulating hops in MuJoCo to compare risk-limited hop rules.' (AH2, AH3; present tense kept; tested: 2 lines)."
+  },
+  {
+   "severity": "minor",
+   "quote": "Built ... / Built ... / built ... / built ...",
+   "issue": "Repeated verbs: 'Built' opens two bullets (BD bullet 3, Caterpillar) and appears in two more (Chortos, Legged bullet 1). The design family appears 4 times (Designed, designed, redesigned, designing), and 'cut' twice in Projects.",
+   "fix": "Use 'Trained' for Caterpillar (above), 'implemented' for the orthosis controller (above), and keep 'Built' for the dashboard and the EKF."
+  },
+  {
+   "severity": "minor",
+   "quote": "Purdue University & UC3M (Madrid)",
+   "issue": "This is the only ampersand on the page. Everywhere else uses 'and' ('School of Mechanical Engineering and School of Science', 'Sensors and Perception').",
+   "fix": "'Purdue University and UC3M (Madrid)' (fits: the header ends at about 423 pt and the date starts at 492 pt)."
+  },
+  {
+   "severity": "minor",
+   "quote": "Legged Robot State Estimation and Control | Personal Project    Aug 2026 – Oct 2026",
+   "issue": "The date column moves between lines. Projects put the date on the first line, but Experience and Education put the location there and the date on the second line, so the right margin doesn't scan as one column.",
+   "fix": "At no line cost, swap the right-tab fields for Education and Experience: dates on the org line, location on the role line. Dates then always sit on the first line."
+  },
+  {
+   "severity": "minor",
+   "quote": "Legged (Aug 2026 – Oct 2026) / Active Orthosis (Apr 2024 – May 2026) / Asteroid (Oct 2026 – Present)",
+   "issue": "Projects aren't in reverse-chronological order (the 'Present' item comes last), while Experience is. A reader scanning dates sees an inconsistency.",
+   "fix": "Either order Projects by end date (Asteroid, Legged, Orthosis) or keep the relevance order on purpose. The current order is defensible because Asteroid has no results yet."
+  },
+  {
+   "severity": "minor",
+   "quote": "Sensors and Perception Co-Op, Atlas",
+   "issue": "Standard spelling is 'Co-op', with a lowercase o. The comma before 'Atlas' also reads as if Atlas were a second title.",
+   "fix": "'Sensors and Perception Co-op, Atlas' (keep 'Co-Op' only if that's the exact official title)."
+  },
+  {
+   "severity": "minor",
+   "quote": "B.S. Mechanical Engineering; B.S. Applied Statistics; Minor in Economics",
+   "issue": "The items aren't parallel ('B.S. X' vs 'Minor in X').",
+   "fix": "'B.S. Mechanical Engineering; B.S. Applied Statistics; Economics minor'"
+  },
+  {
+   "severity": "minor",
+   "quote": "May 2028",
+   "issue": "A bare future date reads as a completed degree to a fast reader.",
+   "fix": "'Expected May 2028' (E2; the right column has room)."
+  },
+  {
+   "severity": "minor",
+   "quote": "GPA 3.32/4 | Clubs: Club Swimming, House Band",
+   "issue": "'/4' isn't matched to the two-decimal GPA, and 'Clubs: Club' repeats.",
+   "fix": "'GPA 3.32/4.00 | Activities: Club Swimming, House Band' (E3, E4)."
+  },
+  {
+   "severity": "minor",
+   "quote": "Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer",
+   "issue": "This is the only labeled item in the contact block (LinkedIn, phone and email have no label).",
+   "fix": "Drop the label, or move it after the URL: 'tmayer2112-ui.github.io/Troy_Mayer (portfolio and code)'."
+  },
+  {
+   "severity": "minor",
+   "quote": "US Citizen",
+   "issue": "Abbreviation style isn't consistent: 'US' has no periods, but 'B.S.' does.",
+   "fix": "'U.S. Citizen'"
+  },
+  {
+   "severity": "minor",
+   "quote": "1 kHz / 0.013 m/s / 4 s / 60 s / 20 µs / 103 ms",
+   "issue": "Number-unit pairs are joined by ordinary spaces. None split in this render, but they will on any reflow: one tested rewrite broke '~20' / 'µs' across lines.",
+   "fix": "Use non-breaking spaces (U+00A0) between each number and its unit, including '4 s' and '60 s'."
+  },
+  {
+   "severity": "minor",
+   "quote": "whole page (PDF properties)",
+   "issue": "The embedded font is LiberationSerif, not the Times New Roman the spec names. It's metric-compatible but visibly different to a typographer. The PDF metadata says Author 'python-docx' with no Title, and that shows in the reader's document properties.",
+   "fix": "Build on a machine with Times New Roman, or accept Liberation Serif knowingly. Set core_properties.author = 'Troy Mayer' and title = 'Troy Mayer Resume' before export."
+  }
+ ],
+ "top3": [
+  "Three sentences are broken in the most-read blocks. Fix them: BD bullet 1's garden-path subject ('...from joint encoders maps impacts'), BD bullet 2's semicolon followed by a tense-switching fragment ('; building a physics-based MuJoCo impact simulation'), and the orthosis 'model-based tuned'.",
+  "Make the Projects bullets parallel. Drop the six run-in labels, which are set in roman and readers take for broken sentences ('Led a 5-engineer team;' has none), and rewrite 'Verification' with active verbs. That alone removes the 'update.' widow and the 'closed-/loop' split, and recovers 2 lines.",
+  "Spend the 3 recovered lines (Legged bullet 1, Caterpillar, orthosis bullet 1) on whitespace. Text currently sits 2.3 pt above a 0.4 in bottom margin with about 2.5 pt between entries; go to about 3.5 pt after entries and 6 pt before sections, and make the email, LinkedIn and portfolio links clickable."
+ ]
+}
