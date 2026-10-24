@@ -1,0 +1,38 @@
+[
+ {
+  "version": "v6_final",
+  "letter": "Q",
+  "truth": "n/a",
+  "interviews": 20,
+  "raw_interviews": 20,
+  "recruiter_advances": 10,
+  "hm_interviews": 10,
+  "screen_avg": 8.1,
+  "hm_avg": 7.6,
+  "avg_rank": 1
+ },
+ {
+  "version": "v1_keywords",
+  "letter": "R",
+  "truth": "n/a",
+  "interviews": 16,
+  "raw_interviews": 16,
+  "recruiter_advances": 10,
+  "hm_interviews": 6,
+  "screen_avg": 7.4,
+  "hm_avg": 6.6,
+  "avg_rank": 2
+ },
+ {
+  "version": "original",
+  "letter": "P",
+  "truth": "n/a",
+  "interviews": 5,
+  "raw_interviews": 5,
+  "recruiter_advances": 5,
+  "hm_interviews": 0,
+  "screen_avg": 6.2,
+  "hm_avg": 5.1,
+  "avg_rank": 3
+ }
+]
