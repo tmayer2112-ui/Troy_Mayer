@@ -37,6 +37,7 @@ Confirmed by Troy in this session: **GPA is 3.32** (S and R say 3.4, which is ou
 - BD9 Models hardware thermal behavior in Python (Pandas, SciPy): Savitzky-Golay filtering [U, R; the site dropped it on 2026-10-09, U re-added it on 10-22], heating-regime detection, multi-start least-squares fits of exponential heating curves, predicting steady-state temperatures across hundreds of units without full-length tests, gated on residual RMSE. [U, S, R]
 - BD10 Designs CATIA (3DEXPERIENCE) fixtures, mounts and shear features for standalone impact testing, plus protective hardware so sensitive parts survive repeated impacts. Uses pin-shear failure analysis to optimize the geometry. [U, S]
 - (Keep it proprietary-safe: method only, no BD data. Tense: the role is ongoing.)
+- **Troy, 2026-10-24:** his current Boston Dynamics description is BD1–BD3 and BD7–BD9, as on the uploaded resume. Drop the CATIA bullet (BD10). BD4–BD6 (Rodrigues detail, the delta-v metric, regression checks) come from older sources, so leave them off unless he brings them back.
 
 ## Caterpillar (via Purdue Data Mine): Machine Learning Researcher · West Lafayette, IN · Jan 2026 – May 2026 [U]
 - CAT1 Built LSTM and XGBoost models forecasting next-day primer, topcoat and solvent consumption from five years of paint-line data, with Monte Carlo confidence intervals on each forecast. [U]
