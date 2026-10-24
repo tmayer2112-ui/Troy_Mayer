@@ -1,0 +1,99 @@
+{
+  "lens": "skim",
+  "verdict": "borderline",
+  "six_second_takeaway": "Bold 'Troy Mayer', then 'Purdue University, School of Mechanical Engineering and School of Science', 'May 2028', 'GPA 3.32/4', then an 8-line gray block of comma-separated controls buzzwords, then bold 'Boston Dynamics', which lands exactly on the one-third line (y = 33%). What sticks: 'Purdue ME/Stats kid, 3.32, Boston Dynamics co-op, long skills list.' Boston Dynamics alone earns the 30-second read. Role fit (controls / robot software, Summer 2027) can only be inferred from the first skills label and the BD name. It is never stated, and the italic title 'Sensors and Perception Co-Op' points the reader toward perception, not controls.",
+  "missed_in_six_seconds": [
+    "The C++/Eigen contact-aided error-state Kalman filter on a simulated Unitree Go1 (0.013 vs 1.38 m/s). It starts 67% of the way down the page, below Caterpillar paint forecasting and the Chortos gel lab, so a skimmer never reaches it.",
+    "The code link. It sits on the third header line in 9 pt type, the smallest text on the page, and the PDF has no link annotations, so it can't be clicked. Nothing beside the EKF project says code exists.",
+    "That the Atlas work is kinematics and dynamics. The first BD bullet is a 3-line, jargon-first sentence, and the title line reads 'Sensors and Perception'.",
+    "'Summer 2027', and the fact that he's applying for controls / robot-software roles. Neither appears anywhere; the term can only be inferred from 'May 2028'.",
+    "C++ itself. On a scan for 'C++', the first hit is mid-line in the third skills bullet (25% down), after 'Software:'.",
+    "The embedded real-time C++ controller (1 kHz PI on ESP32-S3 / FreeRTOS, GoogleTest in CI) and the MIT Cheetah 3-style QP controller (FACTS LR9, which isn't on the page at all). Both are in the bottom 30%.",
+    "The leadership signal 'Led a 5-engineer team', in the third bullet of the orthosis entry, about 88% down."
+  ],
+  "flags": [
+    {
+      "severity": "major",
+      "quote": "ROBOTICS PROJECTS",
+      "issue": "The order buries the strongest robot-software evidence. The section heading sits 65% down the page, so the C++/Eigen EKF, the QP controller and the embedded C++ controller all fall in the bottom third. The page's vertical midpoint lands on 'Caterpillar (via Purdue Data Mine) / Machine Learning Researcher' (paint-consumption forecasting), and the gel lab follows it. So 5 of the 6 middle lines of prime reading space go to the two least relevant entries. The bold 'Chortos Lab, Soft Adaptive Systems and Structures' also carries as much visual weight as 'Boston Dynamics'.",
+      "fix": "Reorder only. EXPERIENCE (Boston Dynamics) → ROBOTICS PROJECTS (Legged Robot, Active Orthosis, Asteroid Hopping) → RESEARCH (Caterpillar, Chortos), each cut to one bullet of 2 lines or fewer. Shorten the bold org name to 'Chortos Lab, Purdue' (dropping words is allowed). The EKF then starts around 40–45% down instead of 67%."
+    },
+    {
+      "severity": "major",
+      "quote": "Controls and estimation: control algorithms (PI, feed-forward, anti-windup, impedance, QP force control), model-based controller tuning, state estimation, Kalman filtering (error-state EKF), sensor fusion, observability analysis",
+      "issue": "TECHNICAL SKILLS takes 8 lines (17–31% down), the band a recruiter reads right after the name, and fills it with a comma wall. Soft entries ('control algorithms', 'model-based controller tuning', 'closed-loop simulation and validation', 'rigid-body kinematics and dynamics') repeat what the bullets already prove and push Boston Dynamics down to the one-third line. Languages, the first thing a robot-software recruiter scans for, aren't the first thing in the block.",
+      "fix": "Cut to 3 lines that lead with languages, all from SK1–SK5: 'Languages: C++17, Python, MATLAB, SQL | Robotics: Eigen, MuJoCo, FreeRTOS, ESP32-S3, error-state EKF, QP force control | Tools: Linux, Git, CMake, GoogleTest, GitHub Actions CI, PyTorch, KiCad, LabVIEW'. That frees about 5 lines and lifts Boston Dynamics into the top quarter."
+    },
+    {
+      "severity": "major",
+      "quote": "whole page",
+      "issue": "Nothing tells the recruiter what he's applying for. 'Summer 2027' appears nowhere, and no line names controls / robot software as the target. The only role label near the top is the BD title, 'Sensors and Perception Co-Op', which frames him as a perception person.",
+      "fix": "Add one line under the contact block, worded from H3: 'Seeking Summer 2027 internships in robot software and controls (C++, Python, state estimation)'. Pay for it with the lines freed in the skills block. Keep the BD title verbatim."
+    },
+    {
+      "severity": "major",
+      "quote": "Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer",
+      "issue": "The code link, the thing that sets this page apart for a software screen, is in 9 pt on the third header line. It isn't a live link: the PDF has no /Annots, so nothing on the page is clickable. Nothing beside the EKF or orthosis entries says the code and tests are public.",
+      "fix": "Make the URL a real hyperlink in the docx before export. On the project heading, replace the 'Personal Project' tag with the repo from H2, giving 'Legged Robot State Estimation and Control | github.com/tmayer2112-ui/Troy_Mayer'. If that doesn't fit on the line, use '| C++ code + tests on GitHub' and hyperlink it."
+    },
+    {
+      "severity": "major",
+      "quote": "Developing rigid-body kinematics and dynamics for Atlas impacts: floating-base forward kinematics (quaternions, Rodrigues' rotations, velocity composition) from joint encoders maps impacts onto the robot mesh, and Khatib's operational-space effective mass estimates impact energy.",
+      "issue": "This is the most-read bullet on the page, and it's a 3-line, 40-word sentence. The grammatical subject is a noun pile with a parenthetical, and the verbs ('maps', 'estimates') don't arrive until halfway through line 2. At a skim, it reads as a jargon dump.",
+      "fix": "Two lines, verbs first (from BD1, BD2, BD4): 'Mapping Atlas impacts onto the robot mesh with floating-base forward kinematics from joint encoders, and estimating impact energy from Khatib's operational-space effective mass.' Keep 'quaternions, Rodrigues' rotations' for the interview."
+    },
+    {
+      "severity": "major",
+      "quote": "State estimation: built a contact-aided error-state Kalman filter in C++/Eigen",
+      "issue": "The run-in labels ('State estimation:', 'Verification:', 'Control:', 'Embedded real-time control:', 'Signal processing:', 'Motion control and optimization:') are the right skim anchors, but they're set in body weight, so the eye slides past them. The BD bullets have no labels at all, which is inconsistent. Apart from org names and section headings, no word on the page stands out.",
+      "fix": "Bold the run-in labels, or bold the two phrases that matter most: 'error-state Kalman filter in C++/Eigen' and '1 kHz PI velocity controller in C++'. If bolding them makes the page noisy, drop the labels and use the characters to remove widows."
+    },
+    {
+      "severity": "major",
+      "quote": "Control: ran walking and 500 Hz QP force-balance controllers on the estimate with 0 falls in 5 × 60 s walks (QP after a 4 s startup turn); the QP controller cut ground-truth velocity-tracking error from 0.169 to 0.091 m/s.",
+      "issue": "This is number soup. The Legged Robot entry packs about 11 numbers into 7 lines (0.013, 1.38, ~20 µs, 1 kHz, 1e-13, 500 Hz, 0, 5 × 60 s, 4 s, 0.169, 0.091), so a recruiter can't tell which one is the headline. '(QP after a 4 s startup turn)' and 'within 1e-13' can't be parsed at speed. The recognizable hook from FACTS LR9, 'MIT Cheetah 3 style', is missing.",
+      "fix": "Let 0.013 vs 1.38 m/s be the single headline. Change 'within 1e-13' to 'matched a Python reference' (LR4). Make the Control bullet (LR7 + LR9): 'Control: walking controller on the estimate completed 5 × 60 s walks with 0 falls; built a 500 Hz MIT Cheetah 3-style QP force-balance controller (0.091 vs 0.169 m/s tracking for a scripted trot, ground truth fed).' Or drop the 0.169/0.091 comparison and keep it for the interview."
+    },
+    {
+      "severity": "major",
+      "quote": "whole page",
+      "issue": "The page is too dense to skim: 647 words, 57 lines, 17 bullets (6 of them 3 lines long), 10 pt Liberation Serif, about 0.4 in top and bottom margins, 0.55 in side margins, and no space between entries. It reads as one gray block, so the skim has no resting points.",
+      "fix": "Aim for about 500 words and no 3-line bullets. Use the skills cut, put Caterpillar on one 2-line bullet, apply the BD bullet 1 rewrite, and remove widows. Spend the savings on the target line and 2–3 pt of space above each entry heading. All of this is cutting and rewording; it stays one page."
+    },
+    {
+      "severity": "minor",
+      "quote": "in ~20 µs per real-time update.",
+      "issue": "Widows and orphans waste lines that are needed elsewhere: 'update.' (EKF bullet), '3.3% cycle-time reduction.' (Caterpillar), 'monitors, a hardware watchdog, and a kill switch.' (orthosis), 'operational-space effective mass estimates impact energy.' (BD), and the skills overflows 'embedded (FreeRTOS, ESP32-S3)' and 'LabVIEW, DAQ, CATIA, NX, Creo, FEA'.",
+      "fix": "Change 'in ~20 µs per real-time update' to 'at ~20 µs per update' (LR3). In the orthosis bullet, change 'designed and implemented' to 'built' and '..., with 10 fault monitors, a hardware watchdog, and a kill switch' to '; 10 fault monitors, watchdog, kill switch' (OR4). Trimming the other widows recovers 3–4 lines."
+    },
+    {
+      "severity": "minor",
+      "quote": "Built LSTM and XGBoost machine learning models forecasting next-day paint consumption from five years of data, with Monte Carlo confidence intervals, achieving a 4.7% reduction in material usage; Python data pipelines contributed to a 3.3% cycle-time reduction.",
+      "issue": "One 3-line bullet with a widow joins two results with a semicolon. It's the least robotics-relevant entry, and it sits at the page's midpoint.",
+      "fix": "Two lines (CAT1, CAT2): 'Built LSTM and XGBoost models forecasting next-day paint consumption with Monte Carlo confidence intervals, achieving a 4.7% reduction in material usage.' Drop the 3.3% clause, or keep it only if the line fits."
+    },
+    {
+      "severity": "minor",
+      "quote": "Purdue University, School of Mechanical Engineering and School of Science",
+      "issue": "The longest bold line in the top third is department names, and 'Clubs: Club Swimming, House Band' sits in prime space where a robotics recruiter looks for signal.",
+      "fix": "Shorten it to 'Purdue University' (dropping words is allowed by E1). Keep the degrees, May 2028 and the GPA, since two listings have 3.0 cutoffs. Drop the clubs or move them to the end of the line."
+    },
+    {
+      "severity": "minor",
+      "quote": "Sensors and Perception Co-Op, Atlas",
+      "issue": "'Atlas', the most memorable word on the page, is the last word of a non-bold italic line, so the bold line a skimmer reads says only 'Boston Dynamics'.",
+      "fix": "Move it onto the bold line as 'Boston Dynamics, Atlas', with 'Sensors and Perception Co-Op' as the italic title (the same fact as the FACTS heading 'Sensors and Perception Co-Op – Atlas')."
+    },
+    {
+      "severity": "minor",
+      "quote": "Data, ML and hardware: PyTorch, XGBoost, LSTM, Pandas, SciPy, Flask, Plotly, SQLite, Snowflake | KiCad, LabVIEW, DAQ, CATIA, NX, Creo, FEA",
+      "issue": "This is a grab bag joined by a pipe. LSTM is a model architecture, not a tool. Snowflake, NX and Creo are noise for a robot-software screen and dilute the controls signal in the most-read block.",
+      "fix": "Drop LSTM, Snowflake, NX and Creo here; keep CATIA, which the BD work uses (BD10). Fold what's left into the 3-line skills block from the second flag."
+    }
+  ],
+  "top3": [
+    "Reorder so ROBOTICS PROJECTS (C++/Eigen EKF, QP controller, embedded C++ controller) comes right after Boston Dynamics, and drop Caterpillar and Chortos to the bottom as one-bullet entries. The EKF currently starts 67% down, below a paint-forecasting job, where no six-second skim reaches it.",
+    "Shrink TECHNICAL SKILLS from 8 lines to 3 that lead with 'C++17, Python'. Use the freed space for a one-line target, 'Seeking Summer 2027 internships in robot software and controls' (H3), so the role fit is stated and Boston Dynamics moves up into the top quarter.",
+    "Make the strongest signals findable: a live hyperlink and a github.com/tmayer2112-ui/Troy_Mayer pointer on the Legged Robot heading; a 2-line, verb-first BD bullet 1; bold run-in labels; and fewer numbers per bullet (one headline result each, with 'MIT Cheetah 3-style' surfaced)."
+  ]
+}
