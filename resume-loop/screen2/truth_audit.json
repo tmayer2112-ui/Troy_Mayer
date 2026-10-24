@@ -1,0 +1,81 @@
+{
+  "Q": {
+    "verdict": "PASS",
+    "issues": [
+      {
+        "severity": "NIT",
+        "line": "classical feedback control",
+        "problem": "The phrase appears in no source. It generalizes skills that are on record (PI + feed-forward control, IMC-tuned PI, the PD/PI loops in the trot controller), so it is supported rather than invented, but the source wording is more specific and safer.",
+        "source": "index.html Skills: 'PI + Feed-Forward Control'; firmware/README.md: 'PI gains use IMC tuning'",
+        "fix": "PI + feed-forward control"
+      },
+      {
+        "severity": "NIT",
+        "line": "Mapping Atlas impacts onto the robot mesh with floating-base forward kinematics from joint encoders and exact rigid-body velocity composition",
+        "problem": "This merges two facts. FK from encoders maps impacts onto the mesh. Exact rigid-body velocity composition computes limb velocities at impact, which feed the energy estimate, not the mesh mapping.",
+        "source": "master_resume_2026-10-22.txt: 'Mapping impacts onto the robot's mesh with encoders and forward kinematics, estimating their energy from Khatib's operational-space effective mass and an OLS velocity fit'; index.html: 'forward kinematics to compute limb velocities at impact ... Velocities come from exact rigid-body velocity composition'",
+        "fix": "Mapping Atlas impacts onto the robot mesh with floating-base forward kinematics from joint encoders; estimating impact energy from limb velocities (exact rigid-body velocity composition), operational-space effective mass and an OLS velocity fit."
+      },
+      {
+        "severity": "NIT",
+        "line": "every change landed after bit-identical regression checks",
+        "problem": "The site attaches this practice to the delta-v metric work, as checks 'across the full event table'. That table is the pipeline's output, so the claim is defensible here, but 'every change' to a pipeline and dashboard reads a little broader than the source.",
+        "source": "index.html (BD bullet on the delta-v metric): '...quantified the metric's noise floor with a null-control experiment, and landed every change only after bit-identical regression checks across the full event table.'",
+        "fix": "...used by engineers during testing; every change landed only after bit-identical regression checks across the full event table."
+      },
+      {
+        "severity": "NIT",
+        "line": "Verified with 26 GoogleTest cases (Jacobians against finite differences, C++/Python parity to 1e-13)",
+        "problem": "The count is correct: 5 invariants + 4 TEST_P x 5 seeds + 1 parity = 26. However, the GoogleTest parity test only asserts < 1e-9 on a 3 s fixture. The 1e-13 figure is the measured max position difference on the 60 s log (metrics.json; attitude 1.2e-12). claims.json does cite test_parity.cpp as evidence for 'to 1e-13', so this is acceptable.",
+        "source": "quadruped-eskf/cpp/tests/test_parity.cpp: EXPECT_LT(max_p, 1e-9); results/metrics.json parity_python_vs_cpp: max_abs_dp_m 1.35e-13, max_dtheta_rad 1.18e-12; claims.json 'parity': 'C++ matches the Python reference to 1e-13 on a recorded walk'",
+        "fix": "Verified with 26 GoogleTest cases (Jacobians against finite differences, C++/Python parity); C++ matches the Python reference to 1e-13 on a recorded walk."
+      },
+      {
+        "severity": "NIT",
+        "line": "Traced a ~4° lean to weak tilt observability on straight walks and fixed it with a 4 s startup turn",
+        "problem": "The ~4° lean exists only in closed loop with the controller fed the estimate (4.1° vs 1.15° fed ground truth). This bullet comes before the 'Closed the loop' bullet and doesn't say so. That doesn't inflate the claim, but the condition belongs with the number.",
+        "source": "quadruped-eskf/README.md Closing the loop: 'Mean lean, first straight segment ... 1.15° [truth] | 4.1° (3.3–6.3°) [estimate]'; claims.json closed_loop_lean: 'about 4° lean on a straight walk when fed the estimate'",
+        "fix": "With the controller fed the estimate, traced a ~4° lean to weak tilt observability on straight walks and fixed it with a 4 s startup turn; ..."
+      },
+      {
+        "severity": "NIT",
+        "line": "0.8% speed error lifting at 15°/s vs. 98% feed-forward-only",
+        "problem": "This matches firmware/README.md and index.html. Note that firmware/results/metrics.json, which uses a different averaging window in demo.cpp, gives 0.133 °/s of 15 °/s = 0.89%, which would round to 0.9%. No change is required. Just be aware that the sources disagree slightly.",
+        "source": "firmware/README.md: 'Lift / lower at ±15 °/s, closed loop | 0.8% / 0.3%'; firmware/results/metrics.json: lift_15dps_steady_error_closed_dps 0.133, ff_only 14.733 (98.2%)",
+        "fix": "Keep as is (README-backed), or write '<1% speed error'."
+      },
+      {
+        "severity": "NIT",
+        "line": "Wrote the firmware around a pinned 1 kHz FreeRTOS task, an IRAM-safe encoder ISR, 10 latching fault monitors, a hardware watchdog, and a kill switch",
+        "problem": "Every element is verified: the pinned 1 kHz task, the IRAM-safe ISR, the hardware task watchdog, the kill switch, and 10 latching monitors in orthosis_core.h (6 in supervise() + 4 in superviseMotion()). The firmware has never run on the board, though, and nothing on this line says so. Bullet 1's 'for an ESP32-S3 ... co-simulated' frames it adequately. Stating it outright would be safer.",
+        "source": "firmware/README.md: 'Status: designed and verified in simulation. It has not run on the board yet: the v2 PCB isn't fabricated.'",
+        "fix": "Wrote the simulation-verified firmware (not yet run on the board) around a pinned 1 kHz FreeRTOS task, ..."
+      },
+      {
+        "severity": "NIT",
+        "line": "lifting emulated 11-class cross-day decoding from 31% to 87% on 115 days of real EMG",
+        "problem": "The numbers are supported: v1 envelope 30.8%, v2 87.3%, 115 days kept, 11 classes, emulation stated. The data, though, comes from a single subject in a public dataset (LibEMG MultiDay), and the decoder README stresses that every accuracy is a single-subject number.",
+        "source": "orthosis-emg-decoder/README.md: '1 subject, 121 recording days'; 'One subject. Every accuracy here is a single-subject number, not a population estimate.'",
+        "fix": "...lifting emulated 11-class cross-day decoding from 31% to 87% on 115 days of one subject's real EMG."
+      },
+      {
+        "severity": "NIT",
+        "line": "with hops sized in MuJoCo simulation",
+        "problem": "The past participle can read as finished work. The master describes the MuJoCo hop sizing as ongoing, and the project started in Oct 2026 with no results.",
+        "source": "master_resume_2026-10-22.txt: 'Simulating it in MuJoCo to size each hop, comparing risk-limited rules...'",
+        "fix": "...and reaction-wheel attitude control, sizing each hop in MuJoCo simulation."
+      }
+    ],
+    "note": "The text layer matches the rendered PDF exactly (1 page). All hyperlinks resolve to real targets: origin is github.com/tmayer2112-ui/Troy_Mayer, quadruped-eskf/ exists on main (origin/main == main), docs/index.html exists for Pages, and the LinkedIn and mailto links match the master. Numbers checked against source files: 0.013 m/s (10-seed mean 0.0128), 1.38 m/s, ~20 µs median (p50 18.2 µs), 26 C++ GoogleTest cases, 0 warnings flags in CMakeLists, 0/5 falls and 0.173 vs 0.169 m/s (within 0.004), 4.1° lean and 1.16° after the turn, 2 cm/s slip, 6.6° yaw at 10 ms force-only, NNLS 500 Hz, 26 firmware tests + ESP32-S3 compile in firmware.yml, 10 fault monitors, 103 to 43 ms with all three causes credited, and 31% to 87% emulated. Simulation, emulation and schematic qualifiers are present throughout, and the closed loop is correctly described as Python simulation. Dates, titles, GPA 3.32 and affiliations match the master. Emerson comes from index.html, which the master omits but does not contradict."
+  },
+  "P": {
+    "verdict": "PASS",
+    "issues": [],
+    "note": "audited in round 1"
+  },
+  "R": {
+    "verdict": "PASS",
+    "issues": [],
+    "note": "audited in round 1"
+  }
+}
