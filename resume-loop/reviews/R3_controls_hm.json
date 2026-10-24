@@ -1,0 +1,118 @@
+{
+ "lens": "controls_hm",
+ "verdict": "borderline",
+ "would_ask_about": [
+  "ESKF: why error-state; how planted feet are added to the state at touchdown and marginalized at liftoff; how Q/R were set from the BMI088-class noise model (and why a tutorial Q = 0.01*I loses attitude).",
+  "Observability: derive the four unobservable directions; why tilt is only weakly observable on a straight walk, and why a 4 s startup turn fixes it. The resume's '(QP after a 4 s startup turn)' will trigger this question whether Troy wants it or not.",
+  "QP force-balance: the single-rigid-body formulation, how friction limits become an NNLS problem, why 500 Hz, what language it runs in, and whether Troy wrote it or ran an existing controller ('ran' is ambiguous).",
+  "Why compare the QP against a scripted trot, and what the commanded speed was. 0.169 m/s RMSE means little without the command.",
+  "BD effective mass: write Lambda = (J M^-1 J^T)^-1. Where M and J come from, and how the OLS velocity fit turns effective mass into impact energy.",
+  "Delta-v metric: why an integral metric survives band-limited sensors that clip peaks; Butterworth characterization; the null-control noise floor.",
+  "Orthosis PI: IMC tuning from a first-order motor model, which anti-windup scheme, why feed-forward alone gives 98% error, and whether the loop has ever spun a real motor.",
+  "EMG estimator: what is Bayesian about it, the 20 ms onset confirm, and the latency vs. false-start trade-off.",
+  "Timing: is ~20 us a median on a desktop host? What are the worst case and jitter, and is the loop hard or soft real time?"
+ ],
+ "flags": [
+  {
+   "severity": "major",
+   "quote": "Embedded real-time control: designed and implemented a 1 kHz PI velocity controller in C++ on an ESP32-S3",
+   "issue": "This reads as a controller running on hardware. The firmware README says it has never run on a board: verified in simulation, v2 PCB not fabricated. Only the '(0.8% ... in simulation)' parenthetical hints at this. The fault monitors, watchdog and kill switch read as hardware-tested too. When an HM finds this out in a screen, it makes every other claim on the page suspect. The skills line 'real-time embedded (FreeRTOS, ESP32-S3)' inherits the same problem.",
+   "fix": "Say 'for an ESP32-S3', not 'on', and mark sim once, briefly (OR2, OR5, OR8): 'Embedded control: 1 kHz PI velocity loop in C++17 for an ESP32-S3 FreeRTOS task (ESP32-S3 build in CI) ...'. Put the co-simulation framing from the next flag in the same bullet, so 'simulation' reads as method, not apology. In skills, write 'embedded C++ (FreeRTOS, ESP32-S3)' in place of 'real-time embedded'. needs Troy: if the loop or fault monitors ever ran on the v1 board or a bench motor, say so. It would be the only hardware closed-loop result on the page."
+  },
+  {
+   "severity": "major",
+   "quote": "model-based tuned with feed-forward and anti-windup (0.8% speed error in simulation)",
+   "issue": "'Model-based tuned' is vague and ungrammatical. 0.8% has no operating condition and no baseline. Bigger miss: the hardware-free controller core is co-simulated against a motor, transmission and forearm plant model. That is exactly Tesla L04's 'controller co-simulation' and 'physics-based model of an electro-mechanical system', and the page hides it behind the word 'simulation'.",
+   "fix": "From OR2, OR3 and OR5: 'IMC-tuned from a first-order motor model with plant-inversion feed-forward and anti-windup; hardware-free core co-simulated against a motor–transmission–forearm model (15°/s forearm lift: 0.8% speed error vs. 98% with feed-forward alone); 10 latching fault monitors, hardware watchdog, kill switch.' This is about the same three lines. Be ready to explain why feed-forward alone does so badly."
+  },
+  {
+   "severity": "major",
+   "quote": "(QP after a 4 s startup turn); the QP controller cut ground-truth velocity-tracking error from 0.169 to 0.091 m/s.",
+   "issue": "Three problems. (1) The parenthetical is an unexplained caveat. It reads like a hack hiding a failure. (2) The baseline is a scripted trot, which is a low bar for a feedback controller. 'Ground-truth velocity-tracking error' also reads as error measured against ground truth, when it means both controllers were fed ground-truth state. (3) The metric that matters for an estimation project is missing: with the estimate in the loop, tracking stays within 0.004 m/s of the ground-truth-fed run (LR7). 'Ran' also leaves it unclear whether Troy wrote the controllers.",
+   "fix": "Rewrite from LR7 and LR9: 'Control: fed the estimate, the walking controller completes 5 × 60 s walks with 0 falls and tracks velocity within 0.004 m/s of the ground-truth-fed run; an MIT Cheetah 3-style QP force-balance controller (single rigid body, friction-limited foot forces as NNLS, 500 Hz) tracks at 0.091 vs. 0.169 m/s RMSE for the scripted trot (both fed ground truth).' Move the startup turn into the finding in the next flag. Use 'implemented' only after Troy confirms he wrote the gait and QP controllers (needs Troy)."
+  },
+  {
+   "severity": "major",
+   "quote": "Legged Robot State Estimation and Control | Personal Project",
+   "issue": "The strongest estimation evidence Troy has is missing: failure analysis. Tilt is only weakly observable on a straight walk (about 4° lean when fed the estimate), and a 4 s turn makes it observable (LR8). About 2 cm/s of foot slip doubles velocity error. Force-only contact with 10 ms latency costs 6.6° of yaw, and gating contact on the gait schedule removes the failure (LR6). These separate someone who understands the filter from someone who followed a tutorial, and they turn the startup-turn caveat into a finding.",
+   "fix": "Add one bullet, about two lines: 'Failure analysis: found tilt only weakly observable on a straight walk (~4° lean when fed the estimate); a 4 s startup turn makes it observable and removes the lean. ~2 cm/s of foot slip doubles velocity error; gating contact on the gait schedule removes a 6.6° yaw failure from 10 ms force-only contact latency.' Pay for the space by trimming Caterpillar and the skills Data line (see below)."
+  },
+  {
+   "severity": "major",
+   "quote": "reaching 0.013 m/s velocity RMSE vs. 1.38 m/s IMU-only, in ~20 µs per real-time update.",
+   "issue": "The headline estimation metric has no conditions: duration, number of seeds, sensor noise model. Its baseline is a strawman. Any controls HM knows unaided IMU integration diverges, so '100× better than dead reckoning' reads as padding. The bullet also leaves out the mechanism that makes it contact-aided (foot states augmented at touchdown and marginalized at liftoff). '~20 µs per real-time update' is a host-side median. To a real-time controls team, 'real-time' implies a bound on worst case and jitter, and the page can't back that.",
+   "fix": "From LR1, LR2 and LR3: '... fusing a 1 kHz BMI088-class IMU with leg kinematics, adding each planted foot to the state at touchdown and marginalizing it at liftoff; 0.013 m/s velocity RMSE over a 60 s walk (mean of 10 sensor-noise seeds); ~20 µs median step of the 1 ms budget.' Drop the IMU-only comparator, or keep it only if space allows. needs Troy: worst-case or p99 step time and the CPU, if he wants to keep the word 'real-time'."
+  },
+  {
+   "severity": "major",
+   "quote": "Developing rigid-body kinematics and dynamics for Atlas impacts: floating-base forward kinematics (quaternions, Rodrigues' rotations, velocity composition) from joint encoders maps impacts onto the robot mesh, and Khatib's operational-space effective mass estimates impact energy.",
+   "issue": "'Developing rigid-body kinematics and dynamics for Atlas' inflates the scope. It sounds like core dynamics work, but this is FK and effective mass for impact analysis. A BD-adjacent HM will notice. The sentence makes the math the subject instead of Troy. 'Quaternions, Rodrigues' rotations' are textbook primitives, so naming them reads junior. The physics is incomplete: effective mass alone doesn't give energy, which needs the OLS velocity fit (BD2). The one real technical choice, exact velocity composition instead of numerical differentiation (BD4), is left out.",
+   "fix": "From BD1, BD2 and BD4: 'Computing floating-base forward kinematics for Atlas impacts from joint encoders, with limb velocities from exact rigid-body composition (base velocity + ω × r) rather than numerical differentiation; maps each impact onto the robot mesh and estimates impact energy from Khatib's operational-space effective mass and an OLS velocity fit.' About the same length. Be ready to derive Λ = (J M⁻¹ Jᵀ)⁻¹."
+  },
+  {
+   "severity": "major",
+   "quote": "ROBOTICS PROJECTS",
+   "issue": "For a controls or estimation team, the legged ESKF + QP project and the orthosis controller are the evidence. They sit in the bottom 40% of the page, below a paint-forecasting ML role and a gel-lab bullet that carry no controls signal. A skimming HM may never reach them.",
+   "fix": "Reorder only, no new facts and no length change. Either move ROBOTICS PROJECTS (Legged first) directly under Boston Dynamics, or retitle the sections 'Robotics Experience' (BD, Legged, Orthosis, Asteroid) and 'Other Experience' (Caterpillar, Chortos)."
+  },
+  {
+   "severity": "major",
+   "quote": "whole page",
+   "issue": "Every control and estimation result on the page is in simulation or emulation. BD is data analysis and modeling, not closed-loop control. Apptronik asks for 'troubleshooting hardware' and model-based control of articulated robots, and Tesla asks for sim-to-real. Labeling each result as sim is honest, but nothing on the page shows Troy closing a loop on physical hardware.",
+   "fix": "needs Troy: any closed-loop control or estimation result measured on real hardware (orthosis motor on a bench, the hopper's pendulum landing rig, anything at BD). Until then, surface the real hardware Troy does touch, one clause each: the AH1 pendulum landing rig, 'v1 board fabricated' (OR8), and the Keyence/NI DAQ rig (CH1, CH4)."
+  },
+  {
+   "severity": "minor",
+   "quote": "control algorithms (PI, feed-forward, anti-windup, impedance, QP force control), model-based controller tuning",
+   "issue": "'Control algorithms' and 'closed-loop simulation and validation' are filler. 'Model-based controller tuning' is vague when the fact is IMC. 'Impedance' rests only on the asteroid project, a design started in Oct 2026 with no result. An HM who asks about the impedance controller will find nothing behind it. 'State estimation, Kalman filtering (error-state EKF), sensor fusion' says one thing three times.",
+   "fix": "From SK2, OR2, LR1 and LR5: 'Controls and estimation: PI with plant-inversion feed-forward and anti-windup, IMC tuning, QP force control, contact-aided error-state EKF, sensor fusion, observability analysis.' Drop 'impedance' unless Troy can defend the design in depth. Drop 'closed-loop simulation and validation'."
+  },
+  {
+   "severity": "minor",
+   "quote": "rigid-body kinematics and dynamics, floating-base forward kinematics",
+   "issue": "Tesla L04 and J&J L07 both ask for forward AND inverse kinematics, plus classical control, linear-systems analysis and stability. The page shows forward kinematics only, and no stability or frequency-domain evidence.",
+   "fix": "needs Troy: the repo's quadruped gait controller uses analytic leg IK (quadruped-eskf/python/qeskf/gait.py). If Troy wrote it, add it to FACTS and name 'analytic leg IK' in the Control bullet. The same goes for any stability-margin or frequency-response analysis of the orthosis PI loop. Add neither to the page until it is in FACTS."
+  },
+  {
+   "severity": "minor",
+   "quote": "Designed a delta-v impact-severity metric robust to sensor bandwidth limits, validating its filtering against synthetic pulses of known size and measuring its noise floor; building a physics-based MuJoCo impact simulation.",
+   "issue": "'Robust to sensor bandwidth limits' is vague. The point is that peak-based metrics fail when band-limited sensors miss the peak, and Δv doesn't. 'Validating its filtering' leaves out what was characterized (the Butterworth anti-alias filter) and how the noise floor was measured (null control). The in-progress MuJoCo sim is tacked onto an unrelated sentence.",
+   "fix": "From BD5 and BD6: 'Designed a Δv impact-severity metric that stays accurate when band-limited sensors miss the impact peak (where peak-based metrics fail); characterized its Butterworth anti-alias filter on synthetic pulses of known amplitude and its noise floor with a null-control test on quiet data.' Move 'building a physics-based MuJoCo impact simulation' (BD3) into the dynamics bullet, or cut it."
+  },
+  {
+   "severity": "minor",
+   "quote": "cut EMG-to-motion latency from 103 ms to 43 ms with a Bayesian EMG estimator",
+   "issue": "'Bayesian EMG estimator' is vague. The bullet leaves out the trade-off any estimation HM will ask about: what the faster onset cost in false positives. The answer exists (false starts 62/min to 0 with a 20 ms confirm). '26 GoogleTest tests' are the whole suite, not the latency validation, so attaching them here conflates the two.",
+   "fix": "From OR6 and OR7: 'Bayesian EMG amplitude estimator with a 20 ms onset confirm: EMG-to-motion latency 103 → 43 ms and false starts 62/min → 0, in closed-loop simulation on real recorded EMG.' Move '26 GoogleTest tests in CI' (OR5) to the controller bullet or the Verification-style clause."
+  },
+  {
+   "severity": "minor",
+   "quote": "raising cross-day gesture decoding from 31% to 87% in emulation.",
+   "issue": "A board redesign 'raising' classifier accuracy from 31% to 87% looks inflated with no ceiling. The task size (11 classes) is missing, and so is the fact that v2 is schematic-only.",
+   "fix": "From OR8 and OR9: '... raising 11-class cross-day gesture decoding from 31% to 87% in emulation (87.9% no-board ceiling).' The ceiling makes the number credible. This bullet is low priority for a controls page, so compress it before cutting anything in the legged project."
+  },
+  {
+   "severity": "minor",
+   "quote": "Motion control and optimization: designing optimized push-off control to hit a target launch speed, knee impedance control for landing, and reaction-wheel attitude control, with MuJoCo simulation comparing risk-limited hop rules.",
+   "issue": "It names three controllers, has zero results, and started this month. It reads as a wish list, and each controller is an interview question Troy may not be able to answer in depth yet. 'Optimization' twice suggests a trajectory-optimization project, which FACTS says does not exist. It also leaves out the one hardware element (the pendulum rig).",
+   "fix": "From AH1, AH2 and AH3: 'Designing push-off control to hit a target launch speed, knee impedance control for landing and reaction-wheel attitude control for a three-legged hopper; building a pendulum landing rig and a MuJoCo hop simulation.' Drop the 'Motion control and optimization:' label."
+  },
+  {
+   "severity": "minor",
+   "quote": "achieving a 4.7% reduction in material usage; Python data pipelines contributed to a 3.3% cycle-time reduction.",
+   "issue": "Off-target for controls, and it takes three lines above the controls projects. The causal claim is unclear: a forecast doesn't reduce material use by itself. An HM will ask how the 4.7% was measured, and against what.",
+   "fix": "Compress to two lines (CAT1 to CAT3): 'Built LSTM and XGBoost models forecasting next-day paint consumption from five years of data, with Monte Carlo confidence intervals; contributed to a 4.7% material-usage reduction and, through Python data pipelines, a 3.3% cycle-time reduction.' Also trim the skills Data line of items already named in bullets (Flask, Plotly, SQLite, LSTM, XGBoost) to free a line for the failure-analysis bullet."
+  },
+  {
+   "severity": "minor",
+   "quote": "observability analysis confirming position and yaw drift while roll, pitch, and velocity stay bounded.",
+   "issue": "This is imprecise. Observability analysis identifies unobservable directions, and drift is a consequence of them. The page also leaves out the specific, checkable result (exactly four unobservable directions, derived analytically and confirmed numerically), which is what shows Troy understands it.",
+   "fix": "From LR5: 'observability analysis, derived analytically and confirmed numerically: exactly four unobservable directions (position, yaw), with roll, pitch and velocity observable.'"
+  }
+ ],
+ "top3": [
+  "Sim/hardware line on the orthosis: 'implemented ... on an ESP32-S3' describes firmware that has never run on a board. Say 'for an ESP32-S3', present the hardware-free core co-simulated against a motor–transmission–forearm model as the method (this also hits Tesla's co-simulation requirement), and give 0.8% its condition and baseline (15°/s lift, vs. 98% feed-forward only). needs Troy: any closed-loop result on real hardware.",
+  "Legged project metrics need conditions and real baselines. Drop the strawman IMU-only comparator and add 60 s / 10 seeds / BMI088-class noise and the foot-state augmentation. Swap the scripted-trot comparison for the 0.004 m/s estimate-fed vs. ground-truth-fed gap. Turn the unexplained '(QP after a 4 s startup turn)' into the tilt-observability finding, add the slip and contact-latency failure analysis, and move the whole section above Caterpillar and Chortos.",
+  "BD bullet 1 overclaims 'developing ... dynamics for Atlas', makes the math the subject, and name-drops textbook primitives while leaving out the physics that makes it work. Rewrite it with Troy as the subject, the OLS velocity fit, and exact velocity composition instead of numerical differentiation (BD1, BD2, BD4)."
+ ]
+}

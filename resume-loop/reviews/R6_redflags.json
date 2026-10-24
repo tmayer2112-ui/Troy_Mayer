@@ -1,0 +1,101 @@
+{
+  "lens": "redflags",
+  "verdict": "borderline",
+  "eligibility_by_listing": {
+    "L01": "ok: 'US Citizen' satisfies the U.S. Person requirement, and May 2028 means he returns to school after the 12-week Summer 2027 term. Two caveats: 'returning to school' is only implied (May 2028 has no 'Expected'), and the co-op shows 'Present' with no end date. The preferred Simulink is absent and isn't in FACTS.",
+    "L02": "risk: GPA 3.32 clears the 3.0 minimum on sister postings, and enrolled BS is ok. But ROS/ROS 2 and MoveIt are absent (not in FACTS), 'model-based feedback control of articulated robots' and 'troubleshooting hardware' are shown only in simulation, and the posting's term is unconfirmed.",
+    "L03": "ok: May 2028 falls inside the Dec 2027 to Jun 2028 graduation window, and ME counts as a 'related field'. If a co-op pushes graduation past Jun 2028 he is out, so the date must stay accurate.",
+    "L04": "risk: May 2028 is the last month of the May 2027 to May 2028 window, so any slip disqualifies him. 'Must be returning to school' is only implied. 'Sim-to-real' and 'multibody models from scratch' have no hardware-side evidence on the page.",
+    "L05": "risk: eligibility is met (BS in engineering, C++). Planning, search and trajectory optimization have no project behind them, and FACTS forbids claiming one. The May/June to Aug/Sep cohort needs availability the page never states. Zipline allows 3 applications per 30 days, and L06 shares that limit.",
+    "L06": "ok on eligibility, since the posting excerpts list no qualifications. The page doesn't state Summer 2027 availability.",
+    "L07": "risk: the posting may have closed (Workday end date 2026-10-17). It requires a Jun 1 to Aug 20 or Jun 21 to Sep 10, 2027 commitment, and the page doesn't address either. The Sep 10 option collides with Purdue's fall start. GPA 3.32 clears the 3.0 minimum, and US Citizen clears 'work authorization without sponsorship'.",
+    "L08": "risk: ROS is a listed qualification and is absent (FACTS forbids claiming it). Path planning has no project. The page doesn't state Spring or Summer 2027 availability.",
+    "L09": "risk: the degree must be 'computer science or closely related STEM', and ME + Applied Statistics is arguable. 'At least one term left' is met by May 2028 but only implied. The preferred 'prior technical internship' is weakened because the Emerson internship is omitted. AWS is absent.",
+    "L10": "risk: the posting requires the anticipated graduation month and year. 'May 2028' is there but not labeled 'Expected'. The degree field is listed as EE/CE 'or related', and ME is arguable. 'Actively enrolled for the whole internship' is unclear while the co-op reads 'Present' with no end date. ROS and CUDA are absent."
+  },
+  "flags": [
+    {
+      "severity": "major",
+      "quote": "Jul 2026 – Present",
+      "issue": "Nothing on the page says he is available for Summer 2027. The Boston Dynamics co-op has no end date. Purdue's co-op program often runs multiple alternating rotations with the same employer, so a screener can reasonably assume he returns to BD next summer. H3 ('Open to Summer 2027 internships') is in FACTS but not on the page. J&J (fixed Jun 1 to Aug 20 / Jun 21 to Sep 10 windows) and Zipline (May/June to Aug/Sep cohort) screen on this directly.",
+      "fix": "Surface H3 under the header or on the education date line, e.g. 'Expected May 2028 | Open to Summer 2027 internships in robot software and controls'. needs Troy: the co-op end date (e.g. 'Jul 2026 – Dec 2026'), whether any BD return rotation is committed, and the exact start and end dates he can work in summer 2027."
+    },
+    {
+      "severity": "major",
+      "quote": "Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer",
+      "issue": "The linked site contradicts the page, and a screener finds that in one click. index.html says 'GPA 3.4'. Its Résumé button serves the 2026-09-30 PDF with 'GPA:3.4/4' and 'Active Orthosis ... April 2024 – Present'. The site also shows an Emerson internship that this page leaves out. A higher GPA on the site than on the resume reads as inflation.",
+      "fix": "needs Troy: before sending, update index.html and docs/index.html to 'GPA 3.32', and replace Troy_Mayer_Resume.pdf with this version. Keep the link, because it is the page's best code evidence; just make it agree with the page."
+    },
+    {
+      "severity": "major",
+      "quote": "whole page",
+      "issue": "The internship record is missing one. FACTS lists Emerson, Discrete Automation (ASCO), Mechanical and Manufacturing Engineer Intern, Florham Park, NJ, Jun 2025 – Aug 2025. Without it, Summer 2025 looks empty, the only finished corporate work is a semester Data Mine project, and L09's 'prior technical internship' looks thin. It is also the page's best real-hardware testing evidence, which the sim-heavy page needs.",
+      "fix": "Add a compact entry: 'Emerson, Discrete Automation (ASCO) | Mechanical and Manufacturing Engineer Intern | Florham Park, NJ | Jun 2025 – Aug 2025', with one bullet: 'Validated solenoid valves (HiPot to UL 429, torque, bending, impact tests) and assembled and tested 159 hydro-pump and solenoid actuators; designed and CNC-machined a rotary-valve spring canister in Creo.' That needs about 3 lines. Either cut the Asteroid entry (3 lines), or reclaim lines elsewhere. In Legged bullet 1, shorten 'per real-time update.' to 'per update.' so the one-word last line goes. Cut 'machine learning' (LSTM/XGBoost already say it) and 'of data' to bring the Caterpillar bullet to 2 lines. Drop LSTM, XGBoost, Flask, Plotly and SQLite from the Data skills line, since the bullets already show them."
+    },
+    {
+      "severity": "major",
+      "quote": "Asteroid Hopping Robot | Independent Research, Purdue University & UC3M (Madrid)",
+      "issue": "The entry is dated 'Oct 2026 – Present'. It started this month and has no results. It runs alongside a full-time co-op in Waltham, MA and a personal project that ended this month, at a Purdue (Indiana) and Madrid affiliation. That is three places at once and three entries active in October 2026, which reads as padding or overcommitment. 'designing optimized push-off control' sounds finished when nothing is. The page also dropped AH1 (building the physical robot and the pendulum landing rig), which is this entry's only hardware angle. 'UC3M' is an unexplained abbreviation.",
+      "fix": "Preferred under this lens: cut the entry and use its 3 lines for Emerson. If it stays, use the FACTS-true in-progress wording with the hardware: 'Building a three-legged hopping robot and a pendulum landing rig; designing push-off control optimized to hit a target launch speed, knee impedance control for landing and reaction-wheel attitude control, sized in MuJoCo.' Spell out 'Universidad Carlos III de Madrid' if space allows. needs Troy: confirm it is part-time or remote alongside the co-op, and that BD permits it."
+    },
+    {
+      "severity": "major",
+      "quote": "simulated Unitree Go1 in MuJoCo",
+      "issue": "Every controls and estimation number on the page comes from simulation or emulation: the EKF RMSE, 0 falls, 0.091 m/s, 0.8% speed error, 103 to 43 ms, 31% to 87%. No line shows a control loop closed on real hardware. L02 asks for 'troubleshooting hardware', L04 for sim-to-real, and L07 for control of real robotic systems. The only real-robot data on the page is BD log analysis.",
+      "fix": "Keep every sim/emulation label (FACTS truth guard), but add the truthful hardware facts the page omits: 'v1 board fabricated' (OR8); BD10, CATIA fixtures, mounts and protective hardware for standalone impact testing (on U, but dropped here); Emerson's valve and actuator testing (EM1, EM3); and AH1's physical robot and rig if Asteroid stays. needs Troy: any controller or firmware result measured on real hardware, if one exists (none is in FACTS)."
+    },
+    {
+      "severity": "major",
+      "quote": "Software: C++17, Python, MATLAB, SQL, Linux, Git, CMake, GoogleTest unit testing, GitHub Actions CI, real-time",
+      "issue": "Several listed requirements are missing, and keyword screens can knock the page out on them. ROS is a stated qualification for L08 and is listed for L02 and L10. Simulink is preferred for L01. Rust or planning experience is wanted for L05. FACTS forbids claiming any of these, so the gap can't be closed truthfully on the page.",
+      "fix": "needs Troy: any genuine ROS/ROS 2 or Simulink use. Otherwise don't add them. Accept the gap, deprioritize L08, and for L02 and L10 lean on the C++/Linux/real-time/MuJoCo evidence that is already there."
+    },
+    {
+      "severity": "minor",
+      "quote": "Led a 5-engineer team; redesigned the 4-channel EMG board in KiCad (INA333, right-leg drive, ISO7763 isolation),",
+      "issue": "This hides two things. The team scope is unclear: it could mean the whole orthosis project or only the electronics subteam, and nothing says how long he led, since the entry spans Apr 2024 – May 2026. 'Redesigned the board' plus a decoding gain reads like a built v2 board, but the v2 is schematic-only and only v1 was fabricated. An interviewer who asks to see the v2 board will catch it.",
+      "fix": "Use OR1's scope: 'Led the 5-engineer electronics team.' Then use OR8: 'redesigned the 4-channel EMG board in KiCad (v2 schematic; v1 fabricated)', keeping 'in emulation' on the 31% to 87% result. needs Troy: the dates of the lead role, if shorter than the entry's span."
+    },
+    {
+      "severity": "minor",
+      "quote": "0 falls in 5 × 60 s walks",
+      "issue": "'Simulated' appears only in bullet 1 of the project. In the Control bullet, '0 falls' and the velocity-tracking numbers can read as a hardware result to a skimmer. The FACTS truth guard says to say 'simulated'.",
+      "fix": "Change it to '0 falls in 5 × 60 s simulated walks'."
+    },
+    {
+      "severity": "minor",
+      "quote": "May 2028",
+      "issue": "The date isn't labeled as expected, and NVIDIA (L10) requires the anticipated graduation month and year. 'Returning to school' (L01, L04) and 'one term left' (L09) are only implied. The page also shows no class standing or coursework. NVIDIA names relevant coursework and Amazon asks for data structures and algorithms, and FACTS has none to add.",
+      "fix": "Change it to 'Expected May 2028'. needs Troy: relevant coursework (e.g. data structures, controls, dynamics), if he wants it on the page. FACTS currently says not to add any."
+    },
+    {
+      "severity": "minor",
+      "quote": "GPA 3.32/4",
+      "issue": "It clears the 3.0 minimum on the Apptronik and J&J sister postings, but it sits below the informal 3.5 screen at high-volume programs (Tesla, NVIDIA, Anduril). It also invites a check against the 3.4 on his portfolio (see the portfolio flag).",
+      "fix": "Keep it on versions for listings with a stated 3.0 minimum (L02, L07); leaving it off there invites an assumption of below 3.0. On versions for L04, L05, L06, L09 and L10, which state no cutoff, dropping it is truthful and allowed. Either way, fix the site to match."
+    },
+    {
+      "severity": "minor",
+      "quote": "Legged Robot State Estimation and Control | Personal Project",
+      "issue": "Legged-robot state estimation done on personal time (Aug–Oct 2026) during a full-time Atlas co-op. A competitor (Apptronik, Tesla Optimus) may wonder about IP overlap with BD. Together with the Asteroid entry, almost all of the robotics-controls story dates from the last three months, which can read as resume-building for the cycle.",
+      "fix": "Label it 'Personal Project (open source, simulated Unitree Go1)'. That is truthful per H2, which says the code is public, and it signals no BD data or code. Keep the orthosis (Apr 2024 – May 2026) on the page as the long-running controls work."
+    },
+    {
+      "severity": "minor",
+      "quote": "Mountainside, NJ 07092",
+      "issue": "All ten jobs are on site in CA, TX, MA or WA. The header shows only a NJ home address while he works in Waltham, MA, and his own portfolio lists 'Waltham, MA · West Lafayette, IN'. A screener can't tell where he is or whether he'll relocate. For L09 (Westborough/North Reading, MA), the current MA presence goes unseen.",
+      "fix": "needs Troy: decide whether the header shows his current location (Waltham, MA, during the co-op) and whether to add 'Open to relocation'. Neither is in FACTS H1."
+    },
+    {
+      "severity": "minor",
+      "quote": "linkedin.com/in/troyarkin",
+      "issue": "The handle doesn't match the name 'Troy Mayer'. A screener may think the link is wrong or belongs to a different name. If LinkedIn still shows GPA 3.4 or 'Present' on the orthosis, that is another contradiction with the page.",
+      "fix": "needs Troy: confirm the URL resolves to his profile, that the profile's GPA (3.32) and dates (orthosis ended May 2026, co-op Jul 2026 start) match this page, and consider a custom URL that matches his name."
+    }
+  ],
+  "top3": [
+    "Summer 2027 availability is invisible. The BD co-op reads 'Jul 2026 – Present' with no end date, and Purdue co-ops often return to the same employer. 'May 2028' isn't labeled 'Expected', and FACTS H3 ('Open to Summer 2027 internships in robot software, controls and data') is not on the page. Add the H3 line and 'Expected May 2028'. needs Troy: the co-op end date.",
+    "The header link contradicts the page in one click. The portfolio says 'GPA 3.4' (page: 3.32), its Résumé PDF shows the orthosis as 'April 2024 – Present', and it lists an Emerson internship this page leaves out. needs Troy: update index.html, docs/index.html and Troy_Mayer_Resume.pdf before any application goes out.",
+    "The record looks thin and simulation-only. The Emerson internship (Jun–Aug 2025, real hardware validation) is missing. Every controls number is from simulation or emulation, and the v2 board is schematic-only. The Asteroid entry started this month with no results, alongside a full-time co-op. Add Emerson in the Asteroid entry's 3 lines (or in reclaimed widow lines), and add 'v1 fabricated' and the BD fixture work (BD10) as hardware evidence."
+  ]
+}

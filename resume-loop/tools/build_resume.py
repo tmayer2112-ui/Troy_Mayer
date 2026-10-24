@@ -31,6 +31,31 @@ def add_runs(p, text, size, bold=False, italic=False):
         r.italic = italic
 
 
+def add_link(p, text, url, size, italic=False):
+    """A real, clickable hyperlink run (Word and the exported PDF both keep it)."""
+    r_id = p.part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+                            is_external=True)
+    h = OxmlElement("w:hyperlink"); h.set(qn("r:id"), r_id)
+    r = OxmlElement("w:r"); rPr = OxmlElement("w:rPr")
+    sz = OxmlElement("w:sz"); sz.set(qn("w:val"), str(int(size * 2))); rPr.append(sz)
+    if italic:
+        rPr.append(OxmlElement("w:i"))
+    r.append(rPr)
+    t = OxmlElement("w:t"); t.text = text; t.set(qn("xml:space"), "preserve"); r.append(t)
+    h.append(r); p._p.append(h)
+
+
+def add_items(p, items, size, sep=" | "):
+    """Contact/link items: plain strings, or {"text", "url"} for a hyperlink."""
+    for i, it in enumerate(items):
+        if i:
+            add_runs(p, sep, size)
+        if isinstance(it, dict):
+            add_link(p, it["text"], it["url"], size)
+        else:
+            add_runs(p, it, size)
+
+
 def tight(p, before=0, after=0, line=1.0):
     pf = p.paragraph_format
     pf.space_before, pf.space_after, pf.line_spacing = Pt(before), Pt(after), line
@@ -94,9 +119,9 @@ def build(spec, out_dir):
 
     p = doc.add_paragraph(); tight(p); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     add_runs(p, spec["name"], st["name"], bold=True)
-    for line in [" | ".join(spec["contact"])] + ([" | ".join(spec["links"])] if spec.get("links") else []):
+    for items in [spec["contact"]] + ([spec["links"]] if spec.get("links") else []):
         p = doc.add_paragraph(); tight(p); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        add_runs(p, line, st["contact"])
+        add_items(p, items, st["contact"])
     if spec.get("summary"):
         p = doc.add_paragraph(); tight(p, before=4); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         add_runs(p, spec["summary"], st["body"], italic=spec.get("summary_italic", False))
@@ -111,6 +136,9 @@ def build(spec, out_dir):
                 if e.get("role"):
                     add_runs(p, " | ", st["body"])
                     add_runs(p, e["role"], st["body"], italic=True)
+                if e.get("link"):  # {"text", "url"} shown after the role
+                    add_runs(p, " | ", st["body"])
+                    add_link(p, e["link"]["text"], e["link"]["url"], st["body"], italic=True)
                 add_runs(p, "\t" + e.get("dates", ""), st["body"])
             elif e.get("org"):
                 p = doc.add_paragraph(); tight(p, before=1); right_tab(p, text_w)

@@ -1,0 +1,107 @@
+{
+  "lens": "software",
+  "verdict": "borderline",
+  "flags": [
+    {
+      "severity": "major",
+      "quote": "Portfolio and code: tmayer2112-ui.github.io/Troy_Mayer",
+      "issue": "The only code link goes to the GitHub Pages portfolio, and that site has no link to github.com or to any source file (grep of index.html and docs/index.html finds none). Pages publishes only /docs, which holds index.html and result figures, so no code can be reached from this URL. The label promises 'code' and the link doesn't deliver it, so an SWE interviewer who clicks can't check any C++, GoogleTest or CI claim. The PDF also has no clickable links at all (pdfinfo -url lists none).",
+      "fix": "Use the repo URL from H2: 'linkedin.com/in/troyarkin | github.com/tmayer2112-ui/Troy_Mayer | tmayer2112-ui.github.io/Troy_Mayer'. It fits on the existing header line. Make all three real hyperlinks in the PDF. Optional: tag each project header with its folder ('quadruped-eskf/', 'firmware/'). Separately, and not a resume claim: needs Troy to add a repo link to the site."
+    },
+    {
+      "severity": "major",
+      "quote": "Portfolio and code",
+      "issue": "Once the link does reach the repo, the root of main looks like a website dump, not a software portfolio. It holds about 20 loose images (image_041273.png, image_04a4f7.png ...), index.html and sync-docs.sh, with no top-level README. Numba cache files (firmware/analysis/__pycache__/*.nbc, *.nbi) are committed. Only firmware/ has CI (.github/workflows/firmware.yml). The 26 GoogleTest and 29 pytest tests in quadruped-eskf and the decoder's tests run in no workflow, while the skills line advertises 'GitHub Actions CI'.",
+      "fix": "needs Troy (repo work, no new resume claim): add a root README that indexes firmware/, quadruped-eskf/ and orthosis-emg-decoder/ with their build and test commands; move the images under assets/; git rm --cached the __pycache__ files; add a quadruped-eskf workflow (cmake build + ctest + pytest). Until then, keep 'CI' attached only to the orthosis firmware, as the page does now."
+    },
+    {
+      "severity": "major",
+      "quote": "loop simulation on real recorded EMG with 26 GoogleTest tests in CI.",
+      "issue": "The 26 tests are the firmware's whole suite: 11 core unit tests, 14 closed-loop tests and 1 latency test in firmware/sim. Attaching them to the EMG-estimator latency claim implies 26 tests check the estimator. An interviewer who opens test_latency.cpp finds a single TEST. The placement also hides the page's best SWE fact: a controller core with no hardware dependencies, plus an ESP32-S3 build in CI (OR5).",
+      "fix": "End the signal-processing bullet at '...validated in closed-loop simulation on real recorded EMG.' Move the tests to the controller bullet in OR5's wording: 'the hardware-free controller core compiles into a motor/forearm simulator; 26 GoogleTest unit, closed-loop and real-EMG latency tests plus an ESP32-S3 build run in GitHub Actions CI.'"
+    },
+    {
+      "severity": "major",
+      "quote": "Embedded real-time control: designed and implemented a 1 kHz PI velocity controller in C++ on an ESP32-S3",
+      "issue": "firmware/README.md says the firmware has not run on the board yet because the v2 PCB isn't fabricated. 'Embedded real-time control ... on an ESP32-S3' reads as deployed firmware, and only the 0.8% figure carries 'in simulation'. An embedded or real-time SWE will ask for measured on-target loop time, ISR latency or scope captures, and Troy has none. 'Model-based tuned' is also vague.",
+      "fix": "Reword using OR2 and OR5: 'designed and implemented a 1 kHz PI velocity controller in C++17 for an ESP32-S3 (1 kHz FreeRTOS task), IMC-tuned from a first-order motor model with feed-forward and anti-windup (0.8% speed error in simulation); the hardware-free core is host-tested against a motor/forearm simulator ...'. Write 'for', not 'on'. Fund the space by trimming part numbers from the board bullet."
+    },
+    {
+      "severity": "major",
+      "quote": "in ~20 µs per real-time",
+      "issue": "LR3's 20 µs is the median, measured on a cloud Xeon VM with a non-real-time kernel. The repo's own results/logs/timing.log shows a p99.9 of about 168 µs, a max of about 4 ms and 0.13% missed deadlines. Calling a median 'per real-time update' invites a real-time C++ team (Apptronik L02) to open that log and challenge it, because real-time reviewers judge worst case, not median. Giving the statistic without saying which one reads as not knowing the difference.",
+      "fix": "Write '~20 µs median per 1 kHz update (of a 1 ms budget)', per LR3, and drop 'real-time'. needs Troy: to tell a real-time story, add to FACTS the p99 of 60 µs and the SCHED_FIFO / mlockall / absolute-deadline benchmark (quadruped-eskf/cpp/apps/bench_loop.cpp, results/timing.json)."
+    },
+    {
+      "severity": "major",
+      "quote": "Control: ran walking and 500 Hz QP force-balance controllers on the estimate",
+      "issue": "This bullet sits under a 'C++/Eigen' headline, so it reads as one integrated C++ stack. In the repo, the closed loop (python/qeskf/closed_loop.py) runs the Python ESKF with Python controllers. The README states the QP is 'Python at 500 Hz in simulation ... with no timing guarantee'. The C++ filter runs only in offline replay (called through subprocess) and in the timing benchmark. The obvious probe ('how did the C++ filter feed the 500 Hz QP?') has an awkward answer. '(QP after a 4 s startup turn)' is cryptic, and 'ground-truth velocity-tracking error' is ambiguous.",
+      "fix": "needs Troy: confirm that the controllers and closed loop are Python, and add that to FACTS so the line can say 'in Python'. Until then, don't word anything to suggest the C++ filter is in the control loop. Spell out LR9: 'QP force-balance controller (fed ground truth) tracked velocity to 0.091 vs 0.169 m/s for the scripted trot; fed the estimate after a 4 s startup turn, 0 falls in 5 × 60 s walks.'"
+    },
+    {
+      "severity": "major",
+      "quote": "of known size and measuring its noise floor; building a physics-based MuJoCo impact simulation.",
+      "issue": "The bank's only professional, process-level SWE fact is cut: BD6, 'Landed every change only after bit-identical regression checks across the full event table.' Its line goes instead to an in-progress MuJoCo sim stapled onto an unrelated metric bullet. 'Landed changes' and 'regression checks' are the words that separate someone who ships into a shared codebase from someone running notebooks. Without them, every Boston Dynamics bullet reads as analysis.",
+      "fix": "Replace the MuJoCo clause: '...validating its anti-alias filtering against synthetic pulses of known amplitude and its noise floor with a null-control test; landed every change only after bit-identical regression checks across the full event table.' (BD5, BD6). Move 'building a physics-based MuJoCo impact simulation' (BD3) to the end of the kinematics bullet, or drop it."
+    },
+    {
+      "severity": "major",
+      "quote": "ROBOTICS PROJECTS",
+      "issue": "All four jobs read as Python, MATLAB or LabVIEW data work: Flask/Plotly, SciPy curve fits, LSTM/XGBoost, a CV tracker and DAQ. The only C++ evidence is in the projects section, which starts about two-thirds down the page, below Caterpillar paint forecasting and gel DAQ. An SDE reader concludes 'mechanical engineer who scripts' before reaching any C++.",
+      "fix": "Reorder (no new claims): Education, Skills, Boston Dynamics, then this section renamed 'ROBOTICS SOFTWARE PROJECTS', then a 'RESEARCH' section holding Caterpillar and Chortos. Within each project, put the C++ line first."
+    },
+    {
+      "severity": "major",
+      "quote": "embedded (FreeRTOS, ESP32-S3)",
+      "issue": "The page tags C++ by language standard (C++17) and nothing more. It shows no design or performance depth: nothing on memory, task structure, interrupts, concurrency or algorithmic cost. The repo has that depth: no heap use in orthosis_core.h, a FreeRTOS task pinned to core 1 with xTaskDelayUntil, serial output in its own task so printing can't delay the loop, an IRAM-safe encoder ISR that reads GPIO registers directly, encoder edge-timing speed estimation (under 0.02% error vs 12–111% for per-tick counting), and an ESKF predict that exploits the structure of F (O(15²·n) instead of O(n³)) and is parity-tested against the dense version. None of it is in FACTS, so none of it can appear.",
+      "fix": "Truthful now: use OR2's '1 kHz FreeRTOS task' and OR5's hardware-free core and CI cross-compile (see the flags above). needs Troy: promote to FACTS, from firmware/README.md and quadruped-eskf/README.md, (a) the pinned 1 kHz task with serial isolated in a separate task, (b) the IRAM ISR with edge-timing velocity estimation, and (c) the O(15²·n) structured covariance predict. One clause of any of these does more for C++ depth than the whole skills line."
+    },
+    {
+      "severity": "major",
+      "quote": "whole page",
+      "issue": "Amazon Robotics (L09) lists data structures, algorithms or object-oriented design as a basic qualification. L02, L08 and L10 ask for ROS/ROS 2. L09 prefers AWS and open-source contributions. L10 names OS and data-structures coursework. None of these words appear on the page, and FACTS forbids ROS, AWS and coursework. There's also no evidence of code review, a multi-contributor codebase, or code used outside Boston Dynamics and the club.",
+      "fix": "Partly fixable with existing facts: surface BD6 (landed changes, regression checks), OR5 (hardware abstraction, CI cross-compile) and LR1 ('adds each planted foot to the state at touchdown and marginalizes it at liftoff', which shows a runtime-sized state). needs Troy: any data-structures, algorithms or OS coursework; any ROS 2 work; whether Boston Dynamics changes went through code review in a shared codebase; and the O(15²·n) predict as an algorithms signal."
+    },
+    {
+      "severity": "minor",
+      "quote": "Software: C++17, Python, MATLAB, SQL, Linux, Git, CMake, GoogleTest unit testing, GitHub Actions CI, real-time",
+      "issue": "Languages are the third skills bullet, behind two lines of research vocabulary ('model-based controller tuning', 'observability analysis', 'closed-loop simulation and validation'). Flask and SQLite, which are backend software, are filed under 'Data, ML and hardware' next to CATIA, NX, Creo and FEA, which a robot-software reader discounts. 'GoogleTest unit testing' is redundant, and NumPy (SK4) is missing.",
+      "fix": "Make this bullet 1 and split it: 'Languages: C++17, Python, SQL, MATLAB' and 'Software and tools: Linux, Git, CMake, GoogleTest, GitHub Actions CI, Flask, SQLite, FreeRTOS (ESP32-S3), Eigen, MuJoCo'. Add NumPy and scikit-learn to the data line (SK4). Shrink CAD to 'CAD/FEA: CATIA, NX, Creo', or cut it for the SDE-leaning listings."
+    },
+    {
+      "severity": "minor",
+      "quote": "within 1e-13, and observability analysis confirming position and yaw drift while roll, pitch, and velocity stay bounded.",
+      "issue": "The 'Verification' bullet holds the page's best testing evidence, but half of it is an observability math result. That dilutes the test-discipline signal and mixes software verification with estimation theory. The suite's size is also missing.",
+      "fix": "Keep this bullet about tests only: 'Verification: GoogleTest suite checks every Jacobian against finite differences; a parity test holds the C++ filter to the Python reference within 1e-13 on a recorded walk.' (LR4). Move the observability clause (LR5) to the state-estimation bullet or cut it. needs Troy: add the README's '26 C++ tests, 29 Python tests, 0 warnings under -Wall -Wextra -Wpedantic' to FACTS to give the suite a size."
+    },
+    {
+      "severity": "minor",
+      "quote": "Developing rigid-body kinematics and dynamics for Atlas impacts: floating-base forward kinematics (quaternions,",
+      "issue": "This reads as a list of textbook names (quaternions, Rodrigues, Khatib) with a tangled subject ('forward kinematics ... from joint encoders maps impacts'). Nothing says whether it's code in a production pipeline or a derivation, and no language or tool is named. The engineering choice an SWE would respect, exact rigid-body velocity composition instead of numerical differentiation (BD4), shrinks to 'velocity composition'.",
+      "fix": "'Developing floating-base forward kinematics from joint encoders that maps each impact onto the Atlas mesh, computing limb velocities by exact rigid-body composition (base velocity + ω × r) rather than numerical differentiation; estimating impact energy from Khatib's operational-space effective mass.' (BD1, BD2, BD4). needs Troy: if this code is C++ or lives in a shared, reviewed Boston Dynamics codebase, add that to FACTS. It's the biggest missing SWE signal on the page."
+    },
+    {
+      "severity": "minor",
+      "quote": "Built an impact data-analysis pipeline and Flask/Plotly dashboard on Linux covering ~28k impact events from ~900 robot",
+      "issue": "This is the page's only evidence of software that other engineers used, and it's the third Boston Dynamics bullet. For L06 (evaluation tools), L09 (fleet software) and L10 (infrastructure), it should lead.",
+      "fix": "Move it to Boston Dynamics bullet 1 or 2. Use BD7's wording: 'impact forensics pipeline ... on a Linux VM'. Keep 'used by engineers during testing' at the end."
+    },
+    {
+      "severity": "minor",
+      "quote": "Modeling hardware thermal behavior in Python (SciPy), fitting heating curves by multi-start least squares to predict",
+      "issue": "Another Python curve-fitting bullet. For robot-software reviewers it reinforces the scripting impression, and it uses two lines that BD6 and OR5 need.",
+      "fix": "Compress to one line ('Modeling unit thermal behavior in Python (SciPy, multi-start least-squares fits) to predict steady-state temperatures without full-length tests'), or cut it for the SDE-leaning listings to free the line BD6 needs."
+    },
+    {
+      "severity": "minor",
+      "quote": "Motion control and optimization: designing optimized push-off control to hit a target launch speed, knee impedance",
+      "issue": "The project started this month. It shows no code, language, tests or results, and 'designing optimized ... optimization' is redundant. Through the SWE lens it spends three lines on zero software evidence. It is also the only basis for 'impedance' in the skills line.",
+      "fix": "Compress to a single line ('Designing push-off, knee-impedance landing and reaction-wheel attitude control, with MuJoCo simulation comparing risk-limited hop rules.') or cut it for L08, L09 and L10, and use the lines for OR5 and BD6."
+    }
+  ],
+  "top3": [
+    "The code link doesn't reach any code. The Pages site has no GitHub link, and Pages serves only /docs. Switch to github.com/tmayer2112-ui/Troy_Mayer (H2) as a real hyperlink, and clean the repo before reviewers land there (needs Troy): root README, images moved to assets/, __pycache__ untracked, CI for quadruped-eskf.",
+    "The page hides its best software-engineering facts and misplaces the one it shows. Put OR5 on the controller bullet (hardware-free core host-tested against a simulator; 26 GoogleTest tests plus the ESP32-S3 build in CI) instead of hanging the 26 tests on the EMG estimator. Put BD6 (bit-identical regression checks before landing every change) in place of the in-progress MuJoCo clause.",
+    "The real-time and C++ framing claims more than the repo shows. '~20 µs per real-time update' is a median on a non-real-time VM (timing.log: max about 4 ms, 0.13% missed deadlines). The controllers that run 'on the estimate' are Python and use the Python filter. The ESP32 firmware has never run on the board. Rescope ('~20 µs median of the 1 ms budget', 'for an ESP32-S3'), and move the C++ projects above the Python-data research roles so the page doesn't read as a mechanical engineer who scripts."
+  ]
+}
