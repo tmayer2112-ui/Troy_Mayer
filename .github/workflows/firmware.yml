@@ -22,7 +22,7 @@ jobs:
 
   # The real thing: Arduino-ESP32 3.x toolchain, ESP32-S3, USB CDC on boot.
   esp32s3-compile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # ubuntu-latest (26.04) has no Python 3.12.4 for arduino/compile-sketches
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/compile-sketches@v1
