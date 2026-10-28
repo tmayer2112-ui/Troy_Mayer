@@ -5,8 +5,9 @@ BMI088-class IMU at 1 kHz with leg kinematics. It includes a Python reference an
 implementation that agree to 1e-13, a GoogleTest suite, a 1 kHz real-time loop benchmark, five
 experiments that break the filter on purpose to find where it stops working, and a closed-loop test where
 the walking controller is driven by the estimate instead of by ground truth, with either the scripted trot or a
-QP force-balance controller on the stance legs. The scripted trot is also ported to C++ and matches the
-Python controller to 1e-15 rad.
+QP force-balance controller on the stance legs. The scripted trot and the estimator-to-controller loop are also in
+C++ and match the Python versions (joint targets agree to within 1e-15 rad alone, 1e-12 rad with the filter in
+the loop).
 
 This is written as an engineering note: what the filter assumes, where it holds, where it doesn't,
 and what's next. The bugs found along the way are in [`DEBUG_LOG.md`](DEBUG_LOG.md).
@@ -26,6 +27,7 @@ and what's next. The bugs found along the way are in [`DEBUG_LOG.md`](DEBUG_LOG.
 | Deadline misses at 1 kHz, non-RT cloud VM | 0.13–0.18 % over 3 × 60 s runs (host stalls, not filter compute) | `make timing` | `timing.json` → `all_runs` |
 | Python vs C++ on the same 60 s log | max \|Δp\| 1.4e-13 m, \|Δv\| 3.3e-13 m/s | `make reproduce`, `make test` | `metrics.json` → `parity_python_vs_cpp` |
 | Trot controller, C++ vs Python, 2500 steps | max joint-target difference 8.9e-16 rad; 0 heap allocations per step | `make test` | [`cpp/tests/test_gait.cpp`](cpp/tests/test_gait.cpp) |
+| Estimator driving the trot controller, C++ vs Python closed loop, 4500 ticks | max joint-target difference 4.3e-13 rad; ~10 µs median per 1 kHz tick (build VM) | `make test` | [`cpp/tests/test_loop.cpp`](cpp/tests/test_loop.cpp) |
 | Unobservable directions, numerically | exactly 4 (3 translations + yaw) in all 30 windows tested | `make observability` | [`results/observability.json`](results/observability.json) |
 | Closed loop, controller fed the estimate, 60 s walk × 5 seeds | 0 falls; velocity tracking 0.173 m/s vs 0.169 m/s fed ground truth | `make closed-loop` | [`results/logs/closed_loop.log`](results/logs/closed_loop.log), [`closed_loop.json`](results/closed_loop.json) |
 | Same, lean on the first straight segment (before any turn) | 3.3–6.3° vs 1.15° fed ground truth; 1.15–1.17° after a 4 s turn at startup | `make closed-loop` | [lean plot](results/figures/closed_loop_lean.png) |
@@ -52,7 +54,7 @@ Tested on Ubuntu 24.04: GCC 13.3, CMake 3.28, Eigen 3.4, GoogleTest 1.14, Python
 sudo apt install build-essential cmake libeigen3-dev libgtest-dev   # CMake fetches GoogleTest if it's missing
 python3 -m pip install -r requirements.txt
 
-make build test     # 0 warnings under -Wall -Wextra -Wpedantic; 30 C++ tests, 29 Python tests
+make build test     # 0 warnings under -Wall -Wextra -Wpedantic; 33 C++ tests, 29 Python tests
 make data           # ~2 min  simulate the walks, synthesize IMU/encoder streams
 make reproduce      # ~3 min  headline numbers, RMSE table, figures, run log
 make closed-loop    # ~5 min  controller driven by the estimate vs by ground truth, push recovery
@@ -429,10 +431,31 @@ trunk height; never yaw or position). The output is 12 joint position targets.
   * joint-limit clamping is provided (`clampToJointLimits`, ranges from `go1.xml`) but not applied inside the
     controller, as in the Python reference, so the driver must call it;
   * safety: a fall detector, torque and velocity limits, an e-stop, and a stand-up and lie-down sequence;
-  * the estimator wiring: the closed-loop loop in [`closed_loop.py`](python/qeskf/closed_loop.py) exists only in
-    Python. A C++ loop would call `Eskf::step` and then `TrotController::jointTargets` every 2 ms.
   * hardware validation. Everything here is checked against the Python reference and the simulation only. Real
     contact sensing, leg flex and motor dynamics will need retuning (see [Limitations](#limitations-honestly)).
+
+**The estimator driving it, in C++.** [`loop.hpp`](cpp/include/qeskf/loop.hpp) /
+[`loop.cpp`](cpp/src/loop.cpp) (`EstimatorController`) is the C++ version of the estimate-fed loop in
+[`closed_loop.py`](python/qeskf/closed_loop.py): one `step()` per 1 kHz tick takes the newest IMU sample,
+the encoders, the sensed contact flags and the velocity command, and returns the joint targets. In order, it:
+
+1. collects the standing calibration window and, at t = 2 s, levels the filter and starts it with the
+   tilt/accel-bias-correlated P0 (`staticAlignment`, `initialCovariance`, ported from `eskf.py`);
+2. propagates with the IMU sample, then ANDs sensed contact with the gait schedule (ended 5 ms early) and
+   runs the touchdown/liftoff bookkeeping and the kinematic update;
+3. every second tick (500 Hz), feeds the controller body-frame velocity, roll/pitch, the bias-corrected gyro
+   and the kinematic trunk height, exactly as in [Closing the loop](#closing-the-loop). Before the filter
+   starts it holds a fixed level stance.
+
+* **It matches Python.** [`test_loop.cpp`](cpp/tests/test_loop.cpp) replays 4.5 s of an estimate-fed Python
+  closed-loop run (tuned filter, sensor seed 0: 2 s calibration, then 2.5 s of trotting with feet touching down
+  and lifting off) recorded by [`make_loop_fixture.py`](python/scripts/make_loop_fixture.py). Largest
+  joint-target difference: 4.3e-13 rad; estimated velocity: 5.3e-14 m/s. Dropping the gyro-bias correction
+  from the feedback gives 7.6e-4 rad and fails the test.
+* **Timing.** About 10 µs median per tick on the build VM (p99 35 µs, max 110 µs over 2500 filter ticks,
+  host-dependent) against a 1000 µs budget. Unlike the controller alone, it allocates: the filter's covariance
+  changes size at every touchdown and liftoff (`Eigen::MatrixXd`). The 1 kHz benchmark (`make timing`) measures
+  the filter on its own.
 
 The QP force-balance controller is still Python only.
 
@@ -620,13 +643,15 @@ python/qeskf/          sim, gait, IMU model, kinematics, ESKF (reference), obser
                        closed_loop (estimator inside the physics loop, feeding the controller),
                        qp_balance (QP force-balance controller for the stance legs)
 python/scripts/        generate_data, tune, reproduce, observability, experiments, closed_loop, qp_compare,
-                       timing, check_claims, debug_repro, make_parity_fixture, make_gait_fixture
+                       timing, check_claims, debug_repro, make_parity_fixture, make_gait_fixture,
+                       make_loop_fixture
 python/tests/          pytest: Jacobians vs finite differences, SPD, quaternion norm, sim/IMU alignment,
                        null space, closed-loop wiring, QP force balance (forces, torque sign, friction)
-cpp/include, cpp/src   C++17/Eigen ESKF, kinematics, SO(3), trot controller (gait)
+cpp/include, cpp/src   C++17/Eigen ESKF, kinematics, SO(3), trot controller (gait),
+                       estimator-driven control loop (loop)
 cpp/apps               qeskf_replay (offline), qeskf_bench_loop (1 kHz real-time loop)
 cpp/tests              GoogleTest: Jacobians vs finite differences, invariants, Python parity fixtures
-                       (ESKF and trot controller), IK, no-allocation check
+                       (ESKF, trot controller, closed loop), IK, no-allocation check
 results/               metrics.json, rmse_table.md, observability.json, experiments.json, closed_loop.json,
                        qp_compare.json, timing.json, tuned_params.json, logs/, figures/ (every PNG has a CSV of its plotted data)
 claims.json            every number the résumé states, mapped to the file and key that back it
