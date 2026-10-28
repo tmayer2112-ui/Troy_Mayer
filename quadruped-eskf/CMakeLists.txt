@@ -10,7 +10,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
-add_library(qeskf cpp/src/eskf.cpp cpp/src/kinematics.cpp)
+add_library(qeskf cpp/src/eskf.cpp cpp/src/kinematics.cpp cpp/src/gait.cpp)
 target_include_directories(qeskf PUBLIC cpp/include)
 target_link_libraries(qeskf PUBLIC Eigen3::Eigen)
 
@@ -31,7 +31,7 @@ if(QESKF_BUILD_TESTS)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
   endif()
-  add_executable(qeskf_tests cpp/tests/test_jacobians.cpp cpp/tests/test_invariants.cpp cpp/tests/test_parity.cpp)
+  add_executable(qeskf_tests cpp/tests/test_jacobians.cpp cpp/tests/test_invariants.cpp cpp/tests/test_parity.cpp cpp/tests/test_gait.cpp)
   target_link_libraries(qeskf_tests PRIVATE qeskf GTest::gtest_main)
   target_compile_definitions(qeskf_tests PRIVATE QESKF_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/cpp/tests/data")
   include(GoogleTest)
