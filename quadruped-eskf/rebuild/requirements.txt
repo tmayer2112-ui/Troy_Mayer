@@ -1,0 +1,3 @@
+numpy
+# optional, only for: python run.py report --plot
+# matplotlib
