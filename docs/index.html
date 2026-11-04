@@ -510,9 +510,61 @@ footer{padding:36px 0 44px;text-align:center}
 }
 #toTop.show{opacity:1;pointer-events:auto;transform:none}
 #toTop svg{width:18px;height:18px}
+
+/* ============================================================
+   POLISH: progress bar, pills, stack chips, card spotlight,
+   method flow, diagrams, lightbox
+   ============================================================ */
+#progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:1001;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,#5B9BFF,#2DD4BF);pointer-events:none}
+.pill-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+.pill-row .status-pill{margin-bottom:0}
+.status-pill.alt .live{background:#5B9BFF;animation-name:pulse2}
+@keyframes pulse2{0%{box-shadow:0 0 0 0 rgba(91,155,255,.65)}70%{box-shadow:0 0 0 9px rgba(91,155,255,0)}100%{box-shadow:0 0 0 0 rgba(91,155,255,0)}}
+@media (max-width:920px){.pill-row{justify-content:center}}
+.pl-short{display:none}
+@media (max-width:520px){.pill-row{gap:8px}.pl-full{display:none}.pl-short{display:inline}}
+.metric .v .num{font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.stack span{font-family:var(--mono);font-size:.66rem;font-weight:600;letter-spacing:.3px;padding:3px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 18%,transparent)}
+.card{position:relative}
+.card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s;
+  background:radial-gradient(360px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent) 11%,transparent),transparent 45%)}
+@media (hover:hover){.card:hover::after{opacity:1}}
+.tl-card{position:relative}
+.tl-item.now .tl-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 18px}
+.flow span{font-size:.76rem;font-weight:600;padding:5px 11px;border-radius:8px;background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent)}
+.flow i{font-style:normal;color:var(--text-3);font-weight:700}
+.shot img{cursor:zoom-in}
+.shot > svg{display:block;width:100%;height:auto;padding:20px 16px 6px}
+.dg-surface{fill:color-mix(in srgb,var(--text-3) 15%,transparent)}
+.dg-surface-line{fill:none;stroke:var(--border-strong);stroke-width:1.5}
+.dg-arc{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 6}
+.dg-escape{fill:none;stroke:var(--text-3);stroke-width:1.5;stroke-dasharray:2 5}
+.dg-body{fill:var(--bg-elev);stroke:var(--text);stroke-width:2}
+.dg-leg{fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dg-leg-old{fill:none;stroke:var(--text-3);stroke-width:1.5;stroke-dasharray:3 3;stroke-linecap:round}
+.dg-leg-new{fill:none;stroke:var(--accent-2);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.dg-wheel{fill:none;stroke:var(--accent-2);stroke-width:2}
+.dg-arrow{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dg-arrow2{fill:none;stroke:var(--accent-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dg-label{fill:var(--text-2);font-family:var(--mono);font-size:12px}
+.dg-label-sm{fill:var(--text-3);font-family:var(--mono);font-size:10px}
+.dg-accent{fill:var(--accent)}
+.dg-desc{fill:var(--text-3);font-family:var(--mono);font-size:11px}
+.dg-phase{fill:var(--text-2);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px}
+.lightbox{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:28px;background:rgba(6,9,14,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.lightbox.open{display:flex}
+.lightbox figure{max-width:min(1400px,100%);max-height:100%;display:flex;flex-direction:column;align-items:center;gap:14px}
+.lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:10px;background:#fff;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.lightbox figcaption{color:#C7D0DE;font-size:.9rem;line-height:1.55;max-width:900px;text-align:center}
+.lb-close{position:absolute;top:16px;right:16px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:1.5rem;line-height:1;cursor:pointer}
+.lb-close:hover{background:rgba(255,255,255,.16)}
+@media (prefers-reduced-motion:reduce){.card::after{transition:none}.status-pill.alt .live{animation:none}}
 </style>
 </head>
 <body>
+<div id="progress" aria-hidden="true"></div>
 
 <nav>
   <div class="nav-inner">
@@ -540,9 +592,9 @@ footer{padding:36px 0 44px;text-align:center}
 <header class="hero" id="top">
   <div class="hero-inner">
     <div class="hero-text">
-      <div class="status-pill"><span class="live"></span>Sensors &amp; Perception Co-Op on Atlas @ Boston Dynamics</div>
+      <div class="pill-row"><div class="status-pill"><span class="live"></span><span class="pl-full">Sensors &amp; Perception Co-Op on Atlas @ Boston Dynamics</span><span class="pl-short">Atlas Co-Op @ Boston Dynamics</span></div><div class="status-pill alt"><span class="live"></span><span class="pl-full">Asteroid hopper research · Purdue × UC3M</span><span class="pl-short">Asteroid hopper research · UC3M</span></div></div>
       <h1>Troy <span class="grad">Mayer</span></h1>
-      <p class="hero-lede">Mechanical Engineering and Applied Statistics student at Purdue. I work on robot kinematics, controls, and state estimation, currently building impact-analysis software for Atlas at Boston Dynamics.</p>
+      <p class="hero-lede">Mechanical Engineering and Applied Statistics student at Purdue. I work on robot kinematics, controls, and state estimation: impact analysis for Atlas at Boston Dynamics, and independent research on a three-legged asteroid hopping robot with Universidad Carlos III de Madrid.</p>
       <div class="hero-meta">
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Waltham, MA · West Lafayette, IN</span>
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>Purdue University · B.S. ME + B.S. Applied Statistics</span>
@@ -565,10 +617,10 @@ footer{padding:36px 0 44px;text-align:center}
   </div>
   <div class="metrics">
     <div class="metrics-inner">
-      <div class="metric"><div class="v">43 ms</div><div class="l">EMG-to-motion latency (sim)</div></div>
+      <div class="metric"><div class="v"><span class="num" data-to="43" data-dec="0">43</span> ms</div><div class="l">EMG-to-motion latency (sim)</div></div>
       <div class="metric"><div class="v">1 kHz</div><div class="l">Fault-gated control loop</div></div>
-      <div class="metric"><div class="v">0.013 m/s</div><div class="l">EKF velocity RMSE (sim)</div></div>
-      <div class="metric"><div class="v">87%</div><div class="l">Cross-day EMG decoding</div></div>
+      <div class="metric"><div class="v"><span class="num" data-to="0.013" data-dec="3">0.013</span> m/s</div><div class="l">EKF velocity RMSE (sim)</div></div>
+      <div class="metric"><div class="v"><span class="num" data-to="87" data-dec="0">87</span>%</div><div class="l">Cross-day EMG decoding</div></div>
     </div>
   </div>
 </header>
@@ -581,12 +633,13 @@ footer{padding:36px 0 44px;text-align:center}
         <div class="eyebrow">About</div>
         <h2 class="section-title">About me</h2>
         <p>I'm a Mechanical Engineering and Applied Statistics student at Purdue, with a minor in Economics, graduating in May 2028.</p>
-        <p>At <strong>Boston Dynamics</strong> I'm a Sensors and Perception co-op on Atlas. I build impact-analysis software: forward kinematics to compute limb velocities at impact, a delta-v impact-severity metric, and a forensics dashboard covering ~28k impact events. I also design test fixtures in CATIA for impact testing.</p>
-        <p>At <strong>Purdue ASME</strong> I lead the electronics team for an EMG-controlled arm orthosis. I redesigned its 4-channel EMG board and designed and implemented its 1&nbsp;kHz PI velocity controller in C++. On my own, I built a contact-aided error-state Kalman filter for a simulated quadruped and a QP force-balance controller that walks on its estimate.</p>
-        <p>Before that, I did LSTM forecasting for a Caterpillar paint line, computer-vision measurement for soft-robotics gels in the Chortos Lab, and valve design and testing at Emerson.</p>
+        <p>At <strong>Boston Dynamics</strong> I'm a Sensors and Perception co-op on Atlas, working on impact analysis. I estimate impact energy from Khatib's operational-space effective mass, fed by forward kinematics through the robot's joint chains, and I'm validating that model with a MuJoCo impact simulation and a pendulum-mounted test arm. I also built the forensics dashboard engineers use to inspect ~28k impacts, and I design fixtures and mounts in CATIA.</p>
+        <p>I'm also doing <strong>independent research</strong> with Purdue and Universidad Carlos III de Madrid on a three-legged asteroid hopping robot: push-off, landing and mid-flight attitude control, with each hop sized in MuJoCo.</p>
+        <p>At <strong>Purdue ASME</strong> I led the electronics team for an EMG-controlled arm orthosis. I redesigned its 4-channel EMG board and designed and implemented its 1&nbsp;kHz PI velocity controller in C++. On my own, I built a contact-aided error-state Kalman filter for a simulated quadruped, then ran a Raibert trot controller and a QP balance controller on its estimate.</p>
+        <p>Before that came LSTM and XGBoost forecasting for a Caterpillar paint line, computer-vision measurement for soft-robotics gels in the Chortos Lab, and rotary-valve design and machining at Emerson.</p>
         <div class="fact-card">
           <div class="fact-row"><div class="fact-k">Education</div><div class="fact-v">Purdue University — B.S. Mechanical Engineering, B.S. Applied Statistics, Minor in Economics · May 2028 · GPA 3.4</div></div>
-          <div class="fact-row"><div class="fact-k">Currently</div><div class="fact-v">Sensors &amp; Perception Co-Op, Atlas — Boston Dynamics (Waltham, MA)</div></div>
+          <div class="fact-row"><div class="fact-k">Currently</div><div class="fact-v">Sensors &amp; Perception Co-Op, Atlas — Boston Dynamics (Waltham, MA) · Asteroid Hopping Robot research — Purdue &amp; Universidad Carlos III de Madrid</div></div>
           <div class="fact-row"><div class="fact-k">Languages</div><div class="fact-v">English (native) · Turkish (fluent) · Spanish (fluent — NJ Seal of Biliteracy)</div></div>
           <div class="fact-row"><div class="fact-k">Status</div><div class="fact-v">Open to Summer 2027 internships in robot software, controls, and data, plus mechanical roles close to the robot</div></div>
         </div>
@@ -621,15 +674,16 @@ footer{padding:36px 0 44px;text-align:center}
           </div>
           <div class="tl-role">Sensors and Perception Co-Op — Atlas</div>
           <div class="tl-loc">Waltham, MA</div>
+          <div class="flow" aria-label="Impact analysis method"><span>Forward kinematics</span><i>→</i><span>Effective mass + velocity fit</span><i>→</i><span>Impact energy</span><i>→</i><span>Dashboard &amp; heatmap</span></div>
           <ul>
-            <li>Built an impact forensics pipeline and Flask/Plotly dashboard, deployed on a Linux VM, covering ~28k impact events from ~900 robot test logs. It runs ETL from a time-series telemetry store into a queryable SQLite cache and gives engineers a 3D impact-location heatmap (normalized by per-facet solid angle, so it reads as density rather than facet size) and per-event waveform inspection during testing.</li>
-            <li>Developed forward kinematics to compute limb velocities at impact, starting from the robot's 6-DOF floating-base state and working out through each joint chain with quaternions, roll-pitch-yaw matrices and Rodrigues' rotation formula. Velocities come from exact rigid-body velocity composition (base velocity plus ω × r lever arms) rather than numerical differentiation, and are fused with high-rate IMU data to measure energy change across impacts.</li>
-            <li>Designed a Δv impact-severity metric robust to the sensor bandwidth limits that affect peak-based metrics. Characterized the Butterworth anti-alias filtering against synthetic pulses of known amplitude, quantified the metric's noise floor with a null-control experiment, and landed every change only after bit-identical regression checks across the full event table.</li>
-            <li>Designed test fixtures in CATIA 3DEXPERIENCE for standalone impact testing, plus protective hardware that lets sensitive components survive repeated impacts, so test campaigns can keep running without replacing parts between hits.</li>
-            <li>Modeled hardware thermal behavior in Python (Pandas, SciPy), detecting heating regimes and fitting exponential models by multi-start least squares to predict steady-state temperatures across hundreds of units without running each test to completion, gated on residual RMSE.</li>
+            <li>Estimated impact energy from Khatib's operational-space effective mass and an OLS velocity fit, fed by a forward-kinematics pipeline that propagates 6-DOF floating-base poses through each joint chain with quaternions and Rodrigues' rotations.</li>
+            <li>Developed a physics-based MuJoCo impact simulation and a custom test around a pendulum-mounted six-joint arm that rotates about all three axes, hand-deriving its Jacobians to validate the effective-mass model.</li>
+            <li>Built an impact forensics pipeline and Flask/Plotly dashboard, deployed on a Linux VM, that ETLs ~900 robot test logs into SQLite. It gives engineers a 3D heatmap of ~28k impacts on the robot's mesh, normalized by per-facet solid angle so it reads as density rather than facet size, plus per-event waveforms during live testing.</li>
+            <li>Modeled hardware thermal behavior in Python, fitting heating curves by multi-start least squares to predict steady-state temperatures across hundreds of units without full-length tests.</li>
+            <li>Designed fixtures, mounts and shear features in CATIA 3DEXPERIENCE for impact testing, optimizing their geometry through pin-shear failure analysis, plus protective hardware so sensitive components survive repeated impacts.</li>
           </ul>
           <div class="tl-tags">
-            <span class="tag">Python</span><span class="tag">Rigid-Body Kinematics</span><span class="tag">CATIA 3DEXPERIENCE</span><span class="tag">Test Fixtures</span><span class="tag">Sensor Fusion</span><span class="tag">Filter Design</span><span class="tag">SQLite</span><span class="tag">Flask</span><span class="tag">Plotly</span><span class="tag">Linux</span><span class="tag">Pandas</span><span class="tag">SciPy</span>
+            <span class="tag">Python</span><span class="tag">MuJoCo</span><span class="tag">Flask</span><span class="tag">SQLite</span><span class="tag">CATIA</span><span class="tag">Linux</span><span class="tag">Rigid-Body Kinematics</span><span class="tag">Robot Dynamics</span><span class="tag">Plotly</span>
           </div>
           <p class="nda-note">Work shown for this role is limited to method and approach. No proprietary hardware, imagery, test data, or internal tooling from Boston Dynamics appears anywhere on this site.</p>
         </div>
@@ -644,11 +698,11 @@ footer{padding:36px 0 44px;text-align:center}
           <div class="tl-role">Machine Learning Researcher</div>
           <div class="tl-loc">West Lafayette, IN</div>
           <ul>
-            <li>Built an LSTM model forecasting next-day primer, topcoat, and solvent consumption from five years of paint-line data, with Monte Carlo confidence intervals on each forecast, achieving a 4.7% reduction in material usage.</li>
-            <li>Built Python pipelines to ingest, clean, and consolidate five years of noisy legacy data into one daily series, contributing to a 3.3% reduction in manufacturing cycle time.</li>
+            <li>Cut material usage 4.7% by forecasting next-day primer, topcoat and solvent consumption with LSTM and XGBoost models trained on five years of paint-line data, with Monte Carlo confidence intervals on every forecast.</li>
+            <li>Consolidated five years of noisy legacy files into one daily series with Python pipelines, contributing to a 3.3% cut in manufacturing cycle time.</li>
           </ul>
           <div class="tl-tags">
-            <span class="tag">LSTM</span><span class="tag">Monte Carlo</span><span class="tag">Python</span><span class="tag">Data Pipelines</span><span class="tag">Power BI</span><span class="tag">Snowflake</span>
+            <span class="tag">Python</span><span class="tag">Snowflake</span><span class="tag">Power BI</span><span class="tag">LSTM</span><span class="tag">XGBoost</span><span class="tag">Monte Carlo</span>
           </div>
         </div>
       </div>
@@ -662,12 +716,12 @@ footer{padding:36px 0 44px;text-align:center}
           <div class="tl-role">Undergraduate Researcher — Soft Adaptive Systems &amp; Structures</div>
           <div class="tl-loc">West Lafayette, IN</div>
           <ul>
-            <li>Built data acquisition systems in LabVIEW and MATLAB, processing and normalizing datasets of 50,000+ points to quantify sub-millimeter material behavior.</li>
-            <li>Formulated and synthesized variations of ionic dielectric gels, tuning chemical composition to increase force output by over 50%.</li>
-            <li>Designed 15 custom Fusion 360 test fixtures and wrote a Python computer-vision autotracker resolving displacement to 0.01 mm on a 29.45 mm cantilever sample.</li>
+            <li>Automated LabVIEW and MATLAB acquisition from a Keyence laser displacement head via an NI USB-6001, processing and normalizing datasets of 50,000+ points to quantify sub-millimeter material behavior.</li>
+            <li>Wrote a Python computer-vision tracker measuring cantilever deflection to 10 µm (0.01 mm) against an in-frame micrometer scale, for the geometry the laser couldn't follow.</li>
+            <li>Formulated, synthesized and direct-ink-write printed ionic dielectric gels, tuning their chemistry against force-voltage tests on 15 custom Fusion 360 fixtures to raise electromechanical force output by over 50%.</li>
           </ul>
           <div class="tl-tags">
-            <span class="tag">LabVIEW</span><span class="tag">MATLAB</span><span class="tag">Python CV</span><span class="tag">Fusion 360</span><span class="tag">DIW 3D Printing</span>
+            <span class="tag">Python</span><span class="tag">LabVIEW</span><span class="tag">MATLAB</span><span class="tag">Fusion 360</span><span class="tag">Computer Vision</span><span class="tag">DIW 3D Printing</span>
           </div>
         </div>
       </div>
@@ -675,19 +729,19 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="tl-item reveal">
         <div class="tl-card">
           <div class="tl-top">
-            <div class="tl-org">Emerson — Discrete Automation</div>
-            <div class="tl-date">Jun 2025 — Aug 2025</div>
+            <div class="tl-org">Emerson — ASCO</div>
+            <div class="tl-date">May 2025 — Aug 2025</div>
           </div>
-          <div class="tl-role">Mechanical and Manufacturing Engineer — Intern</div>
+          <div class="tl-role">Mechanical and Manufacturing Engineering Intern</div>
           <div class="tl-loc">Florham Park, NJ</div>
           <ul>
+            <li>Designed 30+ rotary valve components in Creo, including an adjustable spring canister, piston and connection system for a heavy industrial rotary valve, verified by hand stress analysis; machined pistons to ±0.05 mm and released GD&amp;T drawings.</li>
+            <li>Root-caused actuator deadband from cycle-test data and wrote an assembly procedure that cut it by over 10%, and modified over 400 ASCO 890 signaling boxes to improve test-stand performance.</li>
             <li>Ran electrical and mechanical validation on XM-5 and Red Hat II solenoid valves, comparing PPS against epoxy insulation and the effect of pre-heating — HiPot to UL 429 Sec. 37, plus torque (150 in-lb), bending (200 in-lb) and impact (6.5 J) testing.</li>
-            <li>Designed and manufactured an adjustable spring canister, piston and connection system for a heavy industrial rotary valve in Creo, machined on a CNC lathe and band saw; ran the stress calculations, built the BOM and released GD&amp;T-compliant drawings.</li>
-            <li>Assembled and tested 159 hydro pump and solenoid actuators, updated 298 pneumatic valve drawings, and designed custom Instron tooling for pin removal and stem adaptation to replace 298 actuators with 159 across sustainment and renewal projects.</li>
-            <li>Analyzed actuator deadband from process-capability reports to improve switch-adjustment procedures, and modified over 400 ASCO 890 signaling boxes to improve test-stand performance.</li>
+            <li>Assembled and tested 159 hydro pump and solenoid actuators, updated 298 pneumatic valve drawings, and designed custom Instron tooling for pin removal and stem adaptation.</li>
           </ul>
           <div class="tl-tags">
-            <span class="tag">Creo</span><span class="tag">CNC Machining</span><span class="tag">GD&amp;T</span><span class="tag">UL 429 HiPot</span><span class="tag">Instron</span><span class="tag">Process Capability</span>
+            <span class="tag">Creo</span><span class="tag">CNC</span><span class="tag">GD&amp;T</span><span class="tag">UL 429 HiPot</span><span class="tag">Instron</span>
           </div>
           <p class="nda-note">CAD assemblies, exploded views, and proprietary dimensions have been omitted to comply with Emerson ASCO's confidentiality agreements.</p>
         </div>
@@ -703,7 +757,7 @@ footer{padding:36px 0 44px;text-align:center}
     <div class="reveal">
       <div class="eyebrow">Selected Work</div>
       <h2 class="section-title">Projects</h2>
-      <p class="section-sub">Five builds spanning real-time control, state estimation, embedded firmware, applied machine learning, and mechanism design. Each one links to a full write-up below.</p>
+      <p class="section-sub">Six projects spanning real-time control, state estimation, legged and hopping robots, embedded firmware, applied machine learning, and mechanism design. Each one links to a full write-up below.</p>
     </div>
 
     <div class="filter-bar reveal" id="filterBar">
@@ -722,8 +776,32 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
         <div class="card-body">
           <h3>EMG-Controlled Active Orthosis</h3>
-          <div class="card-org">C++17 · FreeRTOS · KiCad · PyTorch · Team Lead</div>
+          <div class="stack"><span>C++17</span><span>FreeRTOS</span><span>KiCad</span><span>PyTorch</span><span>Team Lead</span></div>
           <p class="card-desc">A 1 kHz, fault-gated velocity loop driven by muscle signals, an isolated 4-channel EMG board redesign, and a gesture decoder. EMG-to-motion latency cut from 103 to 43 ms in closed-loop simulation on real EMG.</p>
+          <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </div>
+      </a>
+
+      <a href="#asteroid-hopper" class="card reveal" data-tags="robotics">
+        <div class="card-media">
+          <div class="card-diagram">
+            <svg viewBox="0 0 300 170" role="img" aria-label="Diagram of a three-legged robot hopping across an asteroid surface">
+              <path class="dg-surface" d="M0 150 Q150 128 300 150 L300 170 L0 170 Z"/>
+              <path class="dg-arc" d="M58 129 Q150 0 242 129"/>
+              <g transform="translate(58 129)"><circle class="dg-body" r="8"/><path class="dg-leg" d="M-6 5 L-12 8 L-14 14 M6 5 L12 8 L14 14 M0 8 L0 14"/></g>
+              <g transform="translate(150 64)"><circle class="dg-body" r="8"/><circle class="dg-wheel" r="3.5"/><path class="dg-leg" d="M-6 6 L-9 11 M6 6 L9 11 M0 8 L0 12"/><path class="dg-arrow2" d="M-15 -5 A16 16 0 0 1 13 -9 M13 -9 l-5 -2 M13 -9 l-1 5"/></g>
+              <g transform="translate(242 129)"><circle class="dg-body" r="8"/><path class="dg-leg" d="M-6 5 L-15 14 M6 5 L15 14 M0 8 L0 14"/></g>
+              <text x="58" y="163" class="dg-label-sm" text-anchor="middle">push off</text>
+              <text x="150" y="38" class="dg-label-sm" text-anchor="middle">reorient</text>
+              <text x="242" y="163" class="dg-label-sm" text-anchor="middle">land</text>
+            </svg>
+          </div>
+          <div class="card-badge">Purdue × UC3M</div>
+        </div>
+        <div class="card-body">
+          <h3>Asteroid Hopping Robot</h3>
+          <div class="stack"><span>MuJoCo</span><span>Impedance Control</span><span>Reaction Wheel</span><span>Optimization</span></div>
+          <p class="card-desc">Independent research on a three-legged robot that hops across an asteroid: push-off control tuned to a target launch speed, knee impedance to absorb landings, reaction-wheel attitude control in flight, and each hop sized in MuJoCo.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
       </a>
@@ -734,9 +812,9 @@ footer{padding:36px 0 44px;text-align:center}
           <div class="card-badge">Personal Project</div>
         </div>
         <div class="card-body">
-          <h3>Legged Robot State Estimation</h3>
-          <div class="card-org">C++ · Eigen · MuJoCo · GoogleTest</div>
-          <p class="card-desc">A contact-aided error-state EKF fusing a simulated BMI088 IMU with leg kinematics on a walking Go1 in MuJoCo — 1 kHz, 0.013 m/s velocity RMSE against ground truth, a QP force-balance controller that walks on the estimate, and experiments that break it on purpose.</p>
+          <h3>Legged Robot State Estimation &amp; Control</h3>
+          <div class="stack"><span>C++</span><span>Eigen</span><span>MuJoCo</span><span>GoogleTest</span><span>QP Control</span></div>
+          <p class="card-desc">A contact-aided error-state EKF fusing a simulated BMI088 IMU with leg kinematics on a walking Go1 in MuJoCo — 1 kHz, 0.013 m/s velocity RMSE against ground truth, with a Raibert trot and a QP force-balance controller that walk on the estimate.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
       </a>
@@ -748,8 +826,8 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
         <div class="card-body">
           <h3>Ionic Dielectric Gels</h3>
-          <div class="card-org">LabVIEW · MATLAB · Python CV · Fusion 360</div>
-          <p class="card-desc">Chemical formulation plus a custom computer-vision autotracker that resolved 0.01 mm displacement across 50,000+ data points, driving a 50%+ increase in electromechanical force output.</p>
+          <div class="stack"><span>LabVIEW</span><span>MATLAB</span><span>Python CV</span><span>Fusion 360</span></div>
+          <p class="card-desc">Formulated and direct-ink-write printed ionic dielectric gels, raising electromechanical force output by over 50%, measured with automated laser acquisition and a Python computer-vision tracker accurate to 10 µm.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
       </a>
@@ -761,8 +839,8 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
         <div class="card-body">
           <h3>Paint Line Forecasting</h3>
-          <div class="card-org">LSTM · Monte Carlo · Python · Full-Stack Dashboard</div>
-          <p class="card-desc">Next-day primer, topcoat and solvent forecasting from five years of records, each prediction carrying a Monte Carlo confidence interval — 4.7% less material used, 3.3% off cycle time.</p>
+          <div class="stack"><span>LSTM</span><span>XGBoost</span><span>Monte Carlo</span><span>Python</span></div>
+          <p class="card-desc">LSTM and XGBoost forecasts of next-day primer, topcoat and solvent use from five years of records, each with a Monte Carlo confidence interval. Cut material usage 4.7% and contributed to a 3.3% cut in cycle time.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
       </a>
@@ -774,8 +852,8 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
         <div class="card-body">
           <h3>Heavy Industrial Valves</h3>
-          <div class="card-org">Creo Parametric · CNC · GD&amp;T</div>
-          <p class="card-desc">Solenoid-valve qualification to UL 429 alongside a rotary-valve spring canister taken from Creo through CNC machining to a released GD&amp;T drawing package.</p>
+          <div class="stack"><span>Creo</span><span>CNC</span><span>GD&amp;T</span></div>
+          <p class="card-desc">30+ rotary valve components designed in Creo and checked by hand stress analysis, pistons machined to ±0.05 mm, and an assembly procedure that cut actuator deadband by over 10%.</p>
           <span class="card-more">Read the write-up <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
       </a>
@@ -788,7 +866,7 @@ footer{padding:36px 0 44px;text-align:center}
 <section class="detail" id="orthosis">
   <div class="wrap">
     <div class="detail-head reveal">
-      <div class="detail-kicker">Purdue ASME — Biomechanics · Apr 2024 — Present</div>
+      <div class="detail-kicker">Purdue ASME — Biomechanics · Apr 2024 — May 2026</div>
       <h2>EMG-Controlled Active Orthosis</h2>
       <div class="detail-org">Electronics Team Lead · C++17 Firmware · KiCad · Machine Learning</div>
     </div>
@@ -796,18 +874,18 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="detail-side reveal">
         <div class="side-block">
           <h4>Summary</h4>
-          <p>A rehabilitative arm orthosis driven by the wearer's own muscle signals: flex to raise the forearm, extend to lower it, contract both to stop. I lead the 5-engineer electronics team and own the EMG board, the control firmware, and the decoder.</p>
+          <p>A rehabilitative arm orthosis driven by the wearer's own muscle signals: flex to raise the forearm, extend to lower it, contract both to stop. I led the 5-engineer electronics team and owned the EMG board, the control firmware, and the decoder.</p>
         </div>
         <div class="side-block">
           <h4>Status</h4>
-          <p>The team's first board (v1) was fabricated. My v2 redesign is schematic-complete, with layout and fabrication next. Until it's built, every firmware and decoder number below comes from simulation or emulation driven by <strong>real recorded EMG</strong>, not from the board.</p>
+          <p>The team's first board (v1) was fabricated, and my v2 redesign was taken through a complete schematic. Every firmware and decoder number below comes from simulation or emulation driven by <strong>real recorded EMG</strong>, not from the board.</p>
         </div>
         <div class="side-block">
           <h4>Control Firmware</h4>
           <ul>
             <li>A C++17 core with no hardware dependencies, run by a <strong>1 kHz FreeRTOS task</strong> on an ESP32-S3. The same file compiles into a simulator of the motor, transmission, and forearm.</li>
             <li>PI velocity loop on the motor encoder, IMC-tuned, with plant-inversion feed-forward and anti-windup, holding speed error to <strong>0.8%</strong> while lifting the forearm.</li>
-            <li>A Bayesian EMG amplitude estimator plus a 20 ms onset confirm. The joint moves <strong>43 ms</strong> after the muscle does (was 103 ms) and stops <strong>32 ms</strong> after it relaxes (was 89 ms), with zero false starts from motion artefacts.</li>
+            <li>A Bayesian EMG amplitude estimator with a 20 ms onset confirm, plus a faster control tier that unlocks once the firmware has measured the motor. Together, the joint moves <strong>43 ms</strong> after the muscle does (was 103 ms) and stops <strong>32 ms</strong> after it relaxes (was 89 ms), with zero false starts from motion artefacts.</li>
             <li>Ten runtime fault monitors (runaway, stall, electrode lead-off, tracking error, over-travel, and more) latch the motor off. A hardware watchdog and a kill switch act independently of the code.</li>
             <li>26 GoogleTest unit, closed-loop, and real-EMG latency tests, plus an ESP32-S3 build, run in CI.</li>
           </ul>
@@ -857,12 +935,130 @@ footer{padding:36px 0 44px;text-align:center}
   </div>
 </section>
 
+<!-- ============================== DETAIL: ASTEROID HOPPER ============================== -->
+<section class="detail" id="asteroid-hopper">
+  <div class="wrap">
+    <div class="detail-head reveal">
+      <div class="detail-kicker">Independent Research · Purdue University &amp; Universidad Carlos III de Madrid · Oct 2026 — Present</div>
+      <h2>Asteroid Hopping Robot</h2>
+      <div class="detail-org">Three-Legged Hopper · Control Design · MuJoCo</div>
+    </div>
+    <div class="detail-layout">
+      <div class="detail-side reveal">
+        <div class="side-block">
+          <h4>The Problem</h4>
+          <p>On a small asteroid, a robot gets around by hopping, and every hop is a gamble: push off too hard and the robot can escape the asteroid entirely; land badly and it tips over. The robot has to choose how far to go with both risks in mind.</p>
+        </div>
+        <div class="side-block">
+          <h4>What I'm Building</h4>
+          <p>A <strong>three-legged hopping robot</strong> that reshapes its legs between hops, and the control that carries it through each one:</p>
+          <ul>
+            <li><strong>Push-off:</strong> control that launches each hop, optimized for a target launch speed.</li>
+            <li><strong>Flight:</strong> reaction-wheel control that reorients the body mid-flight.</li>
+            <li><strong>Landing:</strong> knee impedance control that absorbs the impact.</li>
+          </ul>
+        </div>
+        <div class="side-block">
+          <h4>Sizing Each Hop</h4>
+          <p>In <strong>MuJoCo</strong>, I size each hop by comparing risk-limited policies that trade distance against the chance of escaping the asteroid or tipping over.</p>
+        </div>
+        <div class="side-block">
+          <h4>Test Rig</h4>
+          <p>I'm developing a pendulum rig to test landings.</p>
+        </div>
+        <div class="side-block">
+          <h4>Status</h4>
+          <p>In progress since October 2026. Design and simulation are underway, so there are no results to report yet.</p>
+        </div>
+        <div class="skill-block">
+          <div class="hd">Core Skills</div>
+          <div class="bd">
+            <div>MuJoCo Simulation</div>
+            <div>Impedance Control</div>
+            <div>Attitude Control</div>
+            <div>Risk-Limited Planning</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery reveal">
+        <figure class="shot">
+          <svg viewBox="0 0 760 332" role="img" aria-label="Concept diagram of one hop: push off at a target launch speed, reorient in flight with a reaction wheel, land with knee impedance, then reshape the legs">
+            <path class="dg-surface" d="M0 262 Q380 236 760 262 L760 332 L0 332 Z"/>
+            <path class="dg-surface-line" d="M0 262 Q380 236 760 262"/>
+            <path class="dg-escape" d="M110 230 Q190 -80 300 -60"/>
+            <text x="214" y="34" class="dg-label-sm">too hard: escapes the asteroid</text>
+            <path class="dg-arc" d="M110 230 Q315 -53 520 225"/>
+            <text x="436" y="118" class="dg-label dg-accent">hop sized in MuJoCo</text>
+
+            <g transform="translate(110 232)">
+              <circle class="dg-body" r="14"/>
+              <path class="dg-leg" d="M-10 10 L-21 12 L-25 23 M10 10 L21 12 L25 23 M0 14 L0 23"/>
+              <path class="dg-arrow" d="M17 -7 L40 -39 M40 -39 l-8.1 4 M40 -39 l-1.2 8.9"/>
+            </g>
+
+            <g transform="translate(315 88)">
+              <circle class="dg-body" r="14"/>
+              <circle class="dg-wheel" r="6"/>
+              <path class="dg-leg" d="M-10 10 L-15 18 M10 10 L15 18 M0 14 L0 20"/>
+              <path class="dg-arrow2" d="M-24 -8 A25 25 0 0 1 21 -14 M21 -14 l-8 -2 M21 -14 l-2 8"/>
+            </g>
+
+            <g transform="translate(520 225)">
+              <circle class="dg-body" r="14"/>
+              <polyline class="dg-leg" points="-10,10 -15,14 -12,16 -18,18 -15,20 -21,22 -25,26"/>
+              <polyline class="dg-leg" points="10,10 15,14 12,16 18,18 15,20 21,22 25,26"/>
+              <path class="dg-leg" d="M0 14 L0 26"/>
+            </g>
+
+            <g transform="translate(680 231)">
+              <path class="dg-leg-old" d="M-10 10 L-18 26 M10 10 L18 26"/>
+              <circle class="dg-body" r="14"/>
+              <path class="dg-leg-new" d="M-10 10 L-28 16 L-33 26 M10 10 L28 16 L33 26 M0 14 L0 26"/>
+            </g>
+
+            <text x="110" y="284" class="dg-phase" text-anchor="middle">1 · PUSH OFF</text>
+            <text x="110" y="301" class="dg-desc" text-anchor="middle">hit a target</text>
+            <text x="110" y="315" class="dg-desc" text-anchor="middle">launch speed</text>
+            <text x="315" y="284" class="dg-phase" text-anchor="middle">2 · FLIGHT</text>
+            <text x="315" y="301" class="dg-desc" text-anchor="middle">reaction wheel</text>
+            <text x="315" y="315" class="dg-desc" text-anchor="middle">reorients the body</text>
+            <text x="520" y="284" class="dg-phase" text-anchor="middle">3 · LANDING</text>
+            <text x="520" y="301" class="dg-desc" text-anchor="middle">knee impedance</text>
+            <text x="520" y="315" class="dg-desc" text-anchor="middle">absorbs the impact</text>
+            <text x="680" y="284" class="dg-phase" text-anchor="middle">4 · RESHAPE</text>
+            <text x="680" y="301" class="dg-desc" text-anchor="middle">legs change shape</text>
+            <text x="680" y="315" class="dg-desc" text-anchor="middle">between hops</text>
+          </svg>
+          <figcaption>Concept diagram of one hop, not a render of the robot. Each phase has its own controller, and MuJoCo sizes the hop so the robot covers ground without escaping the asteroid or tipping over.</figcaption>
+        </figure>
+        <div class="arch">
+          <h4>One Hop, Phase by Phase</h4>
+          <div class="arch-flow">
+            <div class="arch-node"><b>Hop Planner · MuJoCo</b><span>Risk-limited policy trades distance against escape and tip-over risk</span></div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-node"><b>Push-Off Control</b><span>Optimized for a target launch speed</span></div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-node hi"><b>Flight: Reaction-Wheel Control</b><span>Reorients the body mid-flight</span></div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-node"><b>Landing: Knee Impedance Control</b><span>Absorbs the impact on touchdown</span></div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-node"><b>Reshape &amp; Repeat</b><span>Legs change shape before the next hop</span></div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-node"><b>Validation</b><span>Pendulum rig to test landings</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============================== DETAIL: STATE ESTIMATION ============================== -->
 <section class="detail" id="state-estimation">
   <div class="wrap">
     <div class="detail-head reveal">
-      <div class="detail-kicker">Personal Project · Aug 2026 — Present</div>
-      <h2>Contact-Aided State Estimation for a Legged Robot</h2>
+      <div class="detail-kicker">Personal Project · Aug 2026 — Oct 2026</div>
+      <h2>State Estimation and Control for a Legged Robot</h2>
       <div class="detail-org">C++ · Eigen · MuJoCo · GoogleTest</div>
     </div>
     <div class="detail-layout">
@@ -898,7 +1094,7 @@ footer{padding:36px 0 44px;text-align:center}
         </div>
         <div class="side-block">
           <h4>Closing the Loop</h4>
-          <p>The walking controller can run on the filter's estimate instead of ground truth. Fed the estimate, the robot completes 5 × 60 s walks without a fall, with velocity tracking within 0.004 m/s of the ground-truth-fed run.</p>
+          <p>The Raibert trot controller can run on the filter's estimate instead of ground truth. Fed the estimate, the robot completes 5 × 60 s walks without a fall, with velocity tracking within 0.004 m/s of the ground-truth-fed run. The trot controller and the estimator-to-controller loop are also in C++, matching the Python versions to 1e-12 rad.</p>
           <p>The one new failure is a lean of about 4° before the first turn: tilt is only weakly observable while walking straight, and the controller levels the <em>estimated</em> trunk. A 4 s turn at startup makes tilt observable and removes it.</p>
           <p>I also added a QP force-balance controller for the stance legs, in the style of MIT Cheetah 3's balance controller: one rigid body, with friction-limited foot forces solved as non-negative least squares at 500 Hz. Fed the estimate after the startup turn, it also completes 5 × 60 s walks without a fall.</p>
         </div>
@@ -945,6 +1141,10 @@ footer{padding:36px 0 44px;text-align:center}
         <figure class="shot">
           <img src="quadruped-eskf/results/figures/closed_loop_lean.png" alt="True trunk roll with the controller fed ground truth versus fed the estimate, with and without a startup turn" loading="lazy">
           <figcaption>Closing the loop: with the controller fed the estimate, tilt error before the first turn becomes a real lean of up to 5°. A 4 s turn at startup makes tilt observable, and the lean disappears.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="quadruped-eskf/results/figures/qp_compare_velocity.png" alt="Forward speed against the command for the scripted trot and the QP force-balance controller, each fed ground truth and fed the estimate" loading="lazy">
+          <figcaption>The QP force-balance controller against the scripted trot on the headline walk (seed 0, in simulation). Force control on the stance legs gets closer to the commanded speed, whether the controller is fed ground truth or the estimate.</figcaption>
         </figure>
       </div>
     </div>
@@ -1029,7 +1229,7 @@ footer{padding:36px 0 44px;text-align:center}
         <div class="side-block">
           <h4>Approach</h4>
           <ul>
-            <li>Trained an <strong>LSTM</strong> to forecast next-day primer, topcoat and solvent consumption from <strong>five years</strong> of production records.</li>
+            <li>Trained <strong>LSTM</strong> and <strong>XGBoost</strong> models to forecast next-day primer, topcoat and solvent consumption from <strong>five years</strong> of production records.</li>
             <li>Ran <strong>Monte Carlo</strong> over each forecast to attach a confidence interval, so a day's prediction carried an uncertainty band instead of a single number.</li>
             <li>Built Python pipelines consolidating five years of month-by-month legacy files into one continuous daily series, surfaced through the dashboard and Power BI.</li>
           </ul>
@@ -1038,7 +1238,7 @@ footer{padding:36px 0 44px;text-align:center}
           <h4>Impact</h4>
           <ul>
             <li><strong>4.7% reduction</strong> in material usage against existing practice.</li>
-            <li><strong>3.3% reduction</strong> in manufacturing cycle time.</li>
+            <li>Contributed to a <strong>3.3% reduction</strong> in manufacturing cycle time.</li>
             <li>Isolated process inefficiencies between the manual and robotic paint lines.</li>
           </ul>
         </div>
@@ -1067,7 +1267,7 @@ footer{padding:36px 0 44px;text-align:center}
 <section class="detail" id="emerson">
   <div class="wrap">
     <div class="detail-head reveal">
-      <div class="detail-kicker">Emerson, Discrete Automation · Jun 2025 — Aug 2025</div>
+      <div class="detail-kicker">Emerson — ASCO · May 2025 — Aug 2025</div>
       <h2>Heavy Industrial Valve Development</h2>
       <div class="detail-org">Mechanical &amp; Manufacturing Engineering Intern</div>
     </div>
@@ -1081,13 +1281,13 @@ footer{padding:36px 0 44px;text-align:center}
           <h4>Approach</h4>
           <ul>
             <li>Validated XM-5 and Red Hat II solenoid valves, comparing <strong>PPS against epoxy insulation</strong> and the effect of pre-heating — <strong>HiPot to UL 429 Sec. 37</strong>, torque to 150 in-lb, bending to 200 in-lb, impact at 6.5 J.</li>
-            <li>Designed an adjustable <strong>spring canister, piston and connection system</strong> for a heavy industrial rotary valve in Creo, then machined it on a CNC lathe and band saw — stress calculations, BOM and GD&amp;T drawings included.</li>
+            <li>Designed <strong>30+ rotary valve components</strong> in Creo, including an adjustable spring canister, piston and connection system for a heavy industrial rotary valve, verified by hand stress analysis. Machined pistons to <strong>±0.05 mm</strong> on a CNC lathe and released GD&amp;T drawings and the BOM.</li>
             <li>Assembled and tested <strong>159 actuators</strong>, updated <strong>298 pneumatic valve drawings</strong>, and designed custom <strong>Instron tooling</strong> for pin removal and stem adaptation.</li>
           </ul>
         </div>
         <div class="side-block">
           <h4>Impact</h4>
-          <p>Analyzed actuator deadband from process-capability reports to improve switch-adjustment procedures, and modified over <strong>400 ASCO 890 signaling boxes</strong> to improve test-stand performance.</p>
+          <p>Root-caused actuator deadband from cycle-test data and wrote an assembly procedure that cut it by <strong>over 10%</strong>, and modified over <strong>400 ASCO 890 signaling boxes</strong> to improve test-stand performance.</p>
         </div>
         <div class="skill-block">
           <div class="hd">Core Skills</div>
@@ -1145,7 +1345,7 @@ footer{padding:36px 0 44px;text-align:center}
       <div class="sk-card reveal">
         <div class="sk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-7"/></svg></div>
         <h3>Data &amp; Machine Learning</h3>
-        <div class="sk-list"><span>PyTorch</span><span>scikit-learn</span><span>Pandas</span><span>NumPy</span><span>SciPy</span><span>LSTM</span><span>Monte Carlo</span><span>Least Squares Fitting</span><span>Snowflake</span><span>Power BI</span></div>
+        <div class="sk-list"><span>PyTorch</span><span>scikit-learn</span><span>Pandas</span><span>NumPy</span><span>SciPy</span><span>LSTM</span><span>XGBoost</span><span>Monte Carlo</span><span>Least Squares Fitting</span><span>Snowflake</span><span>Power BI</span></div>
       </div>
 
       <div class="sk-card reveal">
@@ -1202,6 +1402,11 @@ footer{padding:36px 0 44px;text-align:center}
     </div>
   </div>
 </footer>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged figure">
+  <button class="lb-close" type="button" aria-label="Close">&times;</button>
+  <figure><img alt=""><figcaption></figcaption></figure>
+</div>
 
 <button id="toTop" aria-label="Back to top">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -1314,6 +1519,78 @@ footer{padding:36px 0 44px;text-align:center}
   onScroll();
   toTop.addEventListener("click", function(){
     window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  });
+
+  /* ---------- scroll progress ---------- */
+  var bar = document.getElementById("progress");
+  function setProgress(){
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.transform = "scaleX(" + (h > 0 ? Math.min(1, window.scrollY / h) : 0) + ")";
+  }
+  window.addEventListener("scroll", function(){ window.requestAnimationFrame(setProgress); }, { passive: true });
+  window.addEventListener("resize", setProgress);
+  setProgress();
+
+  /* ---------- hero metrics count up ---------- */
+  if(!reduce){
+    Array.prototype.forEach.call(document.querySelectorAll(".metric .num"), function(el){
+      var to = parseFloat(el.getAttribute("data-to")), dec = parseInt(el.getAttribute("data-dec") || "0", 10);
+      var t0 = null, dur = 1300;
+      el.textContent = (0).toFixed(dec);
+      function frame(ts){
+        if(t0 === null) t0 = ts;
+        var k = Math.min(1, (ts - t0) / dur), ease = 1 - Math.pow(1 - k, 3);
+        el.textContent = (to * ease).toFixed(dec);
+        if(k < 1) window.requestAnimationFrame(frame); else el.textContent = to.toFixed(dec);
+      }
+      window.setTimeout(function(){ window.requestAnimationFrame(frame); }, 250);
+    });
+  }
+
+  /* ---------- card spotlight ---------- */
+  if(window.matchMedia("(hover: hover)").matches){
+    Array.prototype.forEach.call(cards, function(card){
+      card.addEventListener("pointermove", function(e){
+        var r = card.getBoundingClientRect();
+        card.style.setProperty("--mx", (e.clientX - r.left) + "px");
+        card.style.setProperty("--my", (e.clientY - r.top) + "px");
+      });
+    });
+  }
+
+  /* ---------- figure lightbox ---------- */
+  var lb = document.getElementById("lightbox");
+  var lbImg = lb.querySelector("img"), lbCap = lb.querySelector("figcaption"), lbClose = lb.querySelector(".lb-close");
+  var lastFocus = null;
+  function openLb(img){
+    lastFocus = document.activeElement;
+    lbImg.src = img.currentSrc || img.src;
+    lbImg.alt = img.alt;
+    var cap = img.closest("figure") && img.closest("figure").querySelector("figcaption");
+    lbCap.textContent = cap ? cap.textContent : "";
+    lb.classList.add("open");
+    document.body.style.overflow = "hidden";
+    lbClose.focus();
+  }
+  function closeLb(){
+    lb.classList.remove("open");
+    document.body.style.overflow = "";
+    if(lastFocus) lastFocus.focus();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".shot img"), function(img){
+    img.setAttribute("tabindex", "0");
+    img.setAttribute("role", "button");
+    img.setAttribute("aria-label", "Enlarge: " + (img.alt || "figure"));
+    img.addEventListener("click", function(){ openLb(img); });
+    img.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openLb(img); }
+    });
+  });
+  lb.addEventListener("click", function(e){ if(e.target === lb || e.target === lbClose) closeLb(); });
+  document.addEventListener("keydown", function(e){
+    if(!lb.classList.contains("open")) return;
+    if(e.key === "Escape") closeLb();
+    else if(e.key === "Tab"){ e.preventDefault(); lbClose.focus(); }  /* only one control: keep focus in the dialog */
   });
 
   /* ---------- year ---------- */
