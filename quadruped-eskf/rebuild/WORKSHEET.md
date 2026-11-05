@@ -223,11 +223,83 @@ correction to every state, including velocity and the biases."*
 
 ---
 
-## Module 6: experiments and your numbers (day 6)
+## Module 6: the walking controller (day 6)
+
+Your résumé says "closed-loop control using Raibert foot placement and attitude/height controllers".
+This module is the core of each, small enough to work by hand. In your real controller
+(`python/qeskf/gait.py`) all three live inside `foot_targets()`.
+
+**6.1 The gait clock.** A trot cycle takes 0.4 s. Each foot is planted for 60% of it (duty 0.6),
+and the phase offsets are FR 0, FL 0.5, RR 0.5, RL 0. A foot's phase is
+(time since walking started / 0.4 + its offset), keeping only the part after the decimal point.
+The foot is planted while its phase < 0.6.
+
+- (a) 0.10 s after walking starts, each foot's phase = ____. Which feet are planted?
+- (b) Same at 0.25 s, and at 0.22 s.
+- (c) Each foot is down for 0.24 s of every 0.4 s. What fraction of the time are all four down?
+  Hint: draw both diagonal pairs on one timeline.
+- (d) Why move diagonal feet together? Hint: draw a line from FR to RL. Where does it pass?
+- (e) Your estimator uses this same clock. Where, and for what?
+
+**6.2 Raibert foot placement: where a foot lands sets the speed.**
+
+- (a) **The neutral point.** The body moves at v during a stance of T. If the foot lands v·T/2 ahead
+  of the body, the body passes over it exactly at mid-stance. The leg brakes for the first half and
+  pushes for the second half, equally, so the speed comes out unchanged.
+  For v = 0.5 m/s and T = 0.2 s, the neutral point is ____ m ahead.
+- (b) **The correction:** foot = neutral + k (v − v_des). The robot is going 0.6 m/s when told 0.5,
+  and k = 0.06 s (your gait.py value). The foot lands ____ mm further ahead than neutral. Does that
+  speed the robot up or slow it down? Why?
+- (c) **A pendulum to see it with numbers.** Model the body as a point on a stiff, massless leg (the
+  "linear inverted pendulum"). It falls away from its foot: x'' = (g/h)(x − foot).
+  With h = 0.27 m: g/h = ____ s⁻² and ω = √(g/h) = ____ 1/s. If the body is 2 cm *behind* the
+  foot, its acceleration is ____ m/s². Speeding up or braking?
+- (d) Predict before you run anything: the robot starts standing still and is told to walk at 0.5
+  m/s. What does k = 0 do? What might a very large k do?
+- (e) In the terms you used for P, PD and PI: what kind of controller is Raibert's rule, and how
+  often does it act?
+- (f) **Your real controller is not this pendulum.** In gait.py the stance feet are
+  position-controlled to sweep backwards at the *commanded* speed, so the stance legs do most of the
+  speed control and the Raibert term only corrects what's left. On the pendulum, foot placement is
+  the *only* speed control. Keep that in mind before using pendulum numbers for your robot.
+- (g) **The 0.004 m/s question.** In gait.py, only the Raibert correction uses the measured
+  (estimated) speed. If the estimate is off by 0.013 m/s, the foot moves by ____ mm. Use that to
+  explain why tracking barely changed when the controller ran on your estimate (0.173 vs 0.169 m/s).
+
+**6.3 Levelling loops (attitude and height).** A toy body has angle θ, with θ'' = u + push. The
+controller only sees the *measured* angle θ_m = θ + e (e is the estimate's error) and the true rate
+(from the gyro):
+
+  u = −kp·θ_m − kd·θ' − ki·∫θ_m,    with kp = 150 and kd = 20.
+
+- (a) PD only (ki = 0), no push, estimate off by e. At rest (θ' = 0 and θ'' = 0, so u = 0), solve
+  for the true angle: θ = ____. That's your robot's lean.
+- (b) PD only, a perfect estimate (e = 0), and a constant push of 3 rad/s². At rest:
+  θ = ____ rad = ____°. A constant load on a spring-like controller leaves a constant offset.
+- (c) Add the integral (ki = 300). It only stops changing when θ_m = 0. So with the push,
+  θ = ____. With the estimate off by e, θ = ____. Can an integral fix a wrong estimate?
+- (d) In gait.py, the attitude loop changes each leg's length by k_att·angle + d_att·rate
+  (k_att 1.2, d_att 0.06 s). Is that P, PD or PI? The height loop is k_height·error plus an
+  integral (0.002 × error added every 2 ms). Which is it, and why did height need the I?
+  Hint: 6.3b, and the position servos are springs.
+
+**Code:** `m6_walking_control.py`, then `python check.py 6`, then `python m6_walking_control.py`.
+Part B prints the speed after each step for k = 0, 0.06, 0.11 and 0.25. Part C prints the four
+cases from 6.3.
+
+**Say it:** *"Raibert foot placement puts the foot at the neutral point, half the stance travel
+ahead, plus a correction proportional to the speed error: too fast, the foot lands further ahead
+and the leg brakes. The attitude loop is a PD that levels the estimated trunk, so an estimate error
+becomes a real lean, and an integral can't remove it, because it zeroes the measured angle, not
+the true one."*
+
+---
+
+## Module 7: experiments, your numbers, and the retell (day 7)
 
 Run `python run.py report`. Add `--plot` if matplotlib is installed. It takes 1-3 minutes.
 
-**6.1** Fill in from the report, then say each line out loud:
+**7.1** Fill in from the report, then say each line out loud:
 
 - Legs cut velocity RMSE from ____ to ____ m/s.
 - After 30 s, yaw is off ____° and position ____ m. The filter's own σ for them ____.
@@ -235,22 +307,21 @@ Run `python run.py report`. Add `--plot` if matplotlib is installed. It takes 1-
 - 10 cm/s of foot slip gives ____ m/s of velocity error. Why is it almost exactly the slip speed?
 - Flipping one sign in F gives ____ m/s. Which check would have caught it?
 
-**6.2** Now answer the questions you missed before, in 3 sentences each, using what you built:
+**7.2** Now answer the questions you missed before, in 3 sentences each, using what you built:
 
 - Why did the robot lean when the controller used your estimate, and why didn't the filter fix it?
 - What can't the filter estimate, and why not?
 - How does a foot-position measurement correct velocity?
 - Why an error-state filter instead of a normal EKF?
 - How do you know your Jacobians are right?
+- What is Raibert foot placement, and where does your estimate enter the controller?
 
-**6.3** Open `python/qeskf/eskf.py` from the real project next to your `rebuild/eskf.py` (the README has
+**7.3** Open `python/qeskf/eskf.py` from the real project next to your `rebuild/eskf.py` (the README has
 the line map). Find each of your functions in it. Note one thing the real one does that yours
 doesn't.
 
 ---
 
-## Day 7: retell
-
-Close everything. Draw the whiteboard diagram (IMU → predict → state ← update ← legs). Then explain
-the filter in 90 seconds as if to an interviewer: problem, idea, predict, update, results, one
-limit. Record it once. Compare with how you answered before this week.
+**7.4 Retell.** Close everything. Draw the whiteboard diagram (IMU → predict → state ← update ← legs). Then explain
+the project in 90 seconds as if to an interviewer: problem, idea, predict, update, results,
+closing the loop with the controller, one limit. Record it once. Compare with how you answered before this week.

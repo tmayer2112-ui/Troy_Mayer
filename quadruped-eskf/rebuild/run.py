@@ -2,7 +2,7 @@
 
     python run.py imu-only     Module 4: the IMU alone (dead reckoning). Watch it drift.
     python run.py full         Module 5: IMU + legs. Compare with imu-only.
-    python run.py report       Module 6: every experiment, and your interview numbers
+    python run.py report       Module 7: every experiment, and your interview numbers
 Options:
     --seed N       which random sensor errors (default 1: its accelerometer bias, 0.175 m/s^2,
                    is close to the typical size; seed 3 has a big one)
@@ -17,7 +17,8 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+if str(HERE) not in sys.path:
+    sys.path.append(str(HERE))
 import simdata  # noqa: E402
 from so3 import quat_to_rot, rot_to_quat, rpy_from_rot, wrap  # noqa: E402
 

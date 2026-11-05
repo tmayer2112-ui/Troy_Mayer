@@ -1,6 +1,6 @@
 """Auto-checker for the rebuild.
 
-    python check.py 1          check Module 1 (also 2, 3, 4, 5)
+    python check.py 1          check Module 1 (also 2, 3, 4, 5, 6)
     python check.py all        check everything you've written so far
     python check.py 4 --solutions    run a check against the reference solutions instead of your code
 
@@ -339,7 +339,54 @@ def module5():
         print(f"        (your velocity RMSE {res['vel_rmse']:.4f} m/s, {time.time() - t0:.0f} s)")
 
 
-MODULES = {"1": module1, "2": module2, "3": module3, "4": module4, "5": module5}
+# ---------------------------------------------------------------------------------- Module 6
+def module6():
+    m = load("m6_walking_control")
+
+    @check("leg_phase 0.1 s after walking starts = [0.25, 0.75, 0.75, 0.25]   (worksheet 6.1)")
+    def _():
+        close(m.leg_phase(2.1), [0.25, 0.75, 0.75, 0.25], 1e-9, "phase")
+        close(m.leg_phase(1.0), [0.0, 0.5, 0.5, 0.0], 1e-12, "phase before the clock starts")
+
+    @check("scheduled_stance: one diagonal pair, then the other, all four 20% of the time")
+    def _():
+        want = {1.0: [1, 1, 1, 1], 2.10: [1, 0, 0, 1], 2.22: [1, 1, 1, 1], 2.30: [0, 1, 1, 0]}
+        for t, w in want.items():
+            close(np.asarray(m.scheduled_stance(t), float), w, 0, f"stance at t = {t}")
+        import simdata
+        ts = np.arange(2.0, 4.0, 0.001)
+        got = np.array([m.scheduled_stance(t) for t in ts])
+        close(got.astype(float), simdata.scheduled_stance(ts).astype(float), 0, "stance over 2-4 s (vs simdata)")
+        close(got.all(1).mean(), 0.2, 0.002, "fraction of time with all four planted")
+
+    @check("raibert_offset = neutral point + k (v - v_des)   (worksheet 6.2)")
+    def _():
+        close(m.raibert_offset(0.5, 0.5, 0.06), m.neutral_point(0.5), 1e-12, "on speed: just the neutral point")
+        close(m.raibert_offset(0.6, 0.5, 0.06), m.neutral_point(0.6) + 0.006, 1e-12, "0.1 m/s too fast")
+
+    @check("Raibert walk: k = 0.06 reaches the command, k = 0 never changes speed, k = 0.25 blows up")
+    def _():
+        v, cmd = m.walk_steps(0.06)
+        assert abs(v[9] - 0.5) < 0.01 and abs(v[39] - 0.2) < 0.01, f"k = 0.06: speeds {v[9]:.3f}, {v[39]:.3f}"
+        v0, _ = m.walk_steps(0.0)
+        close(v0, np.zeros_like(v0), 1e-12, "k = 0 speeds")
+        vbig, _ = m.walk_steps(0.25)
+        assert abs(vbig[15] - 0.5) > 10, "k = 0.25 should over-correct more every step"
+
+    @check("level_command is -kp*angle - kd*rate - ki*integral")
+    def _():
+        close(m.level_command(0.1, 0.2, 0.3, 150.0, 20.0, 300.0), -15.0 - 4.0 - 90.0, 1e-12, "u")
+
+    @check("levelling loop: an estimate error becomes a real lean; an integral fixes a push but not that")
+    def _():
+        e = np.radians(1.0)
+        close(m.level_loop(meas_error=e), -e, 1e-5, "PD with the estimate off by +1 deg")
+        close(m.level_loop(push=3.0), 3.0 / 150.0, 1e-5, "PD with a 3 rad/s^2 push (= push / kp)")
+        close(m.level_loop(push=3.0, ki=300.0), 0.0, 1e-5, "PID with the push")
+        close(m.level_loop(meas_error=e, ki=300.0), -e, 1e-5, "PID with the estimate off")
+
+
+MODULES = {"1": module1, "2": module2, "3": module3, "4": module4, "5": module5, "6": module6}
 
 
 def main():

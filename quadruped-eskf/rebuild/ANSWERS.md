@@ -143,9 +143,45 @@ same information twice.
 
 ---
 
-## Module 6 (reference numbers, seed 1)
+## Module 6
 
-**6.1**
+**6.1** (a) FR 0.25, FL 0.75, RR 0.75, RL 0.25, so **FR and RL** are planted.
+(b) At 0.25 s: FR 0.625, FL 0.125, RR 0.125, RL 0.625, so **FL and RR**. At 0.22 s: FR 0.55,
+FL 0.05, RR 0.05, RL 0.55, so **all four**.
+(c) One pair is down from 0 to 0.24 s and the other from 0.20 to 0.44 s. They overlap for 0.04 s
+twice per cycle: 0.08 s of every 0.4 s = **20%**. `m6_walking_control.py` measures the same.
+(d) The line between two diagonal feet passes under the middle of the body, so with only two feet
+down the body is still balanced over its support, front to back and side to side.
+(e) Contact detection: a foot counts as planted only if the force is over 5 N AND the schedule says
+stance, and the schedule ends contact 5 ms before liftoff (Module 5's contacts, your E4 experiment).
+
+**6.2** (a) 0.5 × 0.2 / 2 = **0.05 m**. The code uses the pendulum's exact version, 0.045 m.
+(b) 0.06 × 0.1 = **6 mm** further ahead. It **slows the robot down**: with the foot further ahead,
+the body spends longer behind it (braking) than in front of it (pushing).
+(c) g/h = 9.81 / 0.27 = **36.3 s⁻²** and ω = **6.03 1/s**. With x − foot = −0.02 m,
+x'' = 36.3 × (−0.02) = **−0.73 m/s²**: braking.
+(d) k = 0 never changes speed: told to walk, the robot stays at 0 (the k = 0 row). A very large k
+over-corrects: each step flips the error and makes it bigger (the k = 0.25 row). For this pendulum,
+k ≈ 0.11 s corrects the whole error in one step, and anything above ≈ 0.22 s is unstable.
+(e) A **P controller on velocity** that acts once per step (every 0.2 s), through foot placement.
+(g) 0.06 × 0.013 = 0.00078 m, about **0.8 mm**. The body travels 12 cm during each stance, so the
+estimate barely moves where the feet land. The 0.17 m/s tracking error comes from the controller
+itself. Your estimator is the speedometer and the controller is the driver.
+
+**6.3** (a) 0 = −kp(θ + e), so **θ = −e**. The robot leans by exactly the estimate's error, the
+other way.
+(b) 0 = −kp θ + 3, so θ = 3/150 = **0.02 rad = 1.15°**.
+(c) With the push: **θ = 0**. With the estimate off by e: **θ = −e**, still. **No**: the integral
+drives the *measured* angle to zero, so a wrong estimate stays a real lean.
+(d) Attitude: **PD** (P on the angle, D on the rate). Height: **PI**. The trunk sags under its
+weight because position servos act like springs. That's a constant load on a P-like loop, which
+leaves a constant offset (6.3b), and the I removes it.
+
+---
+
+## Module 7 (reference numbers, seed 1)
+
+**7.1**
 
 - Legs cut velocity RMSE from **1.76** to **0.0037** m/s, about 476×.
 - After 30 s, yaw is off **0.34°** and position **0.04 m**. The filter's σ for them only grows
@@ -158,7 +194,7 @@ same information twice.
   thing (E2: 0.1 m/s of slip → 0.0996 m/s of error).
 - One flipped sign in F gives **5.9 m/s**. `check.py 4`'s finite-difference test names the block.
 
-**6.2** (short versions; your own words are better)
+**7.2** (short versions; your own words are better)
 
 - *Lean:* "Tilt and accel bias look the same until the robot turns: 1° of tilt leaks 0.17 m/s² of
   gravity sideways, like a 0.17 m/s² bias. The controller levelled the tilt it was told about, so the
@@ -173,8 +209,12 @@ same information twice.
 - *Jacobians:* "I nudge each error-state input by ±1e-6, rerun the real nonlinear step, and compare the
   measured slope with my formula. They agree to about 1e-10. A flipped sign shows up a million times
   over the tolerance."
+- *Raibert:* "Each foot lands at the neutral point, half the stance travel ahead, plus k times the speed
+  error. Too fast, it lands further ahead and the leg brakes. It's a P loop on velocity that acts once per
+  step. My estimate enters through the speed in that term, and through the roll, pitch and height the
+  levelling loops use."
 
-**6.3** Things the real filter has that the rebuild doesn't:
+**7.3** Things the real filter has that the rebuild doesn't:
 - forward kinematics on encoders, with encoder noise mapped through the leg Jacobian (`kin_cov`);
 - P resized at every touchdown and liftoff (`augment`, `marginalize`);
 - contact from force AND schedule, ending 5 ms early, with a 10 ms settle;

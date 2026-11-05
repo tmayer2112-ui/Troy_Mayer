@@ -4,23 +4,24 @@ You rebuild the core of the quadruped estimator yourself, in Python. Each step i
 first and then coded. Nothing here needs MuJoCo or a GPU, so it runs on Windows on ARM. A synthetic
 trotting robot (`simdata.py`) stands in for the simulator.
 
-By the end you'll have written the predict step, the leg update, the Jacobians and the
-finite-difference tests behind every number on your résumé. You'll have watched the IMU drift,
+By the end you'll have written the predict step, the leg update, the Jacobians, the
+finite-difference tests, and the core of the walking controller (gait clock, Raibert foot placement,
+levelling loops) behind every line on your résumé. You'll have watched the IMU drift,
 the legs stop it, and a turn separate tilt from accelerometer bias.
 
 ## The week
 
 | Day | Module | Time | Paper (WORKSHEET.md) | Code | Done when |
 |---|---|---|---|---|---|
-| 1 | Setup + **1: Kalman filter in 1D** | 35 min | 1.1-1.4: derive the gain | `m1_kalman_1d.py` (6 lines) | `python check.py 1` passes |
-| 2 | **2: position + velocity, with matrices** | 40 min | 2.1-2.4: one predict and one update by hand | `m2_kalman_2d.py` (7 lines) | `python check.py 2` passes |
-| 3 | **3: rotations, gravity leak, finite differences** | 40 min | 3.1-3.4 | `m3_rotations_fd.py` (10 lines) | `python check.py 3` passes |
+| 1 | Setup + **1: Kalman filter in 1D** | 30 min | 1.1-1.4: derive the gain | `m1_kalman_1d.py` (6 lines) | `python check.py 1` passes |
+| 2 | **2: position + velocity, with matrices** | 35 min | 2.1-2.4: one predict and one update by hand | `m2_kalman_2d.py` (7 lines) | `python check.py 2` passes |
+| 3 | **3: rotations, gravity leak, finite differences** | 35 min | 3.1-3.4 | `m3_rotations_fd.py` (10 lines) | `python check.py 3` passes |
 | 4 | **4: the ESKF predict step** | 55 min | 4.1-4.4 | `eskf.py`, 4 functions (~30 lines) | `python check.py 4` passes, then `python run.py imu-only` |
 | 5 | **5: the leg update** | 60 min | 5.1-5.5 | `eskf.py`, 3 functions (~35 lines) | `python check.py 5` passes, then `python run.py full` |
-| 6 | **6: experiments and your numbers** | 30 min | 6.1-6.3 | nothing new | `python run.py report` (1-3 min) |
-| 7 | **Retell** | 15 min | - | - | explain the filter out loud from your own code, recorded once |
+| 6 | **6: the walking controller** (gait clock, Raibert, levelling loops) | 45 min | 6.1-6.3 | `m6_walking_control.py` (6 lines) | `python check.py 6` passes |
+| 7 | **7: experiments, your numbers, retell** | 35 min | 7.1-7.4 | nothing new | `python run.py report` (1-3 min), then the 90-second retell, recorded once |
 
-Total: about 4 h 35 min. Each day follows the same order:
+Total: about 4 h 55 min. Each day follows the same order:
 
 1. **Paper first.** Do that module's worksheet questions. Tiny numbers, no calculator heroics.
 2. **Code.** Fill in the `TODO`s. Each docstring gives the equation, but derive it before you look.
@@ -38,14 +39,14 @@ pick up there tomorrow. The 5-hour cap matters more than finishing perfectly.
 2. In a terminal, in this folder (`quadruped-eskf/rebuild`), run:
    ```
    py -m pip install numpy
-   py -m pip install matplotlib      (optional: only for the plot on day 6)
+   py -m pip install matplotlib      (optional: only for the plot on day 7)
    ```
    Recent NumPy versions ship Windows-on-ARM wheels. If pip starts compiling something or fails,
    install the regular **x64** Python instead; Windows runs it under emulation and everything here works.
 3. Check the setup:
    ```
-   py check.py all --solutions       should say: 22 passed
-   py check.py all                   should say: 0 passed, 0 failed, 22 not written yet
+   py check.py all --solutions       should say: 28 passed
+   py check.py all                   should say: 0 passed, 0 failed, 28 not written yet
    ```
    (On Windows, `py` and `python` are the same thing; the rest of these docs say `python`.)
 
@@ -57,7 +58,8 @@ pick up there tomorrow. The 5-hour cap matters more than finishing perfectly.
 | `ANSWERS.md` | worked answers to the worksheet | no; read it after each module |
 | `m1_kalman_1d.py`, `m2_kalman_2d.py`, `m3_rotations_fd.py` | warm-up modules with `TODO`s | **yes** |
 | `eskf.py` | the filter: 7 functions to write, the rest provided | **yes** |
-| `check.py` | the auto-checker (`python check.py 1` ... `5`, or `all`) | no |
+| `m6_walking_control.py` | the controller module: 4 functions to write | **yes** |
+| `check.py` | the auto-checker (`python check.py 1` ... `6`, or `all`) | no |
 | `run.py` | runs your filter on the walk (`imu-only`, `full`, `report`) | no |
 | `simdata.py` | the synthetic trotting robot | no; read its docstring |
 | `so3.py` | rotation helpers (skew, Exp, quaternions) | no |
@@ -65,8 +67,7 @@ pick up there tomorrow. The 5-hour cap matters more than finishing perfectly.
 
 ## How it maps to your real project
 
-Every function you write here has a twin in `quadruped-eskf/python/qeskf/eskf.py`. On day 6, open
-them side by side.
+Every function you write here has a twin in the real project. On day 7, open them side by side.
 
 | You write (rebuild/eskf.py) | Real project (python/qeskf/eskf.py) | C++ (cpp/src/eskf.cpp) |
 |---|---|---|
@@ -81,6 +82,13 @@ them side by side.
 | provided: `static_alignment`, `initial_covariance` | lines 283 / 305 | |
 | `check.py` Jacobian checks | `python/tests/test_eskf.py` | `cpp/tests/test_jacobians.cpp` |
 
+| You write (rebuild/m6_walking_control.py) | Real project (python/qeskf/gait.py) | C++ (cpp/src/gait.cpp) |
+|---|---|---|
+| `leg_phase`, `scheduled_stance` | lines 51, 55 | `legPhase` 59, `scheduledStance` 66 |
+| `raibert_offset` | line 96, inside `foot_targets` | line 112 |
+| `level_command` (attitude PD) | line 75: a leg-length PD (the QP version is `qp_balance.py` line 115) | line 87 |
+| the height PI (worksheet 6.3d) | lines 69-70 | lines 81-82 |
+
 **What's simpler here than in the real project.** You'll need these if you're asked to compare.
 
 - The leg sensor gives the foot vector directly. The real filter computes it with forward kinematics
@@ -88,6 +96,9 @@ them side by side.
 - Contact is perfect: it comes straight from the gait schedule. The real filter combines a 5 N force
   threshold with the schedule, and ends contact 5 ms early.
 - A lifted foot keeps a fixed slot with its covariance cleared. The real filter resizes P.
+- Module 6's Raibert demo uses an inverted pendulum, where foot placement is the only speed
+  control. Your real trot also sweeps the stance feet at the commanded speed, so don't carry the
+  pendulum's gains or numbers over to the robot.
 - The noise is white and the floor is rigid, so the numbers here are better than the project's:
   about 0.004 m/s velocity RMSE here, against 0.013 m/s there. Don't quote the synthetic numbers as
   project results.
