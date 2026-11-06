@@ -1,0 +1,46 @@
+"""Module 7: deciding which feet are planted. REFERENCE SOLUTION.
+
+The filter's biggest assumption is "a planted foot doesn't move". This module decides when a foot
+counts as planted, the way the real project does (python/qeskf/pipeline.py, closed_loop.py):
+force above 5 N AND the gait schedule says stance, ending a few ms before the scheduled liftoff.
+Then you reproduce two real results: the vertical-drift bug (DEBUG_LOG #4) and the latency experiment (E4).
+"""
+import numpy as np
+
+
+def delay(signal, n):
+    """(Provided.) The signal as it arrives n samples late: the first row is repeated at the start."""
+    if n <= 0:
+        return signal
+    return np.concatenate([np.repeat(signal[:1], n, 0), signal[:-n]])
+
+
+def ahead(sched, n):
+    """(Provided.) The schedule n samples in the future: row k is sched[k + n]. The end repeats."""
+    if n <= 0:
+        return sched
+    return np.concatenate([sched[n:], np.repeat(sched[-1:], n, 0)])
+
+
+def detect_contacts(force, sched, threshold=5.0, latency=0, advance=0, settle=0,
+                    use_force=True, use_schedule=True):
+    """(n, 4) bool: which feet the filter treats as planted at each sample.
+
+    force     (n, 4) foot forces in N        sched  (n, 4) bool, the gait schedule's stance
+    latency   samples the force signal arrives late
+    advance   end contact this many samples before the schedule's liftoff
+    settle    a foot must have been in contact for more than this many samples before it counts
+    """
+    c = np.ones(sched.shape, bool)
+    if use_force:
+        c &= delay(force, latency) > threshold
+    if use_schedule:
+        c &= sched & ahead(sched, advance)
+    if settle:
+        out = np.zeros_like(c)
+        run = np.zeros(c.shape[1], int)
+        for k in range(len(c)):
+            run = np.where(c[k], run + 1, 0)
+            out[k] = run > settle
+        c = out
+    return c

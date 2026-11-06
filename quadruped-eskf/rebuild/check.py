@@ -1,6 +1,6 @@
 """Auto-checker for the rebuild.
 
-    python check.py 1          check Module 1 (also 2, 3, 4, 5)
+    python check.py 1          check Module 1 (also 2-8, 10, 11; Module 9 is C++, see README)
     python check.py all        check everything you've written so far
     python check.py 4 --solutions    run a check against the reference solutions instead of your code
 
@@ -339,13 +339,197 @@ def module5():
         print(f"        (your velocity RMSE {res['vel_rmse']:.4f} m/s, {time.time() - t0:.0f} s)")
 
 
-MODULES = {"1": module1, "2": module2, "3": module3, "4": module4, "5": module5}
+# ---------------------------------------------------------------------------------- Module 8
+def module8():
+    m = load("m8_walking_control")
+
+    @check("leg_phase 0.1 s after walking starts = [0.25, 0.75, 0.75, 0.25]   (worksheet 8.1)")
+    def _():
+        close(m.leg_phase(2.1), [0.25, 0.75, 0.75, 0.25], 1e-9, "phase")
+        close(m.leg_phase(1.0), [0.0, 0.5, 0.5, 0.0], 1e-12, "phase before the clock starts")
+
+    @check("scheduled_stance: one diagonal pair, then the other, all four 20% of the time")
+    def _():
+        want = {1.0: [1, 1, 1, 1], 2.10: [1, 0, 0, 1], 2.22: [1, 1, 1, 1], 2.30: [0, 1, 1, 0]}
+        for t, w in want.items():
+            close(np.asarray(m.scheduled_stance(t), float), w, 0, f"stance at t = {t}")
+        import simdata
+        ts = np.arange(2.0, 4.0, 0.001)
+        got = np.array([m.scheduled_stance(t) for t in ts])
+        close(got.astype(float), simdata.scheduled_stance(ts).astype(float), 0, "stance over 2-4 s (vs simdata)")
+        close(got.all(1).mean(), 0.2, 0.002, "fraction of time with all four planted")
+
+    @check("raibert_offset = neutral point + k (v - v_des)   (worksheet 8.2)")
+    def _():
+        close(m.raibert_offset(0.5, 0.5, 0.06), m.neutral_point(0.5), 1e-12, "on speed: just the neutral point")
+        close(m.raibert_offset(0.6, 0.5, 0.06), m.neutral_point(0.6) + 0.006, 1e-12, "0.1 m/s too fast")
+
+    @check("Raibert walk: k = 0.06 reaches the command, k = 0 never changes speed, k = 0.25 blows up")
+    def _():
+        v, cmd = m.walk_steps(0.06)
+        assert abs(v[9] - 0.5) < 0.01 and abs(v[39] - 0.2) < 0.01, f"k = 0.06: speeds {v[9]:.3f}, {v[39]:.3f}"
+        v0, _ = m.walk_steps(0.0)
+        close(v0, np.zeros_like(v0), 1e-12, "k = 0 speeds")
+        vbig, _ = m.walk_steps(0.25)
+        assert abs(vbig[15] - 0.5) > 10, "k = 0.25 should over-correct more every step"
+
+    @check("level_command is -kp*angle - kd*rate - ki*integral")
+    def _():
+        close(m.level_command(0.1, 0.2, 0.3, 150.0, 20.0, 300.0), -15.0 - 4.0 - 90.0, 1e-12, "u")
+
+    @check("levelling loop: an estimate error becomes a real lean; an integral fixes a push but not that")
+    def _():
+        e = np.radians(1.0)
+        close(m.level_loop(meas_error=e), -e, 1e-5, "PD with the estimate off by +1 deg")
+        close(m.level_loop(push=3.0), 3.0 / 150.0, 1e-5, "PD with a 3 rad/s^2 push (= push / kp)")
+        close(m.level_loop(push=3.0, ki=300.0), 0.0, 1e-5, "PID with the push")
+        close(m.level_loop(meas_error=e, ki=300.0), -e, 1e-5, "PID with the estimate off")
+
+
+# ---------------------------------------------------------------------------------- Module 6
+def module6():
+    m = load("m6_legs")
+    import legs
+
+    @check("foot_position of a straight leg = hip + (0, -0.08, -0.426)   (worksheet 6.1)")
+    def _():
+        close(m.foot_position(0, np.zeros(3)), [0.1881, -0.12675, -0.426], 1e-12, "FR foot, all joints 0")
+        close(m.foot_position(1, np.zeros(3)), [0.1881, 0.12675, -0.426], 1e-12, "FL foot, all joints 0")
+
+    @check("foot_position undoes the provided inverse kinematics (all legs, random poses)")
+    def _():
+        rng = np.random.default_rng(0)
+        for _ in range(40):
+            leg = int(rng.integers(4))
+            p = legs.HIP_OFFSETS[leg] + np.array([rng.uniform(-0.08, 0.08), legs.SIDE[leg] * 0.08 + rng.uniform(-0.03, 0.03),
+                                                  rng.uniform(-0.33, -0.22)])
+            close(m.foot_position(leg, legs.leg_ik(leg, p)), p, 1e-9, f"FK(IK(p)) for leg {leg}")
+
+    @check("foot_jacobian matches finite differences of your foot_position (tolerance 1e-8)")
+    def _():
+        fd = their_fd()
+        rng = np.random.default_rng(1)
+        for leg in range(4):
+            q = np.array([0.0, 0.8, -1.6]) + rng.normal(0, 0.2, 3)
+            close(m.foot_jacobian(leg, q), fd(lambda qq: m.foot_position(leg, qq), q), 1e-8, f"J for leg {leg}")
+
+    @check("leg_noise_cov = J (step^2/12) J^T + model_noise^2 I; 14-bit rounding is far below 3 mm")
+    def _():
+        q = np.array([0.05, 0.75, -1.55])
+        J = m.foot_jacobian(2, q)
+        want = J @ J.T * legs.encoder_step(10) ** 2 / 12 + np.eye(3) * 0.002 ** 2
+        close(m.leg_noise_cov(2, q, bits=10, model_noise=0.002), want, 1e-15, "covariance")
+        enc = m.leg_noise_cov(2, q, bits=14, model_noise=0.0)
+        assert np.sqrt(np.linalg.eigvalsh(enc).max()) < 1e-4, "14-bit rounding should give well under 0.1 mm"
+
+
+# ---------------------------------------------------------------------------------- Module 7
+def module7():
+    m = load("m7_contacts")
+    sched = np.array([0, 1, 1, 1, 1, 1, 0, 0], bool)[:, None].repeat(4, 1)
+    force = np.array([0, 2, 10, 20, 20, 10, 3, 0], float)[:, None].repeat(4, 1)
+
+    def col(c):
+        return np.asarray(c)[:, 0].astype(int).tolist()
+
+    @check("force only: planted while the force is above 5 N   (worksheet 7.1)")
+    def _():
+        assert col(m.detect_contacts(force, sched, use_schedule=False)) == [0, 0, 1, 1, 1, 1, 0, 0], \
+            f"got {col(m.detect_contacts(force, sched, use_schedule=False))}"
+
+    @check("latency: a force signal 1 sample late keeps the foot planted 1 sample too long")
+    def _():
+        got = col(m.detect_contacts(force, sched, latency=1, use_schedule=False))
+        assert got == [0, 0, 0, 1, 1, 1, 1, 0], f"got {got}"
+
+    @check("schedule with advance = 2: contact ends 2 samples before the scheduled liftoff")
+    def _():
+        got = col(m.detect_contacts(force, sched, advance=2, use_force=False))
+        assert got == [0, 1, 1, 1, 0, 0, 0, 0], f"got {got}"
+
+    @check("settle = 2: a foot only counts after more than 2 samples in contact")
+    def _():
+        got = col(m.detect_contacts(force, sched, settle=2, use_force=False))
+        assert got == [0, 0, 0, 1, 1, 1, 0, 0], f"got {got}"
+
+    @check("force AND schedule (advance 1): both have to agree   (worksheet 7.2)")
+    def _():
+        got = col(m.detect_contacts(force, sched, advance=1))
+        assert got == [0, 0, 1, 1, 1, 0, 0, 0], f"got {got}"
+
+
+# ---------------------------------------------------------------------------------- Module 10
+def module10():
+    m = load("m10_consistency")
+
+    @check("nees([1, 2, 0], diag(1, 4, 9)) = 2   (worksheet 10.1)")
+    def _():
+        close(m.nees(np.array([1.0, 2.0, 0.0]), np.diag([1.0, 4.0, 9.0])), 2.0, 1e-12, "NEES")
+
+    @check("Module 2's cart: measuring position sees everything; measuring only velocity can't see position")
+    def _():
+        F = np.array([[1.0, 0.1], [0.0, 1.0]])
+        O = m.observability_matrix([F, F], [np.array([[1.0, 0.0]])] * 3)
+        close(O, [[1, 0], [1, 0.1], [1, 0.2]], 1e-12, "O with H = [1, 0]")
+        assert m.count_unobservable(O) == 0, "position-only measurements should see both states"
+        O2 = m.observability_matrix([F, F], [np.array([[0.0, 1.0]])] * 3)
+        assert m.count_unobservable(O2) == 1, "velocity-only measurements can't see position (1 direction)"
+
+    @check("your filter on the walk: exactly 4 unobservable directions (3 position + yaw)")
+    def _():
+        import simdata
+        E = load("eskf")
+        d = simdata.make_walk(1, noise=False, biases=False, duration=10.0)
+        c = d["contact"]
+        k0 = next(k for k in range(8000, 9000) if (c[k:k + 100] == c[k]).all() and c[k].sum() == 2)
+        Fs, Hs, _ = m.linearize_window(d, E, k0, 100)
+        n = m.count_unobservable(m.observability_matrix(Fs, Hs))
+        assert n == 4, f"found {n} unobservable directions, expected 4"
+
+
+# ---------------------------------------------------------------------------------- Module 11
+def module11():
+    m = load("m11_mujoco")
+
+    @check("specific_force: resting level reads +g; a rotated sensor sees it rotated   (worksheet 11.1)")
+    def _():
+        close(m.specific_force(np.eye(3), np.zeros(3)), [0, 0, 9.80665], 1e-12, "level, at rest")
+        from so3 import rot_from_rpy
+        R = rot_from_rpy(0.0, np.pi / 2, 0.0)
+        close(m.specific_force(R, np.zeros(3)), R.T @ np.array([0, 0, 9.80665]), 1e-12, "pitched 90 deg, at rest")
+        close(m.specific_force(np.eye(3), np.array([0, 0, -9.80665])), np.zeros(3), 1e-12, "free fall")
+
+    @check("analyze_drop on a 6-sample example: touch at 3 ms, sinks 2 mm more, settled from 5 ms")
+    def _():
+        t = np.arange(1, 7) * 1e-3
+        z = np.array([0.010, 0.009, 0.006, 0.004, 0.005, 0.005])
+        force = np.array([0, 0, 6, 20, 15, 15], float)
+        close(m.analyze_drop(t, z, force), (0.003, 2.0, 0.005), 1e-12, "(t_touch, max_sink_mm, t_settled)")
+
+    @check("in MuJoCo: your specific_force matches the simulated accelerometer for the whole drop")
+    def _():
+        try:
+            import mujoco  # noqa: F401
+        except ImportError:
+            raise NotWritten("MuJoCo isn't installed; Module 11 is optional (README, Module 11)")
+        lg = m.simulate()
+        mine = np.array([m.specific_force(R, a) for R, a in zip(lg["R"], lg["a_world"])])
+        close(mine, lg["accel"], 1e-9, "specific force vs accelerometer")
+
+
+def module9():
+    print("  Module 9 is C++. Build and run it as the README says (section \"Module 9: C++\"):")
+    print("    cd cpp && cmake -S . -B build && cmake --build build && ./build/rebuild_tests")
+
+
+MODULES = {"1": module1, "2": module2, "3": module3, "4": module4, "5": module5, "6": module6, "7": module7,
+           "8": module8, "9": module9, "10": module10, "11": module11}
 
 
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     which = args[0] if args else "all"
-    keys = list(MODULES) if which == "all" else [which]
+    keys = [k for k in MODULES if k != "9"] if which == "all" else [which]
     if any(k not in MODULES for k in keys):
         print(__doc__)
         sys.exit(1)

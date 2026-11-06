@@ -10,11 +10,19 @@ Kept:
   * four feet, each planted for 60 % of every 0.4 s trot cycle (diagonal pairs half a cycle apart)
   * a "leg sensor" that reports each planted foot's position in the body frame with 3 mm of
     white noise. It plays the role of forward kinematics on the joint encoders.
+  * swing feet: between stances each foot follows a 7 cm-high arc to its next touchdown, and the leg
+    sensor keeps reporting it (as encoders would), so a contact detector that is late uses a moving foot
+  * a vertical foot force per leg: the robot's weight shared among the planted feet, ramping up after
+    touchdown and down over the last 20 % of stance as the other pair takes the load (Module 7)
   * optional foot slip (each planted foot slides backwards at `slip` m/s)
+  * optional foot_motion=True: each planted foot sinks 2 mm in its first 20 ms (soft ground) and rises
+    3.4 mm over the last 20 % of stance as it unloads. These sizes come from the real project's
+    DEBUG_LOG #4 (sinks ~2 mm early, rises ~4 mm late, net +1.4 mm per stance).
 Dropped:
-  * leg dynamics, encoders and forward kinematics (you get the FK answer directly)
-  * contact forces and contact detection (contact comes straight from the gait schedule)
-  * soft-floor sinking, vibration, and noise that is correlated over time
+  * leg dynamics. The leg sensor reports the foot vector; Module 6 turns it into joint angles (inverse
+    kinematics) and back (your forward kinematics) to model the encoders.
+  * a real contact model: the force is a smooth weight-sharing profile, not a contact solver
+  * vibration, and sensor noise that is correlated over time
 
 The truth is built so that the filter's own discrete IMU model is exact:
     R[k+1] = R[k] @ Exp(w[k] dt)
@@ -76,7 +84,19 @@ def scheduled_stance(t):
     return (phase < DUTY) | (t[:, None] < STAND)
 
 
-def make_walk(seed=0, duration=30.0, turn=True, noise=True, biases=True, slip=0.0, spec=SensorSpec()):
+WEIGHT = 12.74 * G   # N, the Go1 model's mass (12.74 kg) times g
+SWING_HEIGHT = 0.07  # m
+
+
+def _runs(mask):
+    """[(start, end), ...] of the True runs in a 1-D bool array (end exclusive)."""
+    m = np.concatenate([[False], mask, [False]]).astype(int)
+    d = np.diff(m)
+    return list(zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1)))
+
+
+def make_walk(seed=0, duration=30.0, turn=True, noise=True, biases=True, slip=0.0, foot_motion=False,
+              spec=SensorSpec()):
     """Generate one walk. Returns a dict of numpy arrays (see the keys at the bottom)."""
     rng = np.random.default_rng(seed)
     dt = 1.0 / spec.rate_hz
@@ -121,25 +141,53 @@ def make_walk(seed=0, duration=30.0, turn=True, noise=True, biases=True, slip=0.
     acc = f + ba + (rng.normal(0, sa, (n, 3)) if noise else 0.0)
     gyro = w + bg + (rng.normal(0, sg, (n, 3)) if noise else 0.0)
 
-    # --- feet and the leg sensor ---
+    # --- feet: where each one is in the world, planted or swinging ---
     contact = scheduled_stance(t)
-    legs = np.full((n, 4, 3), np.nan)
-    feet = np.zeros((4, 3))
     t_stance = PERIOD * DUTY
-    for k in range(n):
-        for i in range(4):
-            if not contact[k, i]:
-                continue
-            if k == 0 or not contact[k - 1, i]:
-                # touchdown: land half a stance ahead of the hip so the foot ends half a stance behind it
-                feet[i] = p[k] + R[k] @ NOMINAL_FEET[i] + heading[k] * speed[k] * t_stance / 2
-                feet[i, 2] = 0.0                               # flat ground at z = 0
-            elif slip:
-                feet[i] -= heading[k] * slip * dt             # the planted foot slides backwards
-            legs[k, i] = R[k].T @ (feet[i] - p[k])
-            if noise:
+    feet_world = np.zeros((n, 4, 3))
+    weight_share = np.zeros((n, 4))
+    n_sink = int(round(0.020 / dt))
+    for i in range(4):
+        runs = _runs(contact[:, i])
+        for r, (a, b) in enumerate(runs):
+            # touchdown: land half a stance ahead of the hip so the foot ends half a stance behind it
+            foot = p[a] + R[a] @ NOMINAL_FEET[i] + heading[a] * speed[a] * t_stance / 2
+            foot[2] = 0.0                                        # flat ground at z = 0
+            ks = np.arange(a, b)
+            feet_world[a:b, i] = foot
+            if slip:                                             # the planted foot slides backwards
+                feet_world[a:b, i] -= np.cumsum(heading[a:b], 0) * slip * dt - heading[a] * slip * dt
+            s_prog = (ks - a) / max(b - a, 1)                    # 0 at touchdown, ~1 at liftoff
+            if foot_motion:
+                sink = -0.002 * _smoothstep((ks - a) / n_sink)
+                rise = 0.0034 * np.clip((s_prog - 0.8) / 0.2, 0.0, 1.0) ** 2
+                feet_world[a:b, i, 2] += sink + rise
+            weight_share[a:b, i] = _smoothstep(s_prog / 0.1) * (1.0 - _smoothstep((s_prog - 0.8) / 0.2))
+            if b < n:                                            # swing to the next touchdown
+                c = runs[r + 1][0] if r + 1 < len(runs) else n
+                start = feet_world[b - 1, i]
+                end = start + heading[b] * speed[b] * PERIOD if c >= n else None
+                if end is None:
+                    end = p[c] + R[c] @ NOMINAL_FEET[i] + heading[c] * speed[c] * t_stance / 2
+                    end[2] = 0.0
+                u = (np.arange(b, c) - b + 1) / (c - b + 1)
+                feet_world[b:c, i] = start + _smoothstep(u)[:, None] * (end - start)
+                feet_world[b:c, i, 2] += SWING_HEIGHT * 0.5 * (1.0 - np.cos(2 * np.pi * u))
+    weight_share[t < STAND] = 1.0                                 # standing: all four share the weight
+    force = WEIGHT * weight_share / np.maximum(weight_share.sum(1, keepdims=True), 1e-9)
+
+    # --- the leg sensor: each foot's position in the body frame (stands in for FK on the encoders) ---
+    legs_true = np.einsum("kji,kfj->kfi", R, feet_world - p[:, None, :])
+    legs = legs_true.copy()
+    for k in range(n):                                           # stance noise first, in this order,
+        for i in range(4):                                       # so every seed keeps its numbers
+            if contact[k, i] and noise:
                 legs[k, i] += rng.normal(0, spec.leg_noise, 3)
+    if noise:                                                    # swing feet: their own random stream
+        rng_swing = np.random.default_rng(seed + 10_000)
+        legs[~contact] += rng_swing.normal(0, spec.leg_noise, (int((~contact).sum()), 3))
 
     q = np.array([rot_to_quat(Rk) for Rk in R])
-    return dict(t=t, dt=dt, acc=acc, gyro=gyro, contact=contact, legs=legs,
-                p=p, v=v, q=q, ba=ba, bg=bg, spec=spec, turn=turn, slip=slip, seed=seed)
+    return dict(t=t, dt=dt, acc=acc, gyro=gyro, contact=contact, legs=legs, legs_true=legs_true,
+                feet_world=feet_world, force=force, p=p, v=v, q=q, ba=ba, bg=bg, spec=spec,
+                turn=turn, slip=slip, foot_motion=foot_motion, seed=seed)
