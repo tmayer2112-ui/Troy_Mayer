@@ -146,6 +146,7 @@ figure a{display:block}
 figure img{display:block;width:100%;height:auto;border:1px solid var(--border);border-radius:4px;background:#fff}
 figure svg{display:block;width:100%;height:auto;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text)}
 figcaption{font-size:.87rem;color:var(--text-3);line-height:1.5;margin-top:8px}
+figure img.tall{width:auto;max-width:min(100%,360px)}
 
 /* hopper sketches */
 .sk{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
@@ -732,7 +733,7 @@ footer a:hover{color:var(--text)}
           <figcaption>An industrial rotary valve of the class the component redesign targeted.</figcaption>
         </figure>
         <figure>
-          <a href="images/valve_connection_cad.png"><img src="images/valve_connection_cad.png" alt="CAD model of the custom actuator connection" loading="lazy"></a>
+          <a href="images/valve_connection_cad.png"><img class="tall" src="images/valve_connection_cad.png" alt="CAD model of the custom actuator connection" loading="lazy"></a>
           <figcaption>CAD model of the custom connection system between the actuator and the valve body.</figcaption>
         </figure>
       </div>
