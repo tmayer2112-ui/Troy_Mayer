@@ -1,11 +1,11 @@
-"""Module 6: the walking controller. REFERENCE SOLUTION.
+"""Module 8: the walking controller. REFERENCE SOLUTION.
 
 Three small pieces, each the core of something in your controller (python/qeskf/gait.py):
   A. the gait clock: which feet are planted when          (gait.py: leg_phase, scheduled_stance)
   B. Raibert foot placement: where a foot lands sets the speed      (gait.py, line 96)
   C. levelling loops: PD / PI on an angle, fed a measurement that may be wrong
                                                                      (gait.py lines 69-76; qp_balance.py)
-Worksheet: WORKSHEET.md, Module 6.
+Worksheet: WORKSHEET.md, Module 8.
 """
 import numpy as np
 

@@ -41,7 +41,7 @@ than the sensor, the estimate moves most of the way to the measurement."*
 
 ---
 
-## Module 2: position and velocity, with matrices (day 2)
+## Module 2: position and velocity, with matrices (day 1)
 
 Now the state has two numbers, x = [p, v], and P is a 2×2 matrix. The diagonal holds the two
 variances. The off-diagonal is how the two errors are **linked**.
@@ -78,7 +78,7 @@ also corrects velocity. That's how foot-position measurements fix the robot's ve
 
 ---
 
-## Module 3: rotations, the gravity leak, finite differences (day 3)
+## Module 3: rotations, the gravity leak, finite differences (day 2)
 
 **3.1 Why not add to a quaternion?** A quaternion has 4 numbers but a rotation has only 3 degrees of
 freedom; the 4 numbers must have length 1. A small rotation δθ changes a quaternion by about
@@ -131,7 +131,7 @@ to 1e-10."*
 
 ---
 
-## Module 4: the predict step (day 4)
+## Module 4: the predict step (day 3)
 
 The full filter's nominal state is p, v, q, b_a (accel bias), b_g (gyro bias), plus one world position
 per planted foot. The error state is 27 numbers: δp, δv, δθ, δb_a, δb_g, then 3 per foot.
@@ -178,7 +178,7 @@ gravity back, integrate. The uncertainty grows with F P Fᵀ + Q. Nothing gets c
 
 ---
 
-## Module 5: the leg update (day 5)
+## Module 5: the leg update (day 4)
 
 **5.1 The measurement.** A planted foot sits at world position d. The leg sensor (forward kinematics,
 in the real robot) reports where the foot is relative to the body, in the body frame:
@@ -223,13 +223,75 @@ correction to every state, including velocity and the biases."*
 
 ---
 
-## Module 6: the walking controller (day 6)
+## Module 6: legs, forward kinematics and encoder noise (day 5)
+
+The real filter doesn't get foot positions. It reads 12 joint encoders and runs forward kinematics (FK).
+
+**6.1 A two-link leg in its own plane.** Thigh and calf are both L = 0.213 m. The hip angle q2 and
+knee angle q3 both turn about y. Relative to the hip:
+x = −L sin q2 − L sin(q2 + q3) and z = −L cos q2 − L cos(q2 + q3).
+
+- (a) All joints at 0: x = ____, z = ____.
+- (b) Standing pose q2 = 0.8, q3 = −1.6 (use sin(−a) = −sin a): x = ____, z = ____. Where is the foot?
+
+**6.2 Abduction.** The whole leg plane turns about x by q1, and the thigh sits d = ±0.08 m to the
+side (− for right legs): y = cos q1·d − sin q1·z and z' = sin q1·d + cos q1·z. Then add the hip position.
+FR's hip is at (0.1881, −0.04675, 0). With all joints at 0, the FR foot is at (____, ____, ____).
+
+**6.3 The leg Jacobian.** Column j says how the foot moves per radian of joint j. At the standing
+pose: dx/dq2 = ____, dx/dq3 = ____, dz/dq3 = ____. Then check yours against fd_jacobian.
+
+**6.4 Encoder noise.** A 14-bit encoder has 2¹⁴ = 16,384 counts per turn, so one count = ____ rad
+= ____°. Rounding is uniform over ±½ count, which gives a variance of count²/12. Through a 0.3 m lever,
+the foot's σ ≈ ____ mm. In R_leg = J (count²/12) Jᵀ + (3 mm)² I, which term wins? What would 6 bits do?
+
+**Code:** `m6_legs.py`, then `python check.py 6`, `python m6_legs.py`, `python run.py legs` (14, 8 and 6 bits).
+
+**Say it:** *"The leg measurement is forward kinematics on 14-bit joint encoders. Its noise is the
+encoder rounding pushed through the leg Jacobian, plus 3 mm of model error, and the 3 mm dominates by
+about a hundred times."*
+
+---
+
+## Module 7: contacts, and your bug #4 (day 5)
+
+**7.1 Force.** Force samples [0, 2, 10, 20, 20, 10, 3, 0] N, and planted means > 5 N. Which samples
+are planted? Which, if the force arrives 1 sample late?
+
+**7.2 Schedule, advance, settle.** The schedule says stance for [0, 1, 1, 1, 1, 1, 0, 0].
+- *Advance* 2 ends contact 2 samples before the schedule's liftoff: ____.
+- *Settle* 2 counts a foot only after more than 2 samples in contact: ____.
+- Force AND schedule with advance 1: ____.
+
+**7.3 Why.**
+- (a) A late force keeps a lifting foot "planted". What does the filter make of a foot it thinks is
+  fixed, but which is moving at 0.5 m/s?
+- (b) Why can the schedule end contact on time when the force is late?
+- (c) Is using the schedule cheating on a real robot? When does it fail?
+
+**7.4 Your bug, rebuilt.** In `python run.py contacts`, part A, each foot sinks 2 mm after touchdown and
+rises 3.4 mm before liftoff, as in your DEBUG_LOG #4. Predict before you run it:
+- If the filter treats a rising foot as fixed, does the height estimate drift up or down?
+- What does waiting 20 ms after touchdown do?
+- What does ending contact 5, 10 or 20 ms early do?
+
+Then run it and tell the story in five beats: symptom, hypothesis, test, cause, fix.
+
+**Code:** `m7_contacts.py`, then `python check.py 7`, then `python run.py contacts` (about a minute).
+
+**Say it:** *"A foot counts as planted when the force is over 5 N and the schedule says stance, ending
+5 ms early. Force alone is late at liftoff, and the end of stance is exactly when the foot starts to
+move. That's what caused my vertical-drift bug."*
+
+---
+
+## Module 8: the walking controller (day 6)
 
 Your résumé says "closed-loop control using Raibert foot placement and attitude/height controllers".
 This module is the core of each, small enough to work by hand. In your real controller
 (`python/qeskf/gait.py`) all three live inside `foot_targets()`.
 
-**6.1 The gait clock.** A trot cycle takes 0.4 s. Each foot is planted for 60% of it (duty 0.6),
+**8.1 The gait clock.** A trot cycle takes 0.4 s. Each foot is planted for 60% of it (duty 0.6),
 and the phase offsets are FR 0, FL 0.5, RR 0.5, RL 0. A foot's phase is
 (time since walking started / 0.4 + its offset), keeping only the part after the decimal point.
 The foot is planted while its phase < 0.6.
@@ -241,7 +303,7 @@ The foot is planted while its phase < 0.6.
 - (d) Why move diagonal feet together? Hint: draw a line from FR to RL. Where does it pass?
 - (e) Your estimator uses this same clock. Where, and for what?
 
-**6.2 Raibert foot placement: where a foot lands sets the speed.**
+**8.2 Raibert foot placement: where a foot lands sets the speed.**
 
 - (a) **The neutral point.** The body moves at v during a stance of T. If the foot lands v·T/2 ahead
   of the body, the body passes over it exactly at mid-stance. The leg brakes for the first half and
@@ -266,7 +328,7 @@ The foot is planted while its phase < 0.6.
   (estimated) speed. If the estimate is off by 0.013 m/s, the foot moves by ____ mm. Use that to
   explain why tracking barely changed when the controller ran on your estimate (0.173 vs 0.169 m/s).
 
-**6.3 Levelling loops (attitude and height).** A toy body has angle θ, with θ'' = u + push. The
+**8.3 Levelling loops (attitude and height).** A toy body has angle θ, with θ'' = u + push. The
 controller only sees the *measured* angle θ_m = θ + e (e is the estimate's error) and the true rate
 (from the gyro):
 
@@ -281,11 +343,11 @@ controller only sees the *measured* angle θ_m = θ + e (e is the estimate's err
 - (d) In gait.py, the attitude loop changes each leg's length by k_att·angle + d_att·rate
   (k_att 1.2, d_att 0.06 s). Is that P, PD or PI? The height loop is k_height·error plus an
   integral (0.002 × error added every 2 ms). Which is it, and why did height need the I?
-  Hint: 6.3b, and the position servos are springs.
+  Hint: 8.3b, and the position servos are springs.
 
-**Code:** `m6_walking_control.py`, then `python check.py 6`, then `python m6_walking_control.py`.
+**Code:** `m8_walking_control.py`, then `python check.py 8`, then `python m8_walking_control.py`.
 Part B prints the speed after each step for k = 0, 0.06, 0.11 and 0.25. Part C prints the four
-cases from 6.3.
+cases from 8.3.
 
 **Say it:** *"Raibert foot placement puts the foot at the neutral point, half the stance travel
 ahead, plus a correction proportional to the speed error: too fast, the foot lands further ahead
@@ -295,33 +357,122 @@ the true one."*
 
 ---
 
-## Module 7: experiments, your numbers, and the retell (day 7)
+---
 
-Run `python run.py report`. Add `--plot` if matplotlib is installed. It takes 1-3 minutes.
+## Module 9: the predict step in C++ (day 6)
 
-**7.1** Fill in from the report, then say each line out loud:
+You port Module 4 to C++ with Eigen, write the finite-difference test, and run a GoogleTest suite
+with a parity test against the Python reference. This is the shape of your real `cpp/` folder.
+
+**9.1 Python → Eigen.** Fill in the Eigen column:
+
+| numpy | Eigen |
+|---|---|
+| `np.zeros((15, 15))` | `Mat15::________()` |
+| `A @ B`, `A.T` | `A ___ B`, `A.________()` |
+| `F[3:6, 6:9] = X` | `F.block<3, 3>(___, ___) = X` |
+| `quat_mul(q1, q2)` | `q1 ___ q2` (`Eigen::Quaterniond(w, x, y, z)`; careful: `.coeffs()` is x, y, z, w) |
+
+**9.2 Fixed or dynamic size.** `Matrix<double, 15, 15>` has its size known when compiling and lives
+on the stack. `MatrixXd` is sized at run time and allocates on the heap. Run the benchmark: is fixed
+size faster at 15×15? If not, why use it in a 1 kHz loop? (Hint: the worst case matters, not the average.)
+
+**9.3 Your real filter's trick** (`cpp/src/eskf.cpp`, lines 61-66). With 4 feet the state is 27 and
+F = [[F_c, 0], [0, I]], where F_c is 15×15. Count multiply-adds:
+- dense F P Fᵀ: 2 × 27³ = ____;
+- structured, F_c P_cc F_cᵀ (2 × 15³) plus F_c P_cf (15·15·12): ____.
+
+How many times fewer?
+
+**9.4 Tests.** `TEST`, `TEST_P` with `INSTANTIATE_TEST_SUITE_P(..., Range(0u, 5u))`, `EXPECT_LT`.
+Why can a parity test (C++ = Python) pass with a wrong formula, and which test catches it?
+
+**Build and run** (README, "C++ and MuJoCo"):
+```
+cd cpp
+cmake -S . -B build
+cmake --build build
+./build/rebuild_tests_solution
+./build/rebuild_tests
+./build/rebuild_bench
+```
+`rebuild_tests_solution` checks your setup; `rebuild_tests` runs your code. Your job: `predict.hpp` and `fd.hpp`.
+
+**Say it:** *"I ported the predict step to C++ with Eigen, with fixed-size 15×15 matrices so the 1 kHz
+loop never allocates, tested F against central differences in GoogleTest, and matched my Python
+reference to 1e-14 m."*
+
+---
+
+## Module 10: honest uncertainty, what can't be known, and your numbers (day 7)
+
+**10.1 NEES.** A velocity error e = (0.01, 0.02, 0) m/s, with P = diag(0.01², 0.01², 0.01²).
+NEES = eᵀP⁻¹e = ____. If P is honest, NEES averages 3 (one per component). What does an average of 30
+mean? Of 0.3?
+
+**10.2 Predict before running.** If Q is 100× too small, is NEES big or small? And if Q is 100× too big?
+
+**10.3 Observability by hand, with Module 2's cart.** F = [[1, 0.1], [0, 1]].
+- Measuring position, H = [1, 0]: O = [H; HF; HF²] = ____. Can it see both states?
+- Measuring only velocity, H = [0, 1]: O = ____. Which direction is invisible, and why?
+- Now the filter: which 4 directions should the SVD find (Module 5's "shift and spin" test)?
+
+**Code:** `m10_consistency.py`, then `python check.py 10`, then `python run.py report`. Add `--plot` if
+matplotlib is installed. It takes 1-2 minutes.
+
+**10.4** Fill these in from the report, then say each line out loud:
 
 - Legs cut velocity RMSE from ____ to ____ m/s.
 - After 30 s, yaw is off ____° and position ____ m. The filter's own σ for them ____.
 - Before the turn, |corr(tilt, bias)| = ____ and the tilt error is ____°. After the turn: ____°.
-- 10 cm/s of foot slip gives ____ m/s of velocity error. Why is it almost exactly the slip speed?
-- Flipping one sign in F gives ____ m/s. Which check would have caught it?
+- 10 cm/s of foot slip gives ____ m/s. Why is that almost exactly the slip speed?
+- One sign flipped in F gives ____ m/s. Which check catches it?
+- NEES with Q ×0.1 / ×1 / ×10: ____ / ____ / ____.
+- Unobservable directions: ____. The next weakest pair tilt with ____, at a ratio of ____.
 
-**7.2** Now answer the questions you missed before, in 3 sentences each, using what you built:
+**10.5** Answer these in 3 sentences each, using what you built:
 
-- Why did the robot lean when the controller used your estimate, and why didn't the filter fix it?
+- Why did the robot lean on your estimate, and why didn't the filter fix it?
 - What can't the filter estimate, and why not?
 - How does a foot-position measurement correct velocity?
 - Why an error-state filter instead of a normal EKF?
 - How do you know your Jacobians are right?
+- How do you decide a foot is planted, and what goes wrong if you get it late?
+- Where does the leg measurement come from, and what is its noise?
 - What is Raibert foot placement, and where does your estimate enter the controller?
 
-**7.3** Open `python/qeskf/eskf.py` from the real project next to your `rebuild/eskf.py` (the README has
-the line map). Find each of your functions in it. Note one thing the real one does that yours
-doesn't.
+**10.6** Open the real project next to your rebuild. The README has the map. Find each of your
+functions, and note one thing the real one does that yours doesn't.
+
+**10.7 Your real numbers and the retell.**
+1. Read `REAL_NUMBERS.md` out loud.
+2. Close everything and draw the diagram (IMU → predict → state ← update ← legs, and the controller
+   on top).
+3. Explain the project in 90 seconds: problem, idea, predict, update, results, closing the loop, one
+   limit. Record it.
+4. Then do one mock interview with Claude on the real project.
 
 ---
 
-**7.4 Retell.** Close everything. Draw the whiteboard diagram (IMU → predict → state ← update ← legs). Then explain
-the project in 90 seconds as if to an interviewer: problem, idea, predict, update, results,
-closing the loop with the controller, one limit. Record it once. Compare with how you answered before this week.
+## Module 11 (optional): MuJoCo (day 7)
+
+You simulate one Go1 foot and an IMU. Setup is in the README.
+
+**11.1 What an accelerometer reads:** f = Rᵀ(a − g). Predict each reading:
+- free fall: ____;
+- resting level: ____;
+- resting, pitched 90° nose-down (body x points down): ____, on which axis?
+
+**11.2 When is a foot planted?** A quarter of the Go1's weight drops 2.7 cm onto one foot sphere with
+your model's soft contact. Predict: when the force passes 5 N, has the foot stopped?
+
+Run it, then fill in: force > 5 N at ____ ms, foot centre at ____ mm, sinks a further ____ mm, settled
+at ____ ms. Compare with MuJoCo's stiff default.
+
+Why did your project keep the soft foot instead of stiffening it? (DEBUG_LOG #3)
+
+**Code:** `m11_mujoco.py`, then `python check.py 11`, then `python m11_mujoco.py`.
+
+**Say it:** *"An accelerometer reads specific force: zero in free fall, +g at rest. In MuJoCo the Go1's
+soft foot reports 5 N of contact while it still has 12 mm to sink, which is why contact needs a settle
+time and an early liftoff."*

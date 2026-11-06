@@ -1,8 +1,8 @@
-"""Module 6: the walking controller.
+"""Module 8: the walking controller.
 
-  1. Do WORKSHEET.md, Module 6 on paper first.
+  1. Do WORKSHEET.md, Module 8 on paper first.
   2. Fill in the four TODOs below (about 6 lines).
-  3. Run:  python check.py 6      then:  python m6_walking_control.py
+  3. Run:  python check.py 8      then:  python m8_walking_control.py
 
 Three small pieces, each the core of something in your controller (python/qeskf/gait.py):
   A. the gait clock: which feet are planted when          (gait.py: leg_phase, scheduled_stance)
@@ -24,7 +24,7 @@ LEGS = ["FR", "FL", "RR", "RL"]
 
 def leg_phase(t):
     """Where each leg is in its cycle, 0 to 1 (0 = touchdown). The clock starts at t = STAND."""
-    # TODO (2 lines), worksheet 6.1: time since the clock started (never negative: use max(..., 0.0)),
+    # TODO (2 lines), worksheet 8.1: time since the clock started (never negative: use max(..., 0.0)),
     # divided by PERIOD, plus PHASE_OFFSET, wrapped to [0, 1) with % 1.0
     raise NotImplementedError
 
@@ -53,7 +53,7 @@ def neutral_point(v):
 
 def raibert_offset(v, v_des, k):
     """Where to put the next foot, ahead of the body: the neutral point plus k times the speed error."""
-    # TODO (1 line), worksheet 6.2: use neutral_point(v)
+    # TODO (1 line), worksheet 8.2: use neutral_point(v)
     raise NotImplementedError
 
 
@@ -83,7 +83,7 @@ def walk_steps(k, n_steps=40, v0=0.0):
 def level_command(meas, rate, integral, kp, kd, ki):
     """PD (plus I) on an angle: drive the MEASURED angle to zero. Returns the commanded angular
     acceleration. Same shape as your attitude loops (qp_balance.py uses kp = 150, kd = 20)."""
-    # TODO (1 line), worksheet 6.3: minus kp times the angle, minus kd times the rate, minus ki times the integral
+    # TODO (1 line), worksheet 8.3: minus kp times the angle, minus kd times the rate, minus ki times the integral
     raise NotImplementedError
 
 
