@@ -121,7 +121,7 @@ def run(duration=60.0, feedback="estimate", seed=0, profile=command_profile, gai
     log = {k: np.full((n,) + s, np.nan) for k, s in dict(
         t=(), p=(3,), quat=(4,), v=(3,), omega_b=(3,), cmd=(3,), height=(),
         est_p=(3,), est_v=(3,), est_q=(4,), fb_v_b=(3,), fb_rpy=(3,), fb_height=(),
-        acc=(3,), gyro=(3,), contact_est=(4,), qp_f=(4, 3),
+        acc=(3,), gyro=(3,), contact_est=(4,), qp_f=(4, 3), qenc=(12,), force=(4,), q_cmd=(12,),
     ).items()}
     force_hist = np.zeros((n, 4), dtype=bool)
     f = None
@@ -177,6 +177,9 @@ def run(duration=60.0, feedback="estimate", seed=0, profile=command_profile, gai
         log["cmd"][k] = cmd
         log["height"][k] = d.qpos[2] - _mean_stance_foot_z(d, foot_sites)
         log["fb_v_b"][k], log["fb_rpy"][k], log["fb_height"][k] = fb[0], fb[1], fb[3]
+        log["qenc"][k] = qenc
+        if qp is None:
+            log["q_cmd"][k] = q_cmd
         if qp is not None:
             log["qp_f"][k] = qp.f
 
@@ -197,6 +200,7 @@ def run(duration=60.0, feedback="estimate", seed=0, profile=command_profile, gai
                     mujoco.mj_contactForce(m, d, c, fc)
                     fn[i] += fc[0]
         force_hist[k] = fn > CONTACT_FORCE_N
+        log["force"][k] = force_hist[k]
         if f is not None:
             f.predict(acc, gyr, dt)
 
