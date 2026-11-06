@@ -1,10 +1,11 @@
 /* Plant model for testing the orthosis controller on a laptop.
  *
- *   BTS7960 --> DC motor --> 5.2:1 planetary --> 4 mm screw --> cable --> 47 mm pulley --> joint
- *                  |                                                                      |
- *              encoder (28 counts/rev, imperfect edge spacing)          forearm: inertia + gravity
+ *   BTS7960 --> DC motor --> 5.2:1 planetary --> belt --> 4 mm screw --> cable --> 47 mm pulley --> joint
+ *                  |                                                                               |
+ *              encoder (28 counts/rev, imperfect edge spacing)                   forearm: inertia + gravity
  *
- * Motor constants are the goBILDA 5203 (5.2:1, 1150 RPM) datasheet values at 12 V:
+ * Motor constants are the goBILDA Yellow Jacket 5.2:1, 1150 RPM datasheet values at 12 V
+ * (the 5202 on the built arm and the newer 5203 list the same ratings):
  * 9.2 A stall, 0.25 A no-load, 7.9 kg-cm stall torque at the output.
  *   R  = 12 V / 9.2 A                       = 1.30 ohm
  *   Ke = (12 - 0.25 * 1.30) / 626 rad/s    = 0.0186 V s/rad  (= Kt)
@@ -29,8 +30,9 @@ struct PlantParams {
   double R = 1.30;
   double Ke = 0.0186;                 // = Kt in SI units
   double J_rotor = 3.0e-6;            // kg m^2, estimate
-  double J_gear = 0.5e-6;             // gearbox + screw reflected to the motor, estimate
+  double J_gear = 0.5e-6;             // gearbox, belt and screw reflected to the motor, estimate
   double gear = 5.2;
+  double belt = 1.0;                  // gearbox-output turns per screw turn
   double screw_pitch_m = 0.004;
   double pulley_r_m = 0.0235;
   double eta = 0.87 * 0.90;           // gearbox x ball screw
@@ -49,7 +51,7 @@ struct PlantParams {
   bool hard_stop = false;
   double hard_stop_deg = 1e9;
 
-  double N() const { return gear * 2.0 * kPi * pulley_r_m / screw_pitch_m; }  // motor rad / joint rad
+  double N() const { return gear * belt * 2.0 * kPi * pulley_r_m / screw_pitch_m; }  // motor rad / joint rad
   double J() const { return J_rotor + J_gear + limb_I / (N() * N()); }
 };
 
