@@ -6,8 +6,9 @@ cd "$(dirname "$0")"
 rm -rf docs && mkdir -p docs
 cp index.html docs/
 # copy every local asset index.html references -- src=, href=, and CSS url()
-{ grep -oE '(src|href)="[^"#][^"]*"' index.html | sed -E 's/.*="//; s/"//'
-  grep -oE "url\(['\"]?[^)'\"]+['\"]?\)" index.html | sed -E "s/url\(['\"]?//; s/['\"]?\)//"
+# ("|| true": a page with no match for one of the patterns is fine under pipefail)
+{ grep -oE '(src|href)="[^"#][^"]*"' index.html | sed -E 's/.*="//; s/"//' || true
+  grep -oE "url\(['\"]?[^)'\"]+['\"]?\)" index.html | sed -E "s/url\(['\"]?//; s/['\"]?\)//" || true
 } | grep -vE '^(https?:|mailto:|data:)' | sort -u \
   | while read -r f; do [ -f "$f" ] && mkdir -p "docs/$(dirname "$f")" && cp "$f" "docs/$f"; done  # keep paths
 touch docs/.nojekyll   # serve files as-is, skip Jekyll
