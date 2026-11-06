@@ -9,7 +9,7 @@
 <meta property="og:title" content="Troy Mayer">
 <meta property="og:description" content="Mechanical Engineering and Applied Statistics at Purdue. Robot kinematics, controls and state estimation.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="image_f58a52.png">
+<meta property="og:image" content="images/portrait.jpg">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%231f1f1f'/><text x='16' y='23' font-family='Helvetica,Arial,sans-serif' font-size='19' font-weight='600' fill='white' text-anchor='middle'>T</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,15 +81,17 @@ img{max-width:100%}
 .btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:var(--on-accent)}
 
 /* hero */
-.hero{padding:72px 0 64px;border-bottom:1px solid var(--border)}
-.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:56px;align-items:center}
+.hero{padding-bottom:60px;border-bottom:1px solid var(--border)}
+.cover{height:clamp(190px,27vw,330px);background:#30353c url('images/purdue_arch.jpg') center 36%/cover no-repeat;border-bottom:1px solid var(--border)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:56px;align-items:start}
+.hero-text{padding-top:40px}
 .hero h1{font-size:2.7rem;margin-bottom:8px}
 .hero .sub{font-size:1.15rem;color:var(--text-2);margin-bottom:20px}
 .hero .intro{font-size:1.06rem;max-width:620px}
 .hero .meta{color:var(--text-3);font-size:.93rem;margin-bottom:24px}
 .hero .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .hero .actions .mail{margin-left:6px}
-.portrait{width:230px;height:auto;display:block;border-radius:var(--radius);border:1px solid var(--border)}
+.portrait{width:220px;height:auto;display:block;margin-top:-96px;border-radius:var(--radius);border:4px solid var(--bg);background:var(--bg)}
 
 /* sections */
 .section{padding:64px 0}
@@ -178,9 +180,10 @@ footer a:hover{color:var(--text)}
 @media (max-width:640px){
   body{font-size:16px}
   .wrap{padding:0 18px}
-  .hero{padding:40px 0 44px}
-  .hero-grid{grid-template-columns:1fr;gap:24px}
-  .portrait{width:150px;grid-row:1}
+  .hero{padding-bottom:44px}
+  .hero-grid{grid-template-columns:1fr;gap:0}
+  .hero-text{padding-top:18px}
+  .portrait{width:132px;margin-top:-66px;grid-row:1}
   .hero h1{font-size:2.15rem}
   .section,.detail{padding:48px 0}
   .cards,.skills{grid-template-columns:1fr}
@@ -206,8 +209,9 @@ footer a:hover{color:var(--text)}
 </nav>
 
 <header class="hero" id="top">
+  <div class="cover" role="img" aria-label="The Purdue University arch at dusk"></div>
   <div class="wrap hero-grid">
-    <div>
+    <div class="hero-text">
       <h1>Troy Mayer</h1>
       <p class="sub">Mechanical Engineering and Applied Statistics, Purdue University</p>
       <p class="intro">I work on robot kinematics, controls and state estimation. Right now that's impact analysis for Atlas at Boston Dynamics, and independent research on a three-legged asteroid hopping robot with Universidad Carlos III de Madrid.</p>
@@ -218,7 +222,7 @@ footer a:hover{color:var(--text)}
         <a class="mail" href="mailto:tmayer2112@gmail.com">tmayer2112@gmail.com</a>
       </div>
     </div>
-    <img class="portrait" src="image_f58a52.png" alt="Portrait of Troy Mayer">
+    <img class="portrait" src="images/portrait.jpg" alt="Portrait of Troy Mayer">
   </div>
 </header>
 
@@ -309,7 +313,7 @@ footer a:hover{color:var(--text)}
     <div class="cards">
 
       <a href="#orthosis" class="card">
-        <div class="card-media"><img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand"></div>
+        <div class="card-media"><img src="images/orthosis_built.jpg" alt="The assembled active orthosis held in hand"></div>
         <div class="card-body">
           <div class="card-meta">Purdue ASME · 2024–2026</div>
           <h3>EMG-Controlled Active Orthosis</h3>
@@ -351,7 +355,7 @@ footer a:hover{color:var(--text)}
       </a>
 
       <a href="#soft-robotics" class="card">
-        <div class="card-media"><img src="image_05119d.png" alt="Macro photograph of a dielectric gel cantilever against a micrometer scale"></div>
+        <div class="card-media"><img src="images/gel_cantilever.jpg" alt="Macro photograph of a dielectric gel cantilever against a micrometer scale"></div>
         <div class="card-body">
           <div class="card-meta">Chortos Lab · 2025–2026</div>
           <h3>Ionic Dielectric Gels</h3>
@@ -361,7 +365,7 @@ footer a:hover{color:var(--text)}
       </a>
 
       <a href="#caterpillar" class="card">
-        <div class="card-media"><img src="Caterpillar.png" alt="Paint-line analytics dashboard" style="object-position:left top"></div>
+        <div class="card-media"><img src="images/caterpillar_dashboard.png" alt="Paint-line analytics dashboard" style="object-position:left top"></div>
         <div class="card-body">
           <div class="card-meta">Caterpillar via Purdue Data Mine · 2026</div>
           <h3>Paint Line Forecasting</h3>
@@ -371,7 +375,7 @@ footer a:hover{color:var(--text)}
       </a>
 
       <a href="#emerson" class="card">
-        <div class="card-media"><img src="image_058215.png" alt="Industrial rotary valve assembly"></div>
+        <div class="card-media"><img src="images/valve_actuator_cad.png" alt="Industrial rotary valve assembly"></div>
         <div class="card-body">
           <div class="card-meta">Emerson ASCO · 2025</div>
           <h3>Heavy Industrial Valves</h3>
@@ -422,7 +426,7 @@ footer a:hover{color:var(--text)}
 
       <div class="figs">
         <figure>
-          <a href="orthosis_built.jpg"><img src="orthosis_built.jpg" alt="The assembled active orthosis held in hand"></a>
+          <a href="images/orthosis_built.jpg"><img src="images/orthosis_built.jpg" alt="The assembled active orthosis held in hand"></a>
           <figcaption>The built arm: a goBILDA gear motor drives a screw-and-cable transmission to the elbow pulley.</figcaption>
         </figure>
         <figure>
@@ -636,11 +640,11 @@ footer a:hover{color:var(--text)}
 
       <div class="figs">
         <figure>
-          <a href="keyence_rig.jpg"><img src="keyence_rig.jpg" alt="Keyence laser displacement sensor aimed at a flat gel sample beside a laptop running LabVIEW"></a>
+          <a href="images/keyence_rig.jpg"><img src="images/keyence_rig.jpg" alt="Keyence laser displacement sensor aimed at a flat gel sample beside a laptop running LabVIEW"></a>
           <figcaption>The flat-sample setup: a Keyence laser displacement head on a live sample (the red spot is the measurement point), feeding an NI USB-6001 into the LabVIEW VI on the laptop.</figcaption>
         </figure>
         <figure>
-          <a href="image_05119d.png"><img src="image_05119d.png" alt="Macro photograph of a dielectric gel cantilever deflecting" loading="lazy"></a>
+          <a href="images/gel_cantilever.jpg"><img src="images/gel_cantilever.jpg" alt="Macro photograph of a dielectric gel cantilever deflecting" loading="lazy"></a>
           <figcaption>A 29.45 mm dielectric gel cantilever under actuation. The micrometer scale in the frame is what the tracker uses to measure displacement.</figcaption>
         </figure>
         <figure>
@@ -648,7 +652,7 @@ footer a:hover{color:var(--text)}
           <figcaption>The LabVIEW block diagram that acquires and synchronizes data from the test fixtures.</figcaption>
         </figure>
         <figure>
-          <a href="image_05153e.png"><img src="image_05153e.png" alt="Force magnitude versus time under varying voltage" loading="lazy"></a>
+          <a href="images/force_vs_time.png"><img src="images/force_vs_time.png" alt="Force magnitude versus time under varying voltage" loading="lazy"></a>
           <figcaption>Force under varying voltage, the measurement each formulation was tuned against.</figcaption>
         </figure>
       </div>
@@ -688,7 +692,7 @@ footer a:hover{color:var(--text)}
 
       <div class="figs">
         <figure>
-          <a href="Caterpillar.png"><img src="Caterpillar.png" alt="Paint-line analytics dashboard comparing primer and topcoat usage"></a>
+          <a href="images/caterpillar_dashboard.png"><img src="images/caterpillar_dashboard.png" alt="Paint-line analytics dashboard comparing primer and topcoat usage"></a>
           <figcaption>The bottleneck view of the dashboard, ranking paint stages by severity and average deviation to show where the manual and robotic lines diverge.</figcaption>
         </figure>
       </div>
@@ -724,11 +728,11 @@ footer a:hover{color:var(--text)}
 
       <div class="figs">
         <figure>
-          <a href="image_058215.png"><img src="image_058215.png" alt="Industrial rotary valve"></a>
+          <a href="images/valve_actuator_cad.png"><img src="images/valve_actuator_cad.png" alt="Industrial rotary valve"></a>
           <figcaption>An industrial rotary valve of the class the component redesign targeted.</figcaption>
         </figure>
         <figure>
-          <a href="image_05825b.png"><img src="image_05825b.png" alt="CAD model of the custom actuator connection" loading="lazy"></a>
+          <a href="images/valve_connection_cad.png"><img src="images/valve_connection_cad.png" alt="CAD model of the custom actuator connection" loading="lazy"></a>
           <figcaption>CAD model of the custom connection system between the actuator and the valve body.</figcaption>
         </figure>
       </div>
