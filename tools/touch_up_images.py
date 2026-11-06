@@ -99,10 +99,9 @@ def recipes(sr):
     def phone_photo(src):   # light denoise, a little local contrast, sharpening
         return lambda: save_jpg(unsharp(local_contrast(denoise(load(src), h=3), clip=1.25), amount=0.45), src, 88)
 
-    def gel():   # remove the green cast, denoise, 2x EDSR, then local contrast
-        img = denoise(gray_world(load("image_05119d.png"), strength=0.7), h=5)
-        img = unsharp(local_contrast(sr().upsample(img), clip=1.4), sigma=1.4, amount=0.45)
-        save_jpg(resize_width(img, 1500), "gel_cantilever.jpg", 88)
+    def gel():   # 2x EDSR, then take out most of the green cast; no denoise, it smears the brushed metal
+        img = gray_world(sr().upsample(load("image_05119d.png")), strength=0.6)
+        save_jpg(resize_width(unsharp(img, sigma=1.2, amount=0.35), 1500), "gel_cantilever.jpg", 88)
 
     def force():   # screenshot of the MATLAB plots: 2x EDSR so lines and labels are crisper
         save_png(unsharp(sr().upsample(load("image_05153e.png")), sigma=1.0, amount=0.35), "force_vs_time.png")
