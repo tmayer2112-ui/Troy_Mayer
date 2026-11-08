@@ -1,7 +1,7 @@
 """Module 2: the filter band.
 
   1. Do WORKSHEET.md, Module 2, on paper first.
-  2. Fill in the TODOs below (about 18 lines in total).
+  2. Fill in the TODOs below (about 22 lines in total).
   3. Run:  python check.py 2      then:  python run.py filter
 """
 import numpy as np
@@ -50,6 +50,24 @@ def bilinear_biquad(f0, Q, K, kind, fs):
     # TODO (about 8 lines). With A = c^2, B = (w0/Q) c, C = w0^2 the denominator becomes
     #   (A + B + C) + (2C - 2A) z^-1 + (A - B + C) z^-2
     # and the numerator is K A (1 - 2 z^-1 + z^-2) for the high-pass, K C (1 + 2 z^-1 + z^-2) for the low-pass.
+    raise NotImplementedError
+
+
+def adc(v, rng, full_scale=3.1, bits=12, enob=10.0):
+    """The ESP32-S3 ADC as the project models it (emgdec/board.py, adc). Returns volts.
+      1. add Gaussian noise with SD = (full_scale / 2^enob) / sqrt(12): the noise that leaves only
+         `enob` effective bits (a uniform error one LSB wide has SD LSB / sqrt(12))
+      2. clip to 0 .. full_scale (the pin can't read outside it)
+      3. round to the nearest of the 2^bits codes, one LSB = full_scale / 2^bits apart
+    (Worksheet 2.5)"""
+    # TODO (3 lines). np.shape(v) gives the noise the right shape.
+    raise NotImplementedError
+
+
+def alias_frequency(f, fs):
+    """Where a tone at f Hz shows up after sampling at fs: sampling can't tell f from f - k fs, so
+    the tone folds to the nearest multiple of fs and lands between 0 and fs/2.   (Worksheet 2.6)"""
+    # TODO (1 line): |f - fs * round(f / fs)|
     raise NotImplementedError
 
 

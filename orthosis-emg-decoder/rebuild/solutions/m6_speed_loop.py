@@ -78,6 +78,25 @@ class VelocityPI:
         # --- end ---
 
 
+def count_speed(counts, dt):
+    """The old firmware's speed: encoder counts read every dt seconds, differenced. counts/s.
+    (Worksheet 6.5)"""
+    # TODO (1 line): np.diff
+    # --- solution ---
+    return np.diff(counts) / dt
+    # --- end ---
+
+
+def edge_speed(t_edges, k=4):
+    """The firmware's speed (orthosis_core.h, VelocityEstimator): k counts divided by the time they took,
+    from the newest edge back k edges. t_edges = every edge time so far, oldest first. counts/s.
+    k = 4 is one full quadrature cycle, so the uneven spacing of the 4 edges cancels.   (Worksheet 6.5)"""
+    # TODO (1 line)
+    # --- solution ---
+    return k / (t_edges[-1] - t_edges[-1 - k])
+    # --- end ---
+
+
 # ------------------------------------------------------------------ provided from here down
 # The toy arm: the firmware's plant (firmware/sim/plant.h) cut down to one first-order equation.
 #   tau d(omega)/dt = K (duty - gravity - friction) - omega
@@ -178,3 +197,31 @@ def windup(antiwindup, block_s=0.5, seconds=1.5, speed=20.0):
     log = simulate(VelocityPI(antiwindup=antiwindup), arm, lambda t: speed, seconds, release_at=block_s)
     after = log["t"] >= block_s
     return log, float(log["omega"][after].max()), float(log["integ"][np.argmax(after)])
+
+
+# The encoder (firmware/sim/plant.h): 28 counts per motor turn, 0.06698 joint deg per count, and the
+# four edges of each quadrature cycle are not evenly spaced (edge_err, a fraction of a count). The ISR
+# timestamps each edge in whole microseconds.
+DEG_PER_COUNT = 0.06698          # firmware/results/metrics.json, deg_per_count
+EDGE_ERR = (0.0, 0.12, 0.0, -0.10)
+
+
+def encoder_edges(dps, seconds=2.0):
+    """Edge times (s) for a joint turning at a constant dps: edge n sits at count n + EDGE_ERR[n % 4]."""
+    cps = dps / DEG_PER_COUNT
+    n = np.arange(1, int(cps * seconds))
+    return np.round((n + np.array(EDGE_ERR)[n % 4]) / cps * 1e6) * 1e-6
+
+
+def speed_errors(dps, tick=0.01, seconds=2.0):
+    """RMS error, as a fraction of the true speed, of (count difference every `tick`, edge timing read
+    every 1 ms), from the 5th edge on. The firmware's test VelocityEstimator.EdgeTimingBeatsCountDifference."""
+    cps = dps / DEG_PER_COUNT
+    edges = encoder_edges(dps, seconds)
+    t = np.arange(edges[4], seconds, tick)
+    counts = np.searchsorted(edges, t, side="right")
+    by_count = count_speed(counts, tick)
+    t_ms = np.arange(edges[4], seconds, 0.001)
+    by_edge = np.array([edge_speed(edges[:np.searchsorted(edges, tt, side="right")]) for tt in t_ms])
+    rms = lambda v: float(np.sqrt(np.mean((v / cps - 1.0) ** 2)))
+    return rms(by_count), rms(by_edge)

@@ -1,9 +1,11 @@
 """Module 4: LDA and honest evaluation.
 
   1. Do WORKSHEET.md, Module 4, on paper first.
-  2. Fill in the TODOs below (about 22 lines in total).
+  2. Fill in the TODOs below (about 27 lines in total).
   3. Run:  python check.py 4      then:  python run.py lda
 """
+import hashlib
+
 import numpy as np
 
 import simdata
@@ -53,6 +55,16 @@ def cross_day(T, X=None, shrinkage=0.0):
     """Train once on every window of the training days, then score each test day on its own.
     Returns the list of per-day balanced accuracies, one per test day, in day order."""
     # TODO (5 lines): fit on T.day in TRAIN_DAYS, then loop over TEST_DAYS
+    raise NotImplementedError
+
+
+def identical_days(recs):
+    """The data audit's first finding (scripts/audit_data.py): days whose recordings are the same BYTES.
+    Hash each day's recordings, joined in class order, with MD5; return the groups of days that share
+    a hash, e.g. [[5, 7], [63, 68]]. Real EMG can't repeat sample for sample, so a match is a copy.
+    (Worksheet 4.5)"""
+    # TODO (4 lines): hashlib.md5(b"".join(...)).hexdigest(); x.tobytes() gives an array's bytes;
+    # collect {hash: [days]} with dict.setdefault, keep the lists longer than 1
     raise NotImplementedError
 
 

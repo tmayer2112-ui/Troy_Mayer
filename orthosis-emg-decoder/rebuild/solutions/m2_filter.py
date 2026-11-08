@@ -73,6 +73,30 @@ def bilinear_biquad(f0, Q, K, kind, fs):
     # --- end ---
 
 
+def adc(v, rng, full_scale=3.1, bits=12, enob=10.0):
+    """The ESP32-S3 ADC as the project models it (emgdec/board.py, adc). Returns volts.
+      1. add Gaussian noise with SD = (full_scale / 2^enob) / sqrt(12): the noise that leaves only
+         `enob` effective bits (a uniform error one LSB wide has SD LSB / sqrt(12))
+      2. clip to 0 .. full_scale (the pin can't read outside it)
+      3. round to the nearest of the 2^bits codes, one LSB = full_scale / 2^bits apart
+    (Worksheet 2.5)"""
+    # TODO (3 lines). np.shape(v) gives the noise the right shape.
+    # --- solution ---
+    v = v + rng.normal(0.0, full_scale / 2 ** enob / np.sqrt(12), np.shape(v))
+    lsb = full_scale / 2 ** bits
+    return np.round(np.clip(v, 0.0, full_scale) / lsb) * lsb
+    # --- end ---
+
+
+def alias_frequency(f, fs):
+    """Where a tone at f Hz shows up after sampling at fs: sampling can't tell f from f - k fs, so
+    the tone folds to the nearest multiple of fs and lands between 0 and fs/2.   (Worksheet 2.6)"""
+    # TODO (1 line): |f - fs * round(f / fs)|
+    # --- solution ---
+    return abs(f - fs * round(f / fs))
+    # --- end ---
+
+
 # ------------------------------------------------------------------ provided from here down
 def stages():
     """The two stages, high-pass first: [(f0, Q, kind), ...] from the schematic values."""

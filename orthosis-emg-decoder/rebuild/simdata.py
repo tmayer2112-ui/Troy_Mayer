@@ -24,7 +24,8 @@ Kept:
 Dropped:
   * real anatomy: amplitudes and MUAP shapes are random, not muscles. In particular class 0
     ("no motion") is NOT the loudest class here; in MultiDay it is, on every day.
-  * the board, 60 Hz hum and the ADC (Modules 2-3 add the board chains on top of this)
+  * the board and the ADC (Modules 2-3 add them on top of this). 60 Hz hum is optional and off
+    by default: `body_hum`, used by Module 3's board chains.
   * electrode shift onto a different muscle, transitions between gestures, motion artefacts
   * duplicate days, and anything above 1024 Hz
 
@@ -138,6 +139,29 @@ def recording(day, cls, seed=0, flips=True, fs=FS, hold_s=HOLD_S):
 def make_dataset(seed=0, flips=True, days=ALL_DAYS):
     """{(day, class): (n, 4) array}. About 1 s to build."""
     return {(d, c): recording(d, c, seed, flips) for d in days for c in range(N_CLS)}
+
+
+# ----------------------------------------------------------------- Module 3: optional 60 Hz hum
+# None of this is used unless you ask for hum, and it draws from its own random streams, so the EMG
+# above is byte-for-byte the same with or without it.
+def body_hum(day, key, n, fs=FS, seed=0):
+    """60 Hz mains on the body, unit amplitude. The level is drawn per DAY (x 0.5-1.5) and the phase per
+    recording, as in the real model: drawn per recording, the level would identify the recording and
+    so the class (decoder DEBUG_LOG #1)."""
+    level = rng_for(seed, day, "hum-level").uniform(0.5, 1.5)
+    phase = rng_for(seed, *key, "hum-phase").uniform(0.0, 2 * np.pi)
+    return level * np.sin(2 * np.pi * 60.0 * np.arange(n) / fs + phase)
+
+
+def electrode_imbalance(day, seed=0):
+    """Each channel's (Z+ - Z-) / Z on `day`, redrawn every day, uniform on +/-50 % (decoder README,
+    "Mains hum"). It decides how much of the hum each channel turns into signal, and with what sign."""
+    return rng_for(seed, day, "imbalance").uniform(-0.5, 0.5, N_CH)
+
+
+def board_signs(seed=0):
+    """The sign of each channel's own CMRR error, fixed by its parts: drawn once per board."""
+    return rng_for(seed, "board-signs").choice([-1.0, 1.0], N_CH)
 
 
 # ----------------------------------------------------------------- Module 7: 1 kHz, ADC counts

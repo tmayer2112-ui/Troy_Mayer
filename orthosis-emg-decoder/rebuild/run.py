@@ -3,11 +3,13 @@
     python run.py features     Module 1: what the features see
     python run.py filter       Module 2: the band-pass, analog and digital
     python run.py boards       Module 3: v1's loading and dead zone, v2's common-mode budget
-    python run.py lda          Module 4: the protocols, and LDA through each board (~20 s)
-    python run.py polarity     Module 5: the audit, and LDA vs a raw-waveform model (~40 s)
+    python run.py lda          Module 4: the protocols, LDA through each board, hum, the audit (~12 s)
+    python run.py polarity     Module 5: the audit, and LDA vs a raw-waveform model (~11 s)
     python run.py loop         Module 6: the speed loop on the toy arm
-    python run.py latency      Module 7: Bayesian vs two-pole envelope, the onset confirm (~10 s)
-    python run.py report       everything, then synthetic vs real side by side (~1.5 min)
+    python run.py latency      Module 7: Bayesian vs two-pole envelope, the onset confirm (~4 s)
+    python run.py safety       Module 8: the real monitors, and your supervisor on the toy arm
+    python run.py mujoco       Module 11 (optional): your loop on a MuJoCo elbow (needs MuJoCo)
+    python run.py report       everything, then synthetic vs real side by side (~30 s here; allow 2-3x on an ARM laptop)
 Options:
     --solutions    run the reference solutions instead of your code
     --plot         also save report.png (needs matplotlib; skipped if it isn't installed)
@@ -50,7 +52,7 @@ def real(path, key, scale=1.0, fmt="{:.1f}"):
         v = json.loads(Path(path).read_text())
         for k in key.split("/"):
             v = v[int(k)] if isinstance(v, list) else v[k]
-        return fmt.format(v * scale)
+        return fmt.format(v * scale if isinstance(v, (int, float)) else v)
     except (OSError, KeyError, ValueError, IndexError):
         return "(file not found)"
 
@@ -113,8 +115,22 @@ def cmd_filter():
           f"{real(b, 'max_digital_vs_analog_error_db_below_400hz', fmt='{:.3f}')} dB)")
     for f0, name in ((f0h, "HPF"), (f0l, "LPF")):
         print(f"Pre-warp, {name}: w0 = {2 * np.pi * f0:.0f} rad/s -> {2 * 2048 * np.tan(np.pi * f0 / 2048):.0f} rad/s")
-    for fx in (60, 500, 1000):
-        print(f"  gain at {fx:4d} Hz: analog {abs(M.cascade_analog(np.array([fx]))[0]):.3f}")
+    peak = np.abs(ha).max()
+    print("Sampling at the firmware's 1 kHz instead of 2048 Hz (decoder README, E4):")
+    for fx in (500, 700, 1000):
+        g = abs(M.cascade_analog(np.array([float(fx)]))[0])
+        print(f"  {fx:4d} Hz lands at {M.alias_frequency(fx, 1000.0):5.0f} Hz; the band-pass already has it at "
+              f"{20 * np.log10(g / peak):6.1f} dB")
+    sr = DECODER / "results" / "sample_rate.json"
+    print(f"  real cross-day LDA: 2048 Hz {real(sr, '2048 Hz/cross_day/mean', 100)} %, 1 kHz "
+          f"{real(sr, '1000 Hz/cross_day/mean', 100)} %, 1 kHz behind a sharp anti-alias FIR "
+          f"{real(sr, '1000 Hz, FIR anti-alias/cross_day/mean', 100)} %  (sample_rate.json)")
+    print("  -> the 0.4-point cost is the lost band above 500 Hz, not folding: the filtered row is no better.")
+    r = np.random.default_rng(0)
+    v = r.uniform(0.5, 2.5, 100000)
+    err = M.adc(v, r) - v
+    print(f"ADC: 12 bits over 3.1 V = {1e3 * 3.1 / 4096:.3f} mV steps; with noise for 10 effective bits the error "
+          f"SD is {1e3 * err.std():.3f} mV  (decoder README: sigma 0.87 mV, LSB 0.76 mV)")
     PLOTS["filter"] = (f, ha, hd)
 
 
@@ -140,6 +156,16 @@ def cmd_boards():
           f"{100 * np.mean(y > 0.4):.2f} % of samples clear the 0.4 V diode (real: 0.22 %, decoder README)")
     out = M.v1_output(f[:, :, :1], pot[:, None], 2048, np.random.default_rng(0))
     print(f"  the v1 output is never negative (min {out.min():.4f} V), so zero crossings are always 0")
+    print(f"Hum as a dither pedestal (E1): 10 mV through v1's 22.6 dB and x 877.5 gain is "
+          f"{M.hum_at_rectifier(0.010, 22.6, 877.5):.2f} V at the diode")
+    for hum in (0.0, 0.010, 0.100):
+        _, pots = M.run_chains(data(), hum_v=hum)
+        print(f"  {1e3 * hum:5.0f} mV of hum: {100 * pots['v1 share above the diode']:5.2f} % of v1 samples clear the "
+              f"diode, v1 pots {np.round(pots['v1 envelope'] / 1e3)} kOhm")
+    lda = DECODER / "results" / "lda.json"
+    print(f"  real: {real(lda, 'main/v1_envelope@0.0/info/above_diode_fraction', 100, '{:.2f}')} % -> "
+          f"{real(lda, 'sweeps/v1_envelope@0.01@20000.0/info/above_diode_fraction', 100)} % at 10 mV; at 100 mV the "
+          f"pots go to {real(lda, 'main/v1_envelope@0.1/info/pot_ohms', fmt='{}')} (lda.json, .../info)")
 
 
 # ---------------------------------------------------------------------------------- Module 4
@@ -173,6 +199,28 @@ def cmd_lda():
         print(f"  {name:12s} {L.mean_sd(s):>16s}, best day {100 * max(s):.1f} %  |  "
               f"{real(lda, f'main/{key}@0.0/cross_day/per_day/mean', 100)} %")
     PLOTS["lda"] = series
+    print("With 60 Hz hum on the body (E1), cross-day:   synthetic v1 / v2   |   real v1 / v2 (lda.json)")
+    for hum, rkey in ((0.010, "sweeps/{}@0.01@20000.0/cross_day/mean"), (0.100, "main/{}@0.1/cross_day/per_day/mean"),
+                      (1.0, "sweeps/{}@1.0@20000.0/cross_day/mean")):
+        chains, _ = M3.run_chains(data(), hum_v=hum)
+        res = []
+        for name in ("v1 envelope", "v2"):
+            Tc = F.hudgins_table(chains[name])
+            tr = np.isin(Tc.day, L.TRAIN_DAYS)
+            res.append(pct(L.cross_day(Tc, shrinkage=L.ledoit_wolf(Tc.X[tr], Tc.y[tr]))))
+        rv1 = real(lda, rkey.format("v1_envelope"), 100)
+        rv2 = real(lda, rkey.format("v2"), 100)
+        print(f"  {1e3 * hum:5.0f} mV: {res[0]:>7s} / {res[1]:>7s}   |   {rv1} / {rv2} %")
+    print("  The toy doesn't show v2's real loss at 1 V: its EMG is louder (5th percentile ~64 uV RMS) than the")
+    print("  real data's quietest holds (~30 uV), so the same hum is a smaller share of the signal.")
+    print("Data audit (scripts/audit_data.py): byte-identical days in the synthetic set:",
+          L.identical_days(data()) or "none", end="; ")
+    copy = dict(data())
+    copy.update({(21, c): data()[(13, c)] for c in range(11)})
+    print(f"after filing a copy of day 13 as day 21: {L.identical_days(copy)}")
+    print(f"  real: {real(DECODER / 'results' / 'data_audit.json', 'identical_day_groups', fmt='{}')} "
+          f"-> all six dropped, {real(DECODER / 'results' / 'data_audit.json', 'days_kept', fmt='{:.0f}')} days kept "
+          f"(data_audit.json)")
 
 
 # ---------------------------------------------------------------------------------- Module 5
@@ -246,6 +294,13 @@ def cmd_loop():
         _, peak, integ = M.windup(aw)
         print(f"Joint held for 0.5 s at a 20 deg/s command, anti-windup {'on ' if aw else 'off'}: "
               f"integral {integ:.2f} duty at release, peak {peak:.0f} deg/s after it")
+    print("Speed from the encoder (28 counts per motor turn, uneven edges as in plant.h):")
+    print("   deg/s   counts per 10 ms   count difference   edge timing    (firmware test: count / edge)")
+    real_test = {3: "111.0 / 0.00", 10: "33.5 / 0.00", 25: "11.9 / 0.00", 100: "2.2 / 0.02"}
+    for dps in (3, 10, 25, 100):
+        c, e = M.speed_errors(float(dps))
+        print(f"   {dps:5d}   {dps / M.DEG_PER_COUNT * 0.01:16.2f}   {100 * c:15.1f} %   {100 * e:10.3f} %"
+              f"    {real_test[dps]} %")
     PLOTS["loop"] = (lf, lc)
 
 
@@ -278,9 +333,37 @@ def cmd_latency():
     PLOTS["latency"] = steps
 
 
+# ---------------------------------------------------------------------------------- Module 8
+def cmd_safety():
+    M = mod("m8_safety")
+    print(f"The firmware's runtime monitors while ARMED (orthosis_core.h, supervise() and superviseMotion()): "
+          f"{len(M.REAL_MONITORS)}")
+    for name, what, ms, line in M.REAL_MONITORS:
+        print(f"  line {line}  {name:18s} {'at once' if ms == 0 else f'{ms} ms':>9s}  {what}")
+    print("Toy arm, your Module 6 loop, your supervisor (synthetic):")
+    for kind, real_txt in (("obstruction", "stall 443 ms after contact"),
+                           ("reversed encoder", "runaway after 211 ms and 2.3 deg")):
+        t, why, travel, after = M.scenario(kind)
+        print(f"  {kind:17s} -> {why} {after:.0f} ms after the problem began, {abs(travel):.1f} deg of travel   "
+              f"(firmware sim: {real_txt}; firmware/README.md)")
+    t, inside = M.hung_loop()
+    print(f"  the loop hangs at 1000 ms: the watchdog fires at {t} ms; a check inside the loop fired: {inside}")
+
+
+# ---------------------------------------------------------------------------------- Module 11
+def cmd_mujoco():
+    try:
+        import mujoco  # noqa: F401
+    except ImportError:
+        print("  MuJoCo isn't installed (optional, Module 11): run this in WSL with the venv from the README")
+        return
+    mod("m11_mujoco").demo()
+
+
 # ---------------------------------------------------------------------------------- report
 STEPS = [("features", cmd_features, 1), ("filter", cmd_filter, 2), ("boards", cmd_boards, 3),
-         ("lda", cmd_lda, 4), ("polarity", cmd_polarity, 5), ("loop", cmd_loop, 6), ("latency", cmd_latency, 7)]
+         ("lda", cmd_lda, 4), ("polarity", cmd_polarity, 5), ("loop", cmd_loop, 6), ("latency", cmd_latency, 7),
+         ("safety", cmd_safety, 8), ("mujoco", cmd_mujoco, 11)]
 
 
 def run_step(name, fn, n):

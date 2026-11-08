@@ -1,2 +1,5 @@
 report.png
 __pycache__/
+cpp/build/
+# the decoder ignores data/ (the 2 GB dataset); the C++ parity fixture is small and must be kept
+!cpp/data/

@@ -1,6 +1,6 @@
 """Auto-checker for the rebuild.
 
-    python check.py 1                check Module 1 (also 2 ... 7)
+    python check.py 1                check Module 1 (also 2-8 and 11; Module 9 is C++: see cpp/)
     python check.py all              check everything you've written so far
     python check.py 4 --solutions    run the checks against the reference solutions instead of your code
 
@@ -241,6 +241,23 @@ def module2():
         err = np.max(np.abs(20 * np.log10(np.abs(hd[f < 400]) / np.abs(ha[f < 400]))))
         close(err, 0.384, 5e-4, "max |digital - analog| below 400 Hz, dB")
 
+    @check("adc: 12 bits over 3.1 V is a 0.757 mV step; values round to codes and clip at 0 and 3.1 V")
+    def _():
+        got = m.adc(np.array([0.0004, 1.65, 3.5, -0.2]), np.random.default_rng(0), enob=60.0)
+        lsb = 3.1 / 4096
+        close(got, [lsb, round(1.65 / lsb) * lsb, 3.1, 0.0], 1e-12, "volts (noise switched off)")
+
+    @check("adc noise: 10 effective bits means SD 0.874 mV before rounding, about 0.90 mV after  (decoder README)")
+    def _():
+        v = np.random.default_rng(1).uniform(0.5, 2.5, 200000)
+        err = m.adc(v, np.random.default_rng(2)) - v
+        close(1e3 * err.std(), 1e3 * np.sqrt((3.1 / 1024) ** 2 / 12 + (3.1 / 4096) ** 2 / 12), 0.01, "error SD, mV")
+
+    @check("alias_frequency: 700 Hz sampled at 1 kHz shows up at 300 Hz (tests/test_board.py); 1300 -> 300; 480 -> 480")
+    def _():
+        close([m.alias_frequency(f, 1000.0) for f in (700.0, 1300.0, 480.0, 1000.0)], [300.0, 300.0, 480.0, 0.0],
+              1e-9, "Hz")
+
 
 # ---------------------------------------------------------------------------------- Module 3
 def module3():
@@ -285,6 +302,10 @@ def module3():
                 col.append(e)
             want.append(col)
         close(out, np.array(want).T, 1e-12, "detector output")
+
+    @check("hum_at_rectifier: 10 mV through 22.6 dB and a gain of 877.5 is 0.65 V, over the 0.4 V diode  (README E1)")
+    def _():
+        close(m.hum_at_rectifier(0.010, 22.6, 877.5), 0.6505, 5e-4, "volts")
 
 
 # ---------------------------------------------------------------------------------- Module 4
@@ -334,6 +355,18 @@ def module4():
         cd = float(np.mean(m.cross_day(T)))
         assert acc > cd, f"shuffled {acc:.3f} is not above cross-day {cd:.3f}"
         assert shared > 0.99, f"only {100 * shared:.1f} % of test windows share a sample with training"
+
+    @check("identical_days: none in the synthetic data; a copy of day 13 filed as day 21 is found  (audit_data.py)")
+    def _():
+        recs = dataset()
+        assert m.identical_days(recs) == [], f"found {m.identical_days(recs)} in data with no copies"
+        copy = dict(recs)
+        copy.update({(21, c): recs[(13, c)].copy() for c in range(11)})
+        got = [sorted(g) for g in m.identical_days(copy)]
+        assert got == [[13, 21]], f"got {got}, expected [[13, 21]]"
+        near = dict(recs)
+        near.update({(21, c): recs[(13, c)] + (1e-9 if c == 4 else 0.0) for c in range(11)})
+        assert m.identical_days(near) == [], "a day that differs by 1e-9 in one recording is NOT a byte copy"
 
 
 # ---------------------------------------------------------------------------------- Module 5
@@ -461,6 +494,23 @@ def module6():
         d = m.hold(True)[1]
         assert abs(d) < 0.05, f"drift {d:.3f} deg"
 
+    @check("count_speed: counts [0, 3, 7, 11] every 10 ms -> [300, 400, 400] counts/s")
+    def _():
+        close(m.count_speed(np.array([0, 3, 7, 11]), 0.01), [300.0, 400.0, 400.0], 1e-9, "counts/s")
+
+    @check("edge_speed: edges every 1 ms -> 1000 counts/s; uneven edges, one full cycle -> still exact")
+    def _():
+        close(m.edge_speed(np.array([0.0, 0.001, 0.002, 0.003, 0.004])), 1000.0, 1e-9, "counts/s")
+        n = np.arange(1, 10)
+        t = (n + np.array([0, 0.12, 0, -0.10])[n % 4]) / 500.0
+        close(m.edge_speed(t), 500.0, 1e-9, "counts/s over 4 uneven edges")
+
+    @check("at 25 deg/s: counting per 10 ms is 11.9 % off, edge timing < 0.02 %  (firmware test_core.cpp:70 prints 11.9 / 0.00)")
+    def _():
+        by_count, by_edge = m.speed_errors(25.0)
+        close(by_count, 0.119, 0.002, "count difference, RMS fraction")
+        assert by_edge < 2e-4, f"edge timing RMS error {100 * by_edge:.3f} %"
+
 
 # ---------------------------------------------------------------------------------- Module 7
 def module7():
@@ -521,7 +571,96 @@ def module7():
         assert len(on) and 120 <= on[0] <= 135, f"the contraction should switch on 20-35 ms after it starts, got {on[:1] - 100}"
 
 
-MODULES = {"1": module1, "2": module2, "3": module3, "4": module4, "5": module5, "6": module6, "7": module7}
+# ---------------------------------------------------------------------------------- Module 8
+def module8():
+    m = load("m8_safety")
+
+    @check("held_for: a 20 ms monitor trips on the 20th true tick, and any false tick resets it (worksheet 8.2)")
+    def _():
+        ticks, trips = 0, []
+        for cond in [True] * 19 + [False] + [True] * 20:
+            ticks, tripped = m.held_for(ticks, cond, 20)
+            trips.append(tripped)
+        close(trips, [False] * 39 + [True], 0, "tripped on each tick")
+        close(m.held_for(0, True, 0), (1, True), 0, "ms = 0: one true tick trips")
+
+    @check("Supervisor: a blip shorter than the hold time does nothing; a long one faults and names itself")
+    def _():
+        s = m.Supervisor({"stall": 400, "runaway": 60})
+        s.arm()
+        out = [s.step({"runaway": 10 <= k < 50}) for k in range(100)]
+        assert all(out) and s.state == "ARMED", f"a 40 ms runaway blip changed the state to {s.state}"
+        out = [s.step({"runaway": True}) for k in range(100)]
+        assert s.state == "FAULT" and s.reason == "runaway", f"state {s.state}, reason {s.reason}"
+        close(out.index(False), 59, 0, "tick of the fault (the 60th true tick)")
+
+    @check("Supervisor: a fault LATCHES (stays off when the condition goes away); clear() goes to IDLE, not ARMED")
+    def _():
+        s = m.Supervisor({"overspeed": 0})
+        s.arm()
+        s.step({"overspeed": True})
+        assert [s.step({"overspeed": False}) for _ in range(50)] == [False] * 50 and s.state == "FAULT", \
+            "after the condition cleared, the motor came back on"
+        s.clear()
+        assert s.state == "IDLE" and not s.step({}), f"after clear() the state is {s.state}"
+        s.arm()
+        assert s.step({}) and s.state == "ARMED", "arming again after clear() should work"
+
+    @check("Watchdog: fed every ms until 1000 ms, fires once 200 ms pass without a feed (at 1201 ms)")
+    def _():
+        w = m.Watchdog(200.0)
+        fired = None
+        for t in range(1500):
+            if t <= 1000:
+                w.feed(t)
+            if fired is None and w.expired(t):
+                fired = t
+        close(fired, 1201, 0, "ms when it fires")
+
+    @check("toy arm under the supervisor: an obstruction trips 'stall', a reversed encoder trips 'runaway'")
+    def _():
+        needs("m6_speed_loop", "imc_gains", lambda f: f(1.0, 1.0, 1.0), 6)
+        t, why, _, _ = m.scenario("obstruction")
+        assert why == "stall", f"obstruction: fault {why} at {t}"
+        t, why, travel, _ = m.scenario("reversed encoder")
+        assert why == "runaway" and abs(travel) < 6.0, f"reversed encoder: fault {why}, {travel:.1f} deg of travel"
+
+
+# ---------------------------------------------------------------------------------- Module 11
+def module11():
+    m = load("m11_mujoco")
+
+    @check("motor_torque: 50 % duty at stall = 0.783 x 191.95 x 0.0186 x 6 V / 1.3 ohm = 12.90 N m; back-EMF cuts it")
+    def _():
+        close(m.motor_torque(0.5, 0.0), 0.87 * 0.90 * m.N * 0.0186 * 6.0 / 1.3, 1e-9, "N m at stall")
+        close(m.motor_torque(0.5, 6.0 / (0.0186 * m.N)), 0.0, 1e-9, "N m at the no-load speed of 50 % duty")
+
+    @check("joint_speed_dps converts MuJoCo's rad/s to deg/s")
+    def _():
+        class FakeSensor:
+            data = np.array([0.5])
+
+        class FakeData:
+            def sensor(self, name):
+                assert name == "elbow_vel", f"read sensor {name!r}"
+                return FakeSensor()
+        close(m.joint_speed_dps(FakeData()), np.degrees(0.5), 1e-12, "deg/s")
+
+    @check("MuJoCo elbow: gravity matches plant.h (-2.475 N m at 0 deg); your loop lifts at 15 deg/s within 2 %")
+    def _():
+        try:
+            import mujoco  # noqa: F401
+        except ImportError:
+            raise NotWritten("MuJoCo isn't installed; Module 11 is optional (README, Module 11)")
+        close(m.gravity_torque_at(0.0), -3.5 * np.sin(np.radians(45)), 1e-3, "N m")
+        needs("m6_speed_loop", "imc_gains", lambda f: f(1.0, 1.0, 1.0), 6)
+        lg = m.simulate(True, 15.0, 5.0, 1.5)
+        err = float(np.mean(15.0 - lg["speed"][-500:]))
+        assert abs(err) < 0.3, f"lift error {err:.3f} deg/s ({100 * abs(err) / 15:.1f} %)"
+
+
+MODULES = {"1": module1, "2": module2, "3": module3, "4": module4, "5": module5, "6": module6, "7": module7,
+           "8": module8, "11": module11}
 
 
 def main():

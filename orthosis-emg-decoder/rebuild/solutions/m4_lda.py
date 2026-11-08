@@ -2,6 +2,8 @@
 
 Read one function at a time (the stuck rule), close it, then type it yourself.
 """
+import hashlib
+
 import numpy as np
 
 import simdata
@@ -78,6 +80,22 @@ def cross_day(T, X=None, shrinkage=0.0):
     tr = np.isin(T.day, TRAIN_DAYS)
     model = lda_fit(X[tr], T.y[tr], shrinkage)
     return [balanced_accuracy(T.y[T.day == d], lda_predict(model, X[T.day == d])) for d in TEST_DAYS]
+    # --- end ---
+
+
+def identical_days(recs):
+    """The data audit's first finding (scripts/audit_data.py): days whose recordings are the same BYTES.
+    Hash each day's recordings, joined in class order, with MD5; return the groups of days that share
+    a hash, e.g. [[5, 7], [63, 68]]. Real EMG can't repeat sample for sample, so a match is a copy.
+    (Worksheet 4.5)"""
+    # TODO (4 lines): hashlib.md5(b"".join(...)).hexdigest(); x.tobytes() gives an array's bytes;
+    # collect {hash: [days]} with dict.setdefault, keep the lists longer than 1
+    # --- solution ---
+    groups = {}
+    for d in sorted({d for d, _ in recs}):
+        h = hashlib.md5(b"".join(recs[(d, c)].tobytes() for c in sorted(c for dd, c in recs if dd == d))).hexdigest()
+        groups.setdefault(h, []).append(d)
+    return [g for g in groups.values() if len(g) > 1]
     # --- end ---
 
 

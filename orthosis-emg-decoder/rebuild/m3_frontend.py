@@ -1,7 +1,7 @@
 """Module 3: why v1 failed and v2 passes.
 
   1. Do WORKSHEET.md, Module 3, on paper first.
-  2. Fill in the TODOs below (about 13 lines in total).
+  2. Fill in the TODOs below (about 14 lines in total).
   3. Run:  python check.py 3      then:  python run.py boards
 """
 import numpy as np
@@ -53,6 +53,13 @@ def peak_detector(v, vf, decay):
     raise NotImplementedError
 
 
+def hum_at_rectifier(v_cm, cmrr_db, total_gain):
+    """Peak 60 Hz voltage that reaches v1's diode: the body's common-mode v_cm, let into the differential
+    path by the front end's CMRR, then multiplied by the whole chain's gain.   (Worksheet 3.5)"""
+    # TODO (1 line)
+    raise NotImplementedError
+
+
 # ------------------------------------------------------------------ provided from here down
 def db(ratio):
     """A gain ratio below 1 as positive dB of rejection: 1e-3 -> 60 dB."""
@@ -62,14 +69,6 @@ def db(ratio):
 def electrodes(z, mismatch=0.25):
     """(Z+, Z-) for a nominal impedance z and a fractional mismatch: 20k +/- 25 % = 22.5k, 17.5k."""
     return z * (1 + mismatch / 2), z * (1 - mismatch / 2)
-
-
-def adc(v, rng, full_scale=3.1, bits=12, enob=10.0):
-    """ESP32-S3 ADC as the project models it: noise for 10 effective bits, clip to 0-3.1 V,
-    round to 12-bit codes (emgdec/board.py, adc)."""
-    v = v + rng.normal(0.0, full_scale / 2 ** enob / np.sqrt(12), v.shape)
-    lsb = full_scale / 2 ** bits
-    return np.round(np.clip(v, 0.0, full_scale) / lsb) * lsb
 
 
 VREF = 1.65
@@ -104,31 +103,58 @@ def v1_output(filtered, pot, fs, rng, envelope=True):
         y = peak_detector(y, 0.4, np.exp(-1.0 / (fs * 10e-6 * 18e3)))
     else:
         y = np.maximum(y - 0.4, 0.0)
-    return adc(y, rng)
+    return m2_filter.adc(y, rng)
 
 
 def v2_output(filtered, pot, rng):
     """v2 after its gain stage: centred on VREF into the ADC, VREF removed after (as the firmware does)."""
     y = np.clip(filtered * (1 + (10e3 + pot) / 1e3), -1.6, 1.6)
-    return adc(VREF + y, rng) - VREF
+    return m2_filter.adc(VREF + y, rng) - VREF
 
 
-def run_chains(recs, fs=2048, cal_days=(1, 2, 3, 4, 5), seed=0):
+def v1_cm_coupling(mismatch, sign, z=20e3, resistor_cmrr_db=62.0):
+    """Signed common-mode -> differential gain of each v1 channel, referred to the input: the electrode
+    imbalance term plus that channel's resistor-matching error (emgdec/board.py, BoardV1.cm_coupling)."""
+    m = np.asarray(mismatch, float)
+    gd, gc = diff_amp_gains(z * (1 + m / 2), z * (1 - m / 2))
+    return gc / gd + np.asarray(sign, float) * 10 ** (-resistor_cmrr_db / 20)
+
+
+def v2_cm_coupling(mismatch, sign, z=20e3, ina_cmrr_db=100.0, rld_db=20.0):
+    """The same for v2 (emgdec/board.py, BoardV2.cm_coupling)."""
+    dz = z * np.asarray(mismatch, float)
+    return (np.asarray(sign, float) * 10 ** (-ina_cmrr_db / 20) + dz / Z_CM) * 10 ** (-rld_db / 20)
+
+
+def run_chains(recs, fs=2048, cal_days=(1, 2, 3, 4, 5), seed=0, hum_v=0.0):
     """Every recording through each board. Returns {chain: {(day, class): output}} and the pots.
 
     recs are in microvolts. Pots are trimmed on the calibration days only, then frozen:
-    v1 to 1.6 V, v2 to 1.2 V, as in the real project.
+    v1 to 1.6 V, v2 to 1.2 V, as in the real project. hum_v: peak 60 Hz common-mode on the body, in
+    volts (0 = none). Each channel turns it into signal through its own signed coupling, per day.
+    pots also carries "v1 share above the diode": the fraction of v1 samples that clear the 0.4 V drop.
     """
+    import simdata
     keys = sorted(recs)
     x = np.stack([recs[k] for k in keys], axis=-1) * 1e-6           # (n, ch, recordings), volts
     out, pots = {"no board": {k: recs[k] for k in keys}}, {}
     cal = np.array([k[0] in cal_days for k in keys])
     rng = np.random.default_rng(seed)
+    if hum_v:
+        hum = np.stack([simdata.body_hum(k[0], k, len(x), fs, seed) for k in keys], axis=-1)   # (n, recordings)
+        mismatch = np.stack([simdata.electrode_imbalance(k[0], seed) for k in keys], axis=-1)  # (ch, recordings)
     for name, filt, fixed, target in (("v1 envelope", v1_filtered, 47e3, 1.6), ("v2", v2_filtered, 10e3, 1.2)):
-        f = filt(x, fs)
+        xb = x
+        if hum_v:
+            couple = v1_cm_coupling if name.startswith("v1") else v2_cm_coupling
+            xb = x + hum_v * hum[:, None, :] * couple(mismatch, simdata.board_signs(seed)[:, None])[None]
+        f = filt(xb, fs)
         cal_f = np.moveaxis(f[..., cal], -1, 0).reshape(-1, f.shape[1])
         pot = calibrate_pot(cal_f, fixed, target)
         pots[name] = pot
+        if name.startswith("v1"):
+            pre = np.clip(f * (1 + (47e3 + pot[:, None]) / 1e3), -3.3 + 0.05, 3.3 - 1.5)
+            pots["v1 share above the diode"] = float(np.mean(pre > 0.4))
         y = v1_output(f, pot[:, None], fs, rng) if name.startswith("v1") else v2_output(f, pot[:, None], rng)
         out[name] = {k: y[..., i] for i, k in enumerate(keys)}
     return out, pots
