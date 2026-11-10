@@ -1,14 +1,15 @@
 """Module 8: the walking controller.
 
   1. Do WORKSHEET.md, Module 8 on paper first.
-  2. Fill in the four TODOs below (about 6 lines).
+  2. Fill in the seven TODOs below (about 25 lines).
   3. Run:  python check.py 8      then:  python m8_walking_control.py
 
-Three small pieces, each the core of something in your controller (python/qeskf/gait.py):
+Four pieces, each the core of something in your controller (python/qeskf/gait.py):
   A. the gait clock: which feet are planted when          (gait.py: leg_phase, scheduled_stance)
   B. Raibert foot placement: where a foot lands sets the speed      (gait.py, line 96)
   C. levelling loops: PD / PI on an angle, fed a measurement that may be wrong
                                                                      (gait.py lines 69-76; qp_balance.py)
+  D. your real trot: every foot target, exactly as gait.py computes it      (gait.py lines 59-102)
 """
 import numpy as np
 
@@ -100,6 +101,60 @@ def level_loop(kp=150.0, kd=20.0, ki=0.0, meas_error=0.0, push=0.0, T=5.0, dt=1e
     return th
 
 
+# ---------------------------------------------------------------- D. your real trot: foot targets (gait.py lines 59-102)
+from legs import HIP_OFFSETS, SIDE, THIGH_Y  # noqa: E402
+
+T_STANCE = PERIOD * DUTY      # 0.24 s: how long each foot is planted
+SWING_HEIGHT = 0.07           # m
+K_RAIBERT = 0.06              # s, gait.py raibert_k
+K_ATT, D_ATT = 1.2, 0.06      # gait.py k_att, d_att: leg-length PD on roll and pitch
+NOMINAL_HEIGHT = 0.27         # m
+
+
+def nominal_foot(leg):
+    """(Provided.) Where foot `leg` sits under its hip, body frame (z = 0: height is added separately)."""
+    return HIP_OFFSETS[leg] + np.array([0.0, SIDE[leg] * THIGH_Y, 0.0])
+
+
+def _rot2(a):
+    c, s = np.cos(a), np.sin(a)
+    return np.array([[c, -s], [s, c]])
+
+
+def _smoothstep(x):
+    return x * x * (3.0 - 2.0 * x)
+
+
+def attitude_dz(nom, rpy, omega):
+    """How much to raise (+) or lower (-) this foot's target to level the trunk: a PD on roll and pitch,
+    scaled by how far the foot is from the centre (its lever arm)."""
+    # TODO (1 line), worksheet 8.4e: K_ATT (roll * y - pitch * x) + D_ATT (omega_x * y - omega_y * x),
+    # with x, y = nom[0], nom[1]
+    raise NotImplementedError
+
+
+def stance_xy(nom, s, cmd):
+    """Where a planted foot is in the body frame at stance progress s (0 = touchdown, 1 = liftoff).
+    The foot is fixed in the world, so it sweeps backwards at the commanded speed and turns against
+    the commanded yaw rate. cmd = (vx, vy, wz)."""
+    # TODO (2 lines), worksheet 8.4a: tau = time from mid-stance = (s - 0.5) * T_STANCE;
+    # the nominal xy turned by -wz*tau (use _rot2), minus the commanded (vx, vy) times tau
+    raise NotImplementedError
+
+
+def foot_target(leg, phase, cmd, v_body, rpy, omega, h_cmd=NOMINAL_HEIGHT):
+    """Body-frame target for one foot while walking: the same maths as gait.py foot_targets.
+    Stance: sweep backwards. Swing: from where stance ended to the next touchdown point (which slides
+    backwards, ground-speed matching) plus the Raibert correction, lifted on a raised cosine."""
+    # TODO (about 14 lines), worksheet 8.4. In stance (phase < DUTY): xy = stance_xy at s = phase / DUTY,
+    #   z = -h_cmd + attitude_dz.  In swing: s = (phase - DUTY) / (1 - DUTY);
+    #   start = stance_xy(s = 1);  s_early = -(1 - s)(1 - DUTY)/DUTY;
+    #   end = stance_xy(s_early) + K_RAIBERT * (v_body xy - commanded xy)          <- Raibert
+    #   blend b = _smoothstep(min(s / 0.8, 1));  xy = (1 - b) start + b end
+    #   z = -h_cmd + dz + SWING_HEIGHT * 0.5 * (1 - cos(2 pi s))
+    raise NotImplementedError
+
+
 def demo():
     print("A) The gait clock: which feet are planted (t in s; walking starts at 2.0)")
     print("      t     " + "  ".join(f"{n:>3s}" for n in LEGS))
@@ -127,6 +182,23 @@ def demo():
         print(f"   {name:32s} {np.degrees(level_loop(**kw)):+7.3f} deg")
     print("   A wrong estimate becomes a real lean, and an integral can't remove it: it zeroes the MEASURED angle.")
 
+    print("\nD) Your real trot (gait.py foot_targets): the front-right foot over one cycle at 0.5 m/s")
+    print("   phase   part     x - nominal (mm)   z (mm)")
+    nom = nominal_foot(0)
+    for ph in (0.0, 0.3, 0.599, 0.7, 0.9, 0.999):
+        tg = foot_target(0, ph, (0.5, 0.0, 0.0), np.array([0.5, 0, 0]), np.zeros(3), np.zeros(3))
+        part = "stance" if ph < DUTY else "swing"
+        print(f"   {ph:5.3f}   {part:6s} {1000 * (tg[0] - nom[0]):+12.1f} {1000 * tg[2]:12.1f}")
+    a = foot_target(0, 0.995, (0.5, 0, 0), np.array([0.5, 0, 0]), np.zeros(3), np.zeros(3))[0]
+    b_ = foot_target(0, 0.999, (0.5, 0, 0), np.array([0.5, 0, 0]), np.zeros(3), np.zeros(3))[0]
+    foot_speed = (b_ - a) / (0.004 * PERIOD)
+    print(f"   just before touchdown the foot moves {foot_speed:+.2f} m/s in the body frame, so"
+          f" {foot_speed + 0.5:+.2f} m/s over the ground (ground-speed matching: no skid)")
+    fast = foot_target(0, 0.999, (0.5, 0, 0), np.array([0.6, 0, 0]), np.zeros(3), np.zeros(3))[0]
+    print(f"   0.1 m/s too fast: touchdown moves {1000 * (fast - b_):+.1f} mm forward (Raibert, k = {K_RAIBERT} s)")
+    roll = np.radians(2.0)
+    print(f"   rolled 2 deg: left feet {1000 * attitude_dz(nominal_foot(1), (roll, 0, 0), np.zeros(3)):+.1f} mm,"
+          f" right feet {1000 * attitude_dz(nominal_foot(0), (roll, 0, 0), np.zeros(3)):+.1f} mm (target height)")
 
 if __name__ == "__main__":
     demo()

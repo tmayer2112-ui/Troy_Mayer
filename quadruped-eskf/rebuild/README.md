@@ -1,4 +1,4 @@
-# Rebuild the project: one week, about 6.5 hours
+# Rebuild the project: one week, about 7 hours
 
 You rebuild the core of the quadruped project yourself, deriving each piece on paper before coding it:
 - the filter (predict, leg update, Jacobian tests);
@@ -21,8 +21,8 @@ ARM. Its numbers are not your project's: those are in [`REAL_NUMBERS.md`](REAL_N
 | 3 | **4** the predict step | 50 min | ~30 lines | `check.py 4`; `python run.py imu-only` |
 | 4 | **5** the leg update | 55 min | ~35 lines | `check.py 5`; `python run.py full` |
 | 5 | **6** legs: forward kinematics, encoders; **7** contacts and your bug #4 | 60 min | ~30 lines | `check.py 6`, `7`; `run.py legs`, `run.py contacts` |
-| 6 | **8** walking controller; **9** predict in C++ with GoogleTest | 80 min | ~45 lines | `check.py 8`; `./build/rebuild_tests` passes |
-| 7 | **10** NEES, observability, your real numbers, retell; **11** MuJoCo (optional, +30 min) | 50 min | ~15 lines | `run.py report`; a recorded 90 s retell |
+| 6 | **8** walking controller, including your real `gait.py` foot targets | 70 min | ~25 lines | `check.py 8` (it compares you with the real `gait.py`) |
+| 7 | **9** predict in C++ with GoogleTest; **10** NEES, observability, real numbers, retell; **11** MuJoCo (optional, +30 min) | 95 min | ~50 lines | `./build/rebuild_tests` passes; `run.py report`; a recorded 90 s retell |
 
 **Short on time?** Skip Module 11, then Module 6. Don't skip 4, 5, 8, 9 or 10: those are your résumé.
 
@@ -44,8 +44,8 @@ and type it from memory.
 then in this folder run:
 ```
 py -m pip install numpy matplotlib      (matplotlib is optional: the report's plot)
-py check.py all --solutions             42 passed, 1 not written yet (the MuJoCo one, until Module 11)
-py check.py all                         0 passed, 43 not written yet
+py check.py all --solutions             45 passed, 1 not written yet (the MuJoCo one, until Module 11)
+py check.py all                         0 passed, 46 not written yet
 ```
 If pip tries to compile numpy, install the x64 Python instead; Windows runs it under emulation.
 (`py` and `python` are the same thing; the docs say `python`.)
@@ -93,6 +93,7 @@ Paths are relative to `quadruped-eskf/`. Python is `python/qeskf/`, C++ is `cpp/
 | `detect_contacts` | `pipeline.py` (`estimator_contacts`); `closed_loop.py` 147-148 | |
 | `nees`, `observability_matrix` | `pipeline.py` (`nees`); `observability.py` | |
 | `leg_phase`, `scheduled_stance`, `raibert_offset`, `level_command` | `gait.py` 51, 55, 96, 75 (`qp_balance.py` 115) | `gait.cpp` 59, 66, 112, 87 |
+| `stance_xy`, `attitude_dz`, `foot_target` (Part D) | `gait.py` `foot_targets`, lines 59-102 (checked against it exactly) | `gait.cpp` `footTargets`, line 72 |
 | Module 11 IMU check and soft foot | `python/tests/test_sim_imu_consistency.py`; `models/go1/` | |
 
 ## What's simpler here than the real project
@@ -103,6 +104,7 @@ Paths are relative to `quadruped-eskf/`. Python is `python/qeskf/`, C++ is `cpp/
 - Foot force is a weight-sharing profile, not a contact solver. The toy reproduces your bug #4 and the
   velocity side of the latency experiment, but not its 6.6° of yaw.
 - A lifted foot keeps a fixed slot in P. The real filter resizes P.
-- Module 8's Raibert demo is an inverted pendulum, where foot placement is the only speed control. Your
-  real trot also sweeps the stance feet at the commanded speed, so don't carry its numbers over.
+- Module 8's Raibert demo (Part B) is an inverted pendulum, where foot placement is the only speed control.
+  Part D is your real controller, so explain your robot from Part D, and use Part B for why stepping
+  ahead brakes.
 - Module 9 ports predict only (15 states). The real C++ runs the whole step with feet.
