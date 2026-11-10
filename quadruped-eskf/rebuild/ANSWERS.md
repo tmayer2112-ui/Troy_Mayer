@@ -233,6 +233,24 @@ leaves a constant offset (8.3b), and the I removes it.
 
 ---
 
+
+**8.4** (a) τ = (s − 0.5) × 0.24 = −0.12, 0, +0.12 s, so x − nominal = −0.5·τ = **+60, 0, −60 mm**. The foot
+lands ahead of the hip, passes under it at mid-stance, and lifts off behind it.
+(b) **0.06 m**. It's Raibert's v·T/2, using the **commanded** speed and one foot's 0.24 s stance. The toy
+used the measured speed and the exact pendulum formula.
+(c) At s = 0.8: s_early = −0.133, τ = −0.152 s, x = **+76 mm**. At s = 1: **+60 mm**. That's −16 mm in
+0.032 s = **−0.5 m/s** in the body frame, exactly −v_cmd, so the foot's speed **over the ground is 0** at
+touchdown (the demo prints −0.50 and 0.00). It lands without skidding, which was DEBUG_LOG #2's fix.
+(d) Lift: **0, 70, 0 mm**. A raised cosine has zero vertical speed at liftoff and touchdown (its slope,
+sin 2πs, is 0 at both ends), so the foot doesn't slam down. A triangle would hit the ground at full speed.
+(e) FL: 1.2 × 0.0349 × 0.127 = **+5.3 mm**; FR: **−5.3 mm**. A higher target means a shorter leg, so the
+high left side is pulled down and the right side pushed up: it levels. It's a **PD** (P on the angle, D on
+the rate). The lever arm appears because a foot 0.13 m out must move 0.13 × angle to undo that angle.
+(f) While the body yaws, a planted foot stays put in the world, so in the body frame it turns the other way.
+(g) **v_body** shifts touchdown through the Raibert term (0.06 × error). **roll, pitch, ω** set the
+attitude dz on every leg. **height** sets h_cmd through the height PI. The **tilt** estimate made the
+robot lean: a 6.8° tilt error asked every leg to "level" a trunk that was already level.
+
 ---
 
 ## Module 9

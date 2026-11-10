@@ -385,6 +385,39 @@ def module8():
         close(m.level_loop(push=3.0, ki=300.0), 0.0, 1e-5, "PID with the push")
         close(m.level_loop(meas_error=e, ki=300.0), -e, 1e-5, "PID with the estimate off")
 
+    @check("stance_xy at 0.5 m/s: the planted foot sweeps from +60 mm to -60 mm   (worksheet 8.4a)")
+    def _():
+        nom = m.nominal_foot(0)
+        for sp, dx in ((0.0, 0.06), (0.5, 0.0), (1.0, -0.06)):
+            close(m.stance_xy(nom, sp, (0.5, 0.0, 0.0)), [nom[0] + dx, nom[1]], 1e-12, f"stance_xy at s = {sp}")
+
+    @check("attitude_dz: rolled 2 deg, the left feet go up 5.3 mm, the right ones down   (worksheet 8.4e)")
+    def _():
+        r = np.radians(2.0)
+        close(m.attitude_dz(m.nominal_foot(1), (r, 0, 0), np.zeros(3)), 1.2 * r * 0.12675, 1e-12, "left front")
+        close(m.attitude_dz(m.nominal_foot(0), (r, 0, 0), np.zeros(3)), -1.2 * r * 0.12675, 1e-12, "right front")
+
+    @check("foot_target matches your REAL gait.py foot_targets (all legs, 300 random states)")
+    def _():
+        real = HERE.parent / "python"
+        if not (real / "qeskf" / "gait.py").exists():
+            raise NotWritten("can't find the real project's python/qeskf/gait.py next to rebuild/")
+        if str(real) not in sys.path:
+            sys.path.append(str(real))
+        from qeskf.gait import GaitParams, TrotController
+        ctrl = TrotController(GaitParams())
+        rng = np.random.default_rng(3)
+        for _ in range(300):
+            t = 2.0 + rng.uniform(0, 4)
+            cmd = (rng.uniform(-0.5, 0.6), rng.uniform(-0.2, 0.2), rng.uniform(-0.6, 0.6))
+            v = np.array([cmd[0] + rng.normal(0, 0.1), cmd[1] + rng.normal(0, 0.05), 0.0])
+            rpy, om = rng.normal(0, 0.03, 3), rng.normal(0, 0.3, 3)
+            want = ctrl.foot_targets(t, cmd, v, rpy, om)
+            phase = ctrl.leg_phase(t)
+            for leg in range(4):
+                close(m.foot_target(leg, phase[leg], cmd, v, rpy, om), want[leg], 1e-12,
+                      f"leg {leg} at phase {phase[leg]:.3f}")
+
 
 # ---------------------------------------------------------------------------------- Module 6
 def module6():

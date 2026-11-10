@@ -345,9 +345,34 @@ controller only sees the *measured* angle θ_m = θ + e (e is the estimate's err
   integral (0.002 × error added every 2 ms). Which is it, and why did height need the I?
   Hint: 8.3b, and the position servos are springs.
 
+**8.4 Your real trot, piece by piece** (`gait.py` `foot_targets`, lines 59-102). This is the controller
+you'd describe in an interview. Each foot's target is rebuilt every 2 ms from five pieces. Use FR at
+0.5 m/s: stance lasts T_stance = 0.4 × 0.6 = 0.24 s.
+
+- (a) **Stance sweep.** A planted foot is fixed in the world, but the body moves forward, so in the body
+  frame the foot slides backwards: x = nominal − v_cmd·τ, where τ = (s − 0.5)·T_stance is the time from
+  mid-stance. At s = 0, 0.5 and 1, the foot is ____, ____, ____ mm from nominal.
+- (b) **Neutral point.** So the foot touches down v_cmd·T_stance/2 = ____ m ahead of the hip. How is this
+  different from the toy's neutral point? (Which speed does it use: measured or commanded?)
+- (c) **Ground-speed matching.** During the last 20 % of swing, the touchdown target slides backwards along
+  the extended stance path: at s = 0.8 it's at τ = (s_early − 0.5)·0.24, with s_early = −(1 − s)·0.4/0.6.
+  Target x at s = 0.8: ____ mm. At s = 1: ____ mm. That's a change of ____ mm in 0.032 s, i.e. ____ m/s
+  backwards in the body frame. What is the foot's speed over the ground at touchdown, and why does that
+  matter? (DEBUG_LOG #2: the feet used to skid 0.7 m/s.)
+- (d) **Raibert, then the lift.** The touchdown point gets + K_RAIBERT·(v_meas − v_cmd), the toy's correction
+  with the neutral point taken from the command. The swing height is 0.07·½(1 − cos 2πs). At s = 0, 0.5
+  and 1: ____, ____, ____ mm. Why a cosine and not a triangle?
+- (e) **Attitude by leg length.** dz = k_att·(roll·y − pitch·x) + d_att·(ω_x·y − ω_y·x). Rolled +2°
+  (0.0349 rad, left side up): FL (y = +0.127) gets ____ mm and FR gets ____ mm. Which leg gets shorter,
+  and does that level the trunk? Is this P, PD or PI? Why does the lever arm (x, y) appear?
+- (f) **Turning.** In stance_xy the nominal foot is also rotated by −ω_z·τ. Why?
+- (g) **Where your estimate enters.** List which inputs of foot_targets come from the estimator, and what
+  each one changes. Which one made the robot lean?
+
 **Code:** `m8_walking_control.py`, then `python check.py 8`, then `python m8_walking_control.py`.
 Part B prints the speed after each step for k = 0, 0.06, 0.11 and 0.25. Part C prints the four
-cases from 8.3.
+cases from 8.3. Part D prints the front-right foot through one cycle, and the checker compares your
+`foot_target` with your real `gait.py`.
 
 **Say it:** *"Raibert foot placement puts the foot at the neutral point, half the stance travel
 ahead, plus a correction proportional to the speed error: too fast, the foot lands further ahead
@@ -359,7 +384,7 @@ the true one."*
 
 ---
 
-## Module 9: the predict step in C++ (day 6)
+## Module 9: the predict step in C++ (day 7)
 
 You port Module 4 to C++ with Eigen, write the finite-difference test, and run a GoogleTest suite
 with a parity test against the Python reference. This is the shape of your real `cpp/` folder.
