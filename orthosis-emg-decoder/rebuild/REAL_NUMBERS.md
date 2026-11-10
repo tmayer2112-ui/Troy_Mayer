@@ -2,8 +2,11 @@
 
 Say these out loud. The rebuild's synthetic numbers (71 % cross-day, 0.91 % lift error and so on) are **not**
 these. Decoder sources are relative to `orthosis-emg-decoder/`, firmware sources to `firmware/`. Every number
-was re-read from its file, and `make claims` (decoder) and `make test` (firmware: 26 tests, all passing)
-check them.
+was re-read from its file. `make test` (firmware: 26 tests, all passing) and `make claims` (decoder) check
+them. One gap in `make claims`: its résumé scan finds no text, because its regex looks for "emulation" and
+your résumé says "emulated". It then reports the résumé as clean. The résumé's 31 % and 87 % are still
+checked as claims (`resume_v1`, `resume_v2`); only the scan for unbacked numbers misses it
+(`DECODER_ANSWERS.md`, D9.3).
 
 ## The résumé, bullet by bullet
 

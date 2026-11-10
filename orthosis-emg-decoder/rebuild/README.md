@@ -25,11 +25,12 @@ Python runs on Windows on ARM with numpy alone. **Its numbers are not your proje
 | 6 | **7** the Bayesian envelope and latency; **10a** the report and your real numbers | 60 min | ~23 lines | `check.py 7`; `run.py report`; `REAL_NUMBERS.md` read aloud |
 | 7 | **9** the speed loop in C++17; **10b** the retell and a mock interview | 65 min | ~14 lines C++ | `./build/rebuild_tests` passes; a recorded 90 s retell |
 | any, after day 4 | **11** (optional) your loop on a MuJoCo elbow | +30 min | 3 lines | `check.py 11` in WSL |
+| any, after day 5 | (optional) **decoder deep-dive**: `DECODER_WORKSHEET.md`, the whole decoder project end to end | +65 min | paper only | a recorded 60 s decoder retell |
 
 Core: 6 h 35 min. Module 5 comes after 6 only because Module 8's last check drives your Module 6 loop.
 
 **Short on time?** Skip, in this order:
-1. Module 11 (optional).
+1. The decoder deep-dive and Module 11 (both optional).
 2. Module 10's mock interview: do it later with Claude.
 3. Worksheet 2.5-2.6 (ADC, aliasing) and 3.5 (hum as dither): read the answers instead.
 4. Module 5's code: do the paper, then run `python run.py polarity --solutions`.
@@ -82,6 +83,7 @@ What was tested, and where:
 | File | What | Edit? |
 |---|---|---|
 | `WORKSHEET.md`, `ANSWERS.md` | the paper derivations, then the worked answers | on paper |
+| `DECODER_WORKSHEET.md`, `DECODER_ANSWERS.md` | optional: the decoder project end to end (pipeline, trim, pots, what the features measure, the CNN, recalibration, claims) | on paper |
 | `REAL_NUMBERS.md` | your project's real numbers with sources, the careful wordings, your debugging stories | read aloud |
 | `m1_features.py` … `m8_safety.py`, `m11_mujoco.py` | one module each, with `TODO`s | **yes** |
 | `cpp/velocity_pi.hpp` | Module 9 (tests, benchmark, fixture and CMake provided in `cpp/`) | **yes** |
@@ -89,7 +91,7 @@ What was tested, and where:
 | `run.py` | the experiments: `features`, `filter`, `boards`, `lda`, `polarity`, `loop`, `latency`, `safety`, `mujoco`, `report`; `--plot` | no |
 | `simdata.py` | the synthetic EMG; its docstring says what it keeps and drops | read the docstring |
 | `solutions/`, `cpp/solutions/` | reference solutions, for the stuck rule | no |
-| `solutions/worksheet_numbers.py` | recomputes every hand-calculation number in `ANSWERS.md` | no |
+| `solutions/worksheet_numbers.py`, `solutions/decoder_numbers.py` | recompute every number in `ANSWERS.md` and `DECODER_ANSWERS.md` | no |
 | `make_skeletons.py`, `cpp/make_fixture.py` | rebuild the TODO files from `solutions/`, and the C++ parity fixture (maintainers) | no |
 
 ## How it maps to your real project
