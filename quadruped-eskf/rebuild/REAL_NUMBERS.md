@@ -38,7 +38,7 @@ does. The website already words it precisely.
 | Closed-loop estimator | 0.025 m/s when the controller runs on the estimate; 0.009 m/s with the startup turn | `closed_loop.json` |
 | Tests | 33 C++ test cases (20 Jacobian, 5 invariant, 1 parity, 4 gait, 3 loop), 17 Python tests | `cpp/tests/`, `python/tests/` |
 
-## Your two debugging stories (five beats each)
+## Your debugging stories (five beats each)
 
 **#14, the lean.**
 - **Symptom:** on the estimate, the trot leaned 3-6° on the first straight vs 1.15° on truth.
@@ -57,6 +57,19 @@ does. The website already words it precisely.
 - **Confirmation:** ending contact earlier flipped the sign (−0.61 → −0.08 → +0.31 m).
 - **Fix:** end contact a few ms before scheduled liftoff. That's the "5 ms early".
 - (Module 7 rebuilds this bug. Say "10 stance events per second"; the log's "~14" is a typo.)
+
+**#15, the QP walking at 0.115 m/s when told 0.4** (Module 12).
+- **Symptom:** tracking error 0.23 m/s, worse than the trot's 0.169.
+- **Hypothesis:** either the QP can't deliver the forward force, or something absorbs it.
+- **Test:** it asked for +13.2 N forward, well inside friction, but the stance feet delivered −2.7 N.
+- **Cause:** the legs' joint damping and friction, which the rigid-body model doesn't contain.
+- **Fix:** integral action (ki_v = 4), not cancelling the damping (that cost 1.7-2.6° of roll): tracking
+  0.23 → 0.091 m/s. The integrator hits its clamp, so it still runs about 0.1 m/s slow.
+
+**QP numbers** (`README.md`, `make qp-compare`, 5 seeds × 60 s): tracking **0.091** m/s fed truth vs the trot's
+0.169; **0.086** fed the estimate; standing forces **30.7-31.8 N** per foot, summing to m·g; largest side push
+survived 8.9 N·s (trot 11.9). "In the style of MIT Cheetah 3's balance controller": say "simplified", since it has
+no prediction horizon (not MPC).
 
 ## Before the interview
 Read this page out loud once. Then do one mock interview with Claude on the real project and record it.

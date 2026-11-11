@@ -1,10 +1,10 @@
-# Rebuild the project: one week, about 7 hours
+# Rebuild the project: one week, about 8 hours
 
 You rebuild the core of the quadruped project yourself, deriving each piece on paper before coding it:
 - the filter (predict, leg update, Jacobian tests);
 - the legs (forward kinematics, encoder noise);
 - contact detection, including your own DEBUG_LOG #4 bug;
-- the walking controller;
+- the walking controller: your Raibert trot, and your QP force-balance controller;
 - a C++/Eigen port with GoogleTest;
 - consistency and observability checks;
 - optionally, a small MuJoCo simulation.
@@ -23,8 +23,11 @@ ARM. Its numbers are not your project's: those are in [`REAL_NUMBERS.md`](REAL_N
 | 5 | **6** legs: forward kinematics, encoders; **7** contacts and your bug #4 | 60 min | ~30 lines | `check.py 6`, `7`; `run.py legs`, `run.py contacts` |
 | 6 | **8** walking controller, including your real `gait.py` foot targets | 70 min | ~25 lines | `check.py 8` (it compares you with the real `gait.py`) |
 | 7 | **9** predict in C++ with GoogleTest; **10** NEES, observability, real numbers, retell; **11** MuJoCo (optional, +30 min) | 95 min | ~50 lines | `./build/rebuild_tests` passes; `run.py report`; a recorded 90 s retell |
+| 8 | **12** the QP force-balance controller: desired motion, A f = b, friction pyramid, τ = Jᵀ(−f) | 55 min | ~25 lines | `check.py 12` (it compares you with the real `qp_balance.py`) |
 
-**Short on time?** Skip Module 11, then Module 6. Don't skip 4, 5, 8, 9 or 10: those are your résumé.
+**Short on time?** Skip Module 11, then Module 6 (Module 12 uses your Module 6 `foot_position` and
+`foot_jacobian`: if you skipped 6, copy those two from `solutions/m6_legs.py`). Don't skip 4, 5, 8, 9, 10 or 12: those are your résumé. Day 8 can be done
+on any day after Module 8.
 
 **Each module:**
 1. Paper first: that module's questions in `WORKSHEET.md`.
@@ -44,8 +47,8 @@ and type it from memory.
 then in this folder run:
 ```
 py -m pip install numpy matplotlib      (matplotlib is optional: the report's plot)
-py check.py all --solutions             45 passed, 1 not written yet (the MuJoCo one, until Module 11)
-py check.py all                         0 passed, 46 not written yet
+py check.py all --solutions             51 passed, 1 not written yet (the MuJoCo one, until Module 11)
+py check.py all                         0 passed, 52 not written yet
 ```
 If pip tries to compile numpy, install the x64 Python instead; Windows runs it under emulation.
 (`py` and `python` are the same thing; the docs say `python`.)
@@ -72,11 +75,12 @@ These commands were tested on Ubuntu x86-64, not on an ARM laptop.
 | `REAL_NUMBERS.md` | your project's real numbers, the honest wording, your two bug stories | read aloud |
 | `m1_kalman_1d.py` … `m3_rotations_fd.py` | warm-ups | **yes** |
 | `eskf.py` | the filter: 7 functions to write; contact bookkeeping provided | **yes** |
-| `m6_legs.py`, `m7_contacts.py`, `m8_walking_control.py`, `m10_consistency.py`, `m11_mujoco.py` | one module each | **yes** |
+| `m6_legs.py`, `m7_contacts.py`, `m8_walking_control.py`, `m10_consistency.py`, `m11_mujoco.py`, `m12_force_balance.py` | one module each | **yes** |
 | `cpp/predict.hpp`, `cpp/fd.hpp` | Module 9 (tests, benchmark and fixture provided in `cpp/`) | **yes** |
 | `check.py`, `run.py` | the checker (`check.py N` or `all`) and the experiments (`imu-only`, `full`, `legs`, `contacts`, `report`) | no |
 | `simdata.py`, `legs.py`, `so3.py` | the synthetic robot, the Go1 leg geometry and IK, rotation helpers | read the docstrings |
 | `solutions/`, `cpp/solutions/` | reference solutions, for the stuck rule | no |
+| `data/qp_fixture.json`, `make_qp_fixture.py` | 200 states run through your real `qp_balance.py`, for `check.py 12` (the script needs MuJoCo and scipy; the file is committed) | no |
 
 ## How it maps to your real project
 
@@ -95,6 +99,7 @@ Paths are relative to `quadruped-eskf/`. Python is `python/qeskf/`, C++ is `cpp/
 | `leg_phase`, `scheduled_stance`, `raibert_offset`, `level_command` | `gait.py` 51, 55, 96, 75 (`qp_balance.py` 115) | `gait.cpp` 59, 66, 112, 87 |
 | `stance_xy`, `attitude_dz`, `foot_target` (Part D) | `gait.py` `foot_targets`, lines 59-102 (checked against it exactly) | `gait.cpp` `footTargets`, line 72 |
 | Module 11 IMU check and soft foot | `python/tests/test_sim_imu_consistency.py`; `models/go1/` | |
+| `desired_accel`, `build_A_b`, `solve_forces`, `joint_torques`; provided `plan`, `nnls` | `qp_balance.py` lines 113-116, 117-125, 126-131, 136-137; `plan` 101; `scipy.optimize.nnls`. Tests: `python/tests/test_qp_balance.py` | Python only |
 
 ## What's simpler here than the real project
 
@@ -108,3 +113,7 @@ Paths are relative to `quadruped-eskf/`. Python is `python/qeskf/`, C++ is `cpp/
   Part D is your real controller, so explain your robot from Part D, and use Part B for why stepping
   ahead brakes.
 - Module 9 ports predict only (15 states). The real C++ runs the whole step with feet.
+- Module 12's forces match the real controller exactly, but its simulation is a single rigid body with
+  massless legs and perfect feedback, and its drag is invented. It reproduces the *mechanism* of DEBUG_LOG #15
+  (an unmodelled force, fixed by an integral), not its numbers, and it can't reproduce #16's fall, which
+  needs the estimator. `nnls` is written in numpy here; the real code calls scipy's, which gives the same answer.
