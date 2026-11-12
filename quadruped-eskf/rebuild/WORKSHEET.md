@@ -501,3 +501,83 @@ Why did your project keep the soft foot instead of stiffening it? (DEBUG_LOG #3)
 **Say it:** *"An accelerometer reads specific force: zero in free fall, +g at rest. In MuJoCo the Go1's
 soft foot reports 5 N of contact while it still has 12 mm to sink, which is why contact needs a settle
 time and an early liftoff."*
+
+---
+
+## Module 12: the QP force-balance controller (day 8)
+
+Module 8's trot is **position** control: it says where each foot goes, and stiff servos get it there.
+Your QP controller (`qp_balance.py`) keeps that for the **swing** legs (Raibert included) but makes the
+**stance** legs **force** controlled. Analogy: carrying a tray. Instead of moving your hands to set
+spots, you decide how hard each hand pushes. Four steps, every 2 ms:
+
+  1. **What motion do I want?** PD/PI on the body → desired acceleration a and angular acceleration ω̇.
+  2. **What forces give it?** Treat the robot as one rigid body: Σ f = m(a − g) and Σ r × f = I ω̇.
+  3. **Best legal forces:** feet can only push, and mustn't slip.
+  4. **Motor torques:** τ = Jᵀ(−f).
+
+Numbers: m = 12.74 kg, g = 9.81 m/s² (down), μ = 0.6.
+
+**12.1 What motion do I want?** Gains: kv 4, ki_v 4, kpz 100, kdz 20, kr 150, kdr 20.
+  a_x = kv·(v_cmd − v) + ki_v·∫(v_cmd − v),   a_z = kpz·(h_des − h) − kdz·v_z,   ω̇_y = −kr·pitch − kdr·ω_y
+- (a) Commanded 0.5 m/s, moving 0.4, integral 0.1: a_x = ____ m/s².
+- (b) Height 0.26 m, wanted 0.27, not moving vertically: a_z = ____ m/s².
+- (c) Pitched 0.02 rad, pitching at 0.1 rad/s: ω̇_y = ____ rad/s². Which Module 8 loop has the same
+  kr and kdr, and what's different about how this one acts? (Hint: that one changed leg lengths.)
+
+**12.2 What forces give that motion?** One rigid body, n feet pushing with forces f_i at positions r_i
+(from the centre of mass):
+  push:  f_1 + … + f_n = m(a − g)        twist:  r_1 × f_1 + … + r_n × f_n = I ω̇
+- (a) Standing still (a = 0): the feet must push ____ N in total, which way? Why "a **minus** g"?
+  With a = (0.8, 0, 1.0) from 12.1: total push (____, 0, ____) N.
+- (b) One foot at r = (0.19, −0.13, −0.27) m pushes f = (0, 0, 31) N. r × f = (r_y f_z − r_z f_y,
+  r_z f_x − r_x f_z, r_x f_y − r_y f_x) = (____, ____, ____) N·m.
+- (c) The same thing as a matrix: r × f = [r]× f. Fill in [r]× (same pattern as Module 3's skew):
+  [[0, ____, ____], [____, 0, ____], [____, ____, 0]]. Check it gives (b).
+- (d) Stack both equations as **A f = b** for n feet. Size of A: ____ × ____. With four feet: ____
+  unknowns and 6 equations, so how many answers? With two diagonal feet: ____ unknowns.
+- (e) Four feet, symmetric about the centre: what's the obvious answer standing? ____ N each.
+  Your real QP gives 30.7, 31.1, 31.4 and 31.8 N. Why not all equal? (Your CoM is at x = −2 mm.)
+
+**12.3 The best legal forces.**
+- (a) **Friction.** A foot pressing down 60 N with μ = 0.6 can push sideways at most ____ N before it
+  slips. Your code uses a pyramid, |f_x| + |f_y| ≤ μ f_z. Is it inside or outside the real cone
+  √(f_x² + f_y²) ≤ μ f_z? So is it safe?
+- (b) **The trick.** Any f = β₁(μ, 0, 1) + β₂(−μ, 0, 1) + β₃(0, μ, 1) + β₄(0, −μ, 1) with every β ≥ 0
+  is legal. β = (10, 0, 0, 0) gives f = (____, ____, ____). β = (10, 0, 5, 0) gives f = ____: on
+  the edge or inside? Now the only constraint is "β ≥ 0", which `nnls` (non-negative least squares) solves.
+- (c) **Weights.** It minimises Σ w_k (A f − b)_k² + α‖f‖² with w = (1, 1, 5, 10, 10, 2) for
+  (f_x, f_y, f_z, roll, pitch, yaw). When it can't do everything, what does it give up first? Why is
+  that the right order for a walking robot? What does the small α do when there are many answers (12.2d)?
+- (d) **Friction caps speed-up.** Standing, total f_z ≈ 125 N. Most total forward push: ____ N, so the
+  most forward acceleration ≈ ____ m/s². Told 3 m/s from rest, a_des = 4 × 3 = 12 m/s². What happens?
+
+**12.4 Motor torques: τ = Jᵀ(−f).**
+- (a) **Why Jᵀ?** Power in = power out: the motors' τ·q̇ equals the foot's force times its speed,
+  F·v. And v = J q̇ (Module 6). So τ·q̇ = F·(J q̇) = (JᵀF)·q̇ for every q̇, giving τ = ____.
+- (b) **Why the minus?** f is the ground pushing the **robot**. The foot pushes the **ground** with ____.
+  What happens if you flip the sign? (Your `test_qp_balance.py` checks exactly this.)
+- (c) **One joint.** A knee with the foot 0.17 m in front of it (horizontal), and the ground pushing up
+  31 N: τ_knee = ____ N·m.
+- (d) Standing, FR's three torques are (2.46, 0, 5.12) N·m (abduction, hip, knee). Why is the **hip**
+  torque 0? (The FR foot is at x = 0.1881 m; the hip is at x = 0.1881 m.) Where does 2.46 come from?
+  (The foot is 0.08 m out from the abduction axis.)
+
+**12.5 Trot vs QP, in your results.** From `README.md` (`make qp-compare`, 5 seeds):
+- Speed tracking fed ground truth: trot 0.169 m/s, QP 0.091. Why can force control track better?
+- DEBUG_LOG #15: the first QP run walked at 0.115 m/s when told 0.4. The forces it asked for were right,
+  but they never reached the ground. What absorbed them, and why did integral action fix it when
+  feeding the damping forward didn't? Which Module 8 lesson is that (8.3b-c)?
+- DEBUG_LOG #16: fed the estimate, the QP fell on 1 of 5 seeds and the trot fell on none. Why does more
+  attitude authority make a wrong tilt estimate **more** dangerous?
+
+**Code:** `m12_force_balance.py` (uses your Module 6 `foot_jacobian`), then `python check.py 12`
+(it compares your forces and torques with your real `qp_balance.py` on 200 states), then
+`python m12_force_balance.py` (about 15 s). Part 7 of the demo runs a rigid-body toy trot with an unmodelled drag,
+with and without the velocity integral.
+
+**Say it:** *"The trot is position control. My QP controller keeps Raibert for the swing legs but makes
+the stance legs force controlled. A PD/PI on the body state gives the acceleration I want. A
+single-rigid-body model turns that into six equations, A f = b, for the stance-foot forces. I solve it
+as non-negative least squares over the edges of a friction pyramid, so each foot only pushes and
+doesn't slip, and map the forces to joint torques with τ = Jᵀ(−f)."*

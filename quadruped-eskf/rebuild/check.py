@@ -1,6 +1,6 @@
 """Auto-checker for the rebuild.
 
-    python check.py 1          check Module 1 (also 2-8, 10, 11; Module 9 is C++, see README)
+    python check.py 1          check Module 1 (also 2-8, 10-12; Module 9 is C++, see README)
     python check.py all        check everything you've written so far
     python check.py 4 --solutions    run a check against the reference solutions instead of your code
 
@@ -550,13 +550,84 @@ def module11():
         close(mine, lg["accel"], 1e-9, "specific force vs accelerometer")
 
 
+# ---------------------------------------------------------------------------------- Module 12
+def module12():
+    m = load("m12_force_balance")
+    g = m.Gains()
+
+    @check("desired_accel: 0.1 m/s slow, 1 cm low, pitched 0.02 rad   (worksheet 12.1)")
+    def _():
+        a, wd = m.desired_accel((0.5, 0, 0), np.array([0.4, 0, 0]), np.array([0, 0.02, 0]), np.array([0, 0.1, 0]),
+                                0.26, np.array([0.1, 0, 0]))
+        close(a, [0.8, 0, 1.0], 1e-12, "a_des (kv 0.1 + ki_v 0.1, 0, kpz 0.01)")
+        close(wd, [0, -5.0, 0], 1e-12, "wd_des (-kr 0.02 - kdr 0.1)")
+        a, wd = m.desired_accel((0, 0.2, 0.3), np.array([0, 0, 0.1]), np.array([0.01, 0, 0]), np.array([0, 0, 0.1]),
+                                0.27, np.array([0, 0.05, 0.02]))
+        close(a, [0, 4 * 0.2 + 4 * 0.05, -20 * 0.1], 1e-12, "a_des (sideways, falling at 0.1 m/s)")
+        close(wd, [-1.5, 0, 10 * 0.2 + 10 * 0.02], 1e-12, "wd_des (roll 0.01, yaw rate 0.1 slow)")
+
+    @check("build_A_b: standing needs m g up; a foot at (0.19, -0.13, -0.27) pushing 31 N up twists (-4.03, -5.89, 0)")
+    def _():
+        r = np.array([[0.19, -0.13, -0.27], [-0.19, 0.13, -0.27]])
+        A, b = m.build_A_b(r, np.zeros(3), np.zeros(3))
+        close(A.shape, (6, 6), 0, "A's shape for two feet")
+        close(b, [0, 0, m.MASS * 9.80665, 0, 0, 0], 1e-9, "b standing still (sign of gravity?)")
+        close(A @ np.array([0, 0, 31.0, 0, 0, 0]), [0, 0, 31, -4.03, -5.89, 0], 1e-9, "A f for the first foot alone")
+        f = np.array([1.0, 2, 3, 4, 5, 6])
+        close(A[3:] @ f, np.cross(r[0], f[:3]) + np.cross(r[1], f[3:]), 1e-12, "torque rows = sum r x f")
+        _, b = m.build_A_b(r, np.array([0.8, 0, 1.0]), np.array([0, -5.0, 0]), mass=10.0, inertia=np.diag([1, 2, 3.0]))
+        close(b, [8.0, 0, 10 * (1 + 9.80665), 0, -10.0, 0], 1e-12, "b with a_des and wd_des")
+
+    @check("solve_forces: legal forces (push only, inside the pyramid); friction caps a 12 m/s^2 demand")
+    def _():
+        r = np.array([[0.19, -0.127, -0.25], [0.19, 0.127, -0.25], [-0.19, -0.127, -0.25], [-0.19, 0.127, -0.25]])
+        A, b = m.build_A_b(r, np.zeros(3), np.zeros(3))
+        f = m.solve_forces(A, b)
+        close(f, np.tile([0, 0, m.MASS * 9.80665 / 4], (4, 1)), 1e-4,
+              "symmetric stance: m g / 4 each, no sideways force (alpha shaves off 0.04 mN)")
+        A, b = m.build_A_b(r, np.array([12.0, 0, 0]), np.zeros(3))
+        f = m.solve_forces(A, b)
+        assert np.all(f[:, 2] >= -1e-9), f"a foot pulls on the ground: f_z = {f[:, 2]}"
+        slip = np.abs(f[:, 0]) + np.abs(f[:, 1]) - g.mu * f[:, 2]
+        assert np.all(slip <= 1e-6), f"outside the friction pyramid by {slip.max():.3g} N"
+        close(f[:, 0].sum(), g.mu * f[:, 2].sum(), 1e-6, "forward force at the friction limit (mu sum f_z)")
+
+    @check("joint_torques = J^T (-f): standing FR torques (2.46, 0, 5.12) N m   (worksheet 12.4)")
+    def _():
+        import m6_legs
+        f = np.array([0, 0, 30.7])
+        tau = m.joint_torques(0, m.STAND_Q, f, np.eye(3))
+        close(tau, m6_legs.foot_jacobian(0, m.STAND_Q).T @ -f, 1e-12, "tau with RH = I")
+        close(tau, [2.456, 0.0, 5.124], 2e-3, "tau, rounded")
+        RH = m.rot_rp(0.1, -0.2)
+        close(m.joint_torques(2, m.STAND_Q, f, RH), m6_legs.foot_jacobian(2, m.STAND_Q).T @ -(RH.T @ f), 1e-12,
+              "tau when the trunk is tilted (f is in the heading frame)")
+
+    @check("plan() with your functions matches your REAL qp_balance.py on 200 states (2 and 4 feet, friction-limited)")
+    def _():
+        import json
+        cases = json.loads((HERE / "data" / "qp_fixture.json").read_text())["cases"]
+        for i, c in enumerate(cases):
+            fb = (np.array(c["v_body"]), np.array(c["rpy"]), np.array(c["w_body"]), c["height"])
+            f, tau = m.plan(np.array(c["stance"]), np.array(c["q"]), fb, c["cmd"], np.array(c["i_err"]))
+            close(f, c["f"], 1e-6, f"case {i}: foot forces (N)")
+            close(tau, c["tau"], 1e-6, f"case {i}: stance torques (N m)")
+
+    @check("rigid-body toy: starting 5 deg nose-down, your QP levels it to < 0.5 deg within 0.4 s")
+    def _():
+        s = m.simulate(T=0.4, cmd=(0, 0, 0), tilt_deg=(0.0, 5.0), trot=False)
+        assert abs(np.degrees(s["pitch"][-1])) < 0.5, f"pitch after 0.4 s: {np.degrees(s['pitch'][-1]):.2f} deg"
+        assert abs(s["h"][-1] - m.H_DES) < 0.005, f"height after 0.4 s: {s['h'][-1]:.4f} m (wanted 0.27)"
+
+
 def module9():
     print("  Module 9 is C++. Build and run it as the README says (section \"Module 9: C++\"):")
     print("    cd cpp && cmake -S . -B build && cmake --build build && ./build/rebuild_tests")
 
 
 MODULES = {"1": module1, "2": module2, "3": module3, "4": module4, "5": module5, "6": module6, "7": module7,
-           "8": module8, "9": module9, "10": module10, "11": module11}
+           "8": module8, "9": module9, "10": module10, "11": module11,
+           "12": module12}
 
 
 def main():

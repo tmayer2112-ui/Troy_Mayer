@@ -345,3 +345,56 @@ sinks 4.0 mm and bounces. So "in contact" isn't "stopped". The soft foot stands 
 and your project kept it because "tuning the world to suit the estimator would hide a real modelling
 error" (DEBUG_LOG #3).
 
+---
+
+## Module 12
+
+**12.1** (a) 4 × 0.1 + 4 × 0.1 = **0.8 m/s²**. (b) 100 × 0.01 = **1.0 m/s²**, up.
+(c) −150 × 0.02 − 20 × 0.1 = **−5 rad/s²**, nose up. It's Module 8's levelling loop (kp 150, kd 20 came
+from here). The difference: the trot levels by changing **leg lengths** (attitude dz), the QP by
+**pushing harder** on some feet.
+
+**12.2** (a) **125 N up** (12.74 × 9.81). Gravity is (0, 0, −9.81): to stand still, the feet must supply
+everything gravity takes away, so m(0 − g) = +125 N up. With a = (0.8, 0, 1.0): (**10.2**, 0, **137.7**) N.
+(b) (−0.13 × 31 − 0, 0 − 0.19 × 31, 0) = (**−4.03, −5.89, 0**) N·m.
+(c) [[0, **0.27**, **−0.13**], [**−0.27**, 0, **−0.19**], [**0.13**, **0.19**, 0]], i.e.
+[[0, −r_z, r_y], [r_z, 0, −r_x], [−r_y, r_x, 0]]. Times (0, 0, 31) gives (−4.03, −5.89, 0).
+(d) **6 × 3n**. Four feet: **12** unknowns, 6 equations, so **infinitely many** answers (you can shift
+weight between feet in many ways). Two feet: **6** unknowns, at most one exact answer, and it may break
+friction, so the QP finds the closest legal one.
+(e) 125 / 4 = **31.2 N** each. The CoM is 2 mm behind centre, so the rear feet carry a little more
+(31.4, 31.8 vs 30.7, 31.1). Those are your README's "30.7-31.8 N per foot"; the demo reproduces them.
+
+**12.3** (a) 0.6 × 60 = **36 N**. The pyramid is **inside** the cone. Along x it allows the full 36 N, but
+diagonally only 18 + 18 N, which is 25 N in magnitude. So it's conservative: **safe**. Your project also
+assumes μ = 0.6 while the feet really have 0.8.
+(b) (**6, 0, 10**). (6, 3, 15): 6 + 3 = 9 = 0.6 × 15, so **on the edge**. Every β ≥ 0 lands inside.
+(c) It gives up **f_x, f_y first** (weight 1, speed), then height (5), and fights hardest for **roll and
+pitch** (10). Being slow is fine; tipping over isn't. α picks, among the many answers, the one with the
+smallest forces, so the weight is shared evenly instead of one foot doing everything.
+(d) 0.6 × 125 = **75 N**, so **5.9 m/s²**. Told 12 m/s², the forward force sits on the friction limit.
+The demo shows 80.2 N = 0.6 × 133.7: the QP presses down 9 N more than the weight to get more grip,
+trading some of the f_z row (weight 5) for the f_x row. That trade is exactly what the weights decide.
+
+**12.4** (a) **τ = JᵀF**. (b) **−f**. Flip it and the legs pull instead of push: the robot collapses
+(`test_torque_sign_holds_height`: standing height drops more than 5 cm).
+(c) 0.17 × 31 = **5.3 N·m**. The demo's 5.12 uses the exact 0.167 m and 30.7 N.
+(d) The foot is **directly below the hip** (same x), so a vertical force has **no lever arm** about
+the hip axis. Abduction: 30.7 N × 0.08 m = **2.46 N·m**. Knee: 30.7 × 0.167 = **5.12 N·m**.
+
+**12.5**
+- **Tracking.** The trot only changes speed through where feet land (once a step, Module 8.2). The QP
+  also pushes forward with every stance foot, every 2 ms.
+- **#15.** The legs' own **joint damping and friction**, which the rigid-body model doesn't contain. It
+  asked for +13.2 N forward; the stance feet delivered −2.7 N. Feeding the damping forward got speed back
+  but cost roll accuracy (1.7-2.6° RMS), and with no damping at all the robot fed the estimate fell. An integral doesn't need
+  to know *what* the missing force is: it keeps growing until the speed error is zero. That's 8.3b-c: a
+  constant load leaves a constant offset, and the I removes it. Your fix (ki_v = 4): tracking 0.23 →
+  0.091 m/s. Be honest: the integrator saturates at its clamp, so it still runs about 0.1 m/s slow.
+- **#16.** The QP can tilt the trunk faster and harder, so it turns a wrong tilt estimate into a real tilt
+  faster. On seed 3 the pitch estimate's error grew to 24° and the true pitch reached 28°: it fell. The position-servoed trot
+  can't tilt that far. Fix: the 4 s startup turn (as in #14), after which 0/5 fell.
+- **The toy (demo part 7).** Told 0.4 m/s: 0.381 with no drag (Raibert's v·T/2 brakes slightly on a
+  pendulum, as in Module 8), **0.271** with a 20 N·s/m drag the controller doesn't know about, **0.397**
+  with ki_v = 4 added. The same mechanism as #15, but the drag is invented for illustration: the toy's
+  numbers aren't the project's.
