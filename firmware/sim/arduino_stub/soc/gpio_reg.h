@@ -1,4 +1,0 @@
-#pragma once
-#define DR_REG_GPIO_BASE 0x60004000
-#define GPIO_IN_REG (DR_REG_GPIO_BASE + 0x3C)
-#define GPIO_IN1_REG (DR_REG_GPIO_BASE + 0x40)
